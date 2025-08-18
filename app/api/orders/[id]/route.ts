@@ -1,0 +1,62 @@
+import { type NextRequest, NextResponse } from "next/server"
+import { requireAuth } from "@/lib/auth/middleware"
+import { db } from "@/lib/db"
+import { orders, products, variants } from "@/lib/db/schema"
+import { eq, and } from "drizzle-orm"
+import { btcpayClient } from "@/lib/btcpay/client"
+
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { user } = await requireAuth()
+    const orderId = Number.parseInt(params.id)
+
+    const [order] = await db
+      .select({
+        id: orders.id,
+        qty: orders.qty,
+        priceSats: orders.priceSats,
+        status: orders.status,
+        createdAt: orders.createdAt,
+        btcpayInvoiceId: orders.btcpayInvoiceId,
+        product: {
+          id: products.id,
+          name: products.name,
+          description: products.description,
+          imageUrl: products.imageUrl,
+        },
+        variant: {
+          id: variants.id,
+          label: variants.label,
+          isHolographic: variants.isHolographic,
+          color: variants.color,
+        },
+      })
+      .from(orders)
+      .leftJoin(products, eq(orders.productId, products.id))
+      .leftJoin(variants, eq(orders.variantId, variants.id))
+      .where(and(eq(orders.id, orderId), eq(orders.userId, user.id)))
+      .limit(1)
+
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    }
+
+    // If order has BTCPay invoice, get latest status
+    let invoiceData = null
+    if (order.btcpayInvoiceId) {
+      try {
+        invoiceData = await btcpayClient.getInvoice(order.btcpayInvoiceId)
+      } catch (error) {
+        console.error("Failed to fetch invoice data:", error)
+      }
+    }
+
+    return NextResponse.json({
+      order,
+      invoice: invoiceData,
+    })
+  } catch (error) {
+    console.error("Get order error:", error)
+    return NextResponse.json({ error: "Failed to fetch order" }, { status: 500 })
+  }
+}
