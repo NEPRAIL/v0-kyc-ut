@@ -19,7 +19,7 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300">
+    <header className="sticky top-0 z-50 w-full backdrop-blur-nav transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 sm:h-16 items-center justify-between">
           {/* Logo */}
@@ -37,61 +37,79 @@ export function Header() {
             <NavigationMenuList>
               <NavigationMenuItem>
                 <Link href="/shop" legacyBehavior passHref>
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background/20 backdrop-blur-sm px-4 py-2 text-sm font-medium transition-all duration-300 hover:bg-accent/30 hover:text-accent-foreground hover:scale-105 focus:bg-accent/30 focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
                     Marketplace
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="transition-all duration-300 hover:scale-105">
+                <NavigationMenuTrigger className="transition-all duration-300 hover:scale-105 bg-background/20 backdrop-blur-sm hover:bg-accent/30">
                   Categories
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <div className="grid gap-3 p-6 w-[400px] animate-in fade-in-0 zoom-in-95">
+                  <div className="grid gap-3 p-6 w-[400px] animate-in fade-in-0 zoom-in-95 bg-background/95 backdrop-blur-xl border border-white/10">
                     <Link
                       href="/shop?category=neo-banks"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground"
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent/20 hover:text-accent-foreground hover:scale-105 focus:bg-accent/20 focus:text-accent-foreground"
                     >
                       <div className="text-sm font-medium leading-none">Neo-Banks 🏪</div>
                       <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Modern digital banking solutions
+                        Modern digital banking solutions with KYC completed
                       </p>
                     </Link>
                     <Link
-                      href="/shop?category=business-bank"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground"
+                      href="/shop?category=business-banks"
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent/20 hover:text-accent-foreground hover:scale-105 focus:bg-accent/20 focus:text-accent-foreground"
                     >
                       <div className="text-sm font-medium leading-none">Business Banks 👤</div>
                       <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Professional business banking accounts
+                        Professional business banking accounts ready to use
                       </p>
                     </Link>
                     <Link
                       href="/shop?category=crypto-exchanges"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground"
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent/20 hover:text-accent-foreground hover:scale-105 focus:bg-accent/20 focus:text-accent-foreground"
                     >
                       <div className="text-sm font-medium leading-none">Crypto Exchanges 🪙</div>
                       <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Premium trading platform access
+                        Pre-verified cryptocurrency trading accounts
                       </p>
                     </Link>
                     <Link
                       href="/shop?category=custom-name-banks"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground"
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent/20 hover:text-accent-foreground hover:scale-105 focus:bg-accent/20 focus:text-accent-foreground"
                     >
                       <div className="text-sm font-medium leading-none">Custom Name Banks 📊</div>
                       <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Personalized banking solutions
+                        Personalized banking solutions with custom naming
                       </p>
                     </Link>
                     <Link
-                      href="/shop?category=european-banks"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground"
+                      href="/shop?category=spain-banks"
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent/20 hover:text-accent-foreground hover:scale-105 focus:bg-accent/20 focus:text-accent-foreground"
                     >
-                      <div className="text-sm font-medium leading-none">European Banks 🇪🇺</div>
+                      <div className="text-sm font-medium leading-none">Spain Banks 🇪🇸</div>
                       <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Spain, Italy, Germany banking access
+                        Spanish banking institutions with full verification
+                      </p>
+                    </Link>
+                    <Link
+                      href="/shop?category=italy-banks"
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent/20 hover:text-accent-foreground hover:scale-105 focus:bg-accent/20 focus:text-accent-foreground"
+                    >
+                      <div className="text-sm font-medium leading-none">Italy Banks 🇮🇹</div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Italian banking solutions with completed KYC
+                      </p>
+                    </Link>
+                    <Link
+                      href="/shop?category=germany-banks"
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent/20 hover:text-accent-foreground hover:scale-105 focus:bg-accent/20 focus:text-accent-foreground"
+                    >
+                      <div className="text-sm font-medium leading-none">Germany Banks 🇩🇪</div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        German banking accounts with premium verification
                       </p>
                     </Link>
                   </div>
@@ -100,7 +118,7 @@ export function Header() {
 
               <NavigationMenuItem>
                 <Link href="/about" legacyBehavior passHref>
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background/20 backdrop-blur-sm px-4 py-2 text-sm font-medium transition-all duration-300 hover:bg-accent/30 hover:text-accent-foreground hover:scale-105 focus:bg-accent/30 focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
                     About
                   </NavigationMenuLink>
                 </Link>
@@ -108,7 +126,7 @@ export function Header() {
 
               <NavigationMenuItem>
                 <Link href="/contact" legacyBehavior passHref>
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background/20 backdrop-blur-sm px-4 py-2 text-sm font-medium transition-all duration-300 hover:bg-accent/30 hover:text-accent-foreground hover:scale-105 focus:bg-accent/30 focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
                     Contact
                   </NavigationMenuLink>
                 </Link>
@@ -121,7 +139,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="sm"
-              className="hidden sm:flex p-2 transition-all duration-300 hover:scale-110 hover:bg-accent"
+              className="hidden sm:flex p-2 transition-all duration-300 hover:scale-110 hover:bg-accent/20 backdrop-blur-sm"
             >
               <Search className="w-4 h-4" />
             </Button>
@@ -129,7 +147,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="sm"
-              className="relative p-2 transition-all duration-300 hover:scale-110 hover:bg-accent"
+              className="relative p-2 transition-all duration-300 hover:scale-110 hover:bg-accent/20 backdrop-blur-sm"
             >
               <ShoppingCart className="w-4 h-4" />
               <Badge className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-xs bg-secondary animate-pulse">
@@ -141,7 +159,7 @@ export function Header() {
               asChild
               variant="outline"
               size="sm"
-              className="hidden md:flex bg-transparent text-sm px-3 py-2 transition-all duration-300 hover:scale-105 hover:shadow-md"
+              className="hidden md:flex bg-transparent backdrop-blur-sm text-sm px-3 py-2 transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-accent/20 border-white/20"
             >
               <Link href="/login">
                 <User className="w-4 h-4 mr-2" />
@@ -152,11 +170,18 @@ export function Header() {
             {/* Mobile menu */}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="lg:hidden p-2 transition-all duration-300 hover:scale-110">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="lg:hidden p-2 transition-all duration-300 hover:scale-110 hover:bg-accent/20 backdrop-blur-sm"
+                >
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[280px] sm:w-[350px] animate-in slide-in-from-right duration-300">
+              <SheetContent
+                side="right"
+                className="w-[280px] sm:w-[350px] animate-in slide-in-from-right duration-300 bg-background/95 backdrop-blur-xl border-l border-white/10"
+              >
                 <nav className="flex flex-col space-y-6 mt-8">
                   <Link
                     href="/shop"

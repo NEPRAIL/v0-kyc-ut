@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,34 +10,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Star, Search, Filter, Grid, List } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { allProducts, productCategories } from "@/lib/data/products"
+import { allProducts, productCategories, getSortedProducts, verificationLevels } from "@/lib/data/products"
 
 export default function ShopPage() {
+  const searchParams = useSearchParams()
   const [search, setSearch] = useState("")
-  const [category, setCategory] = useState("all")
-  const [rarity, setRarity] = useState("all")
-  const [sortBy, setSortBy] = useState("name")
+  const [category, setCategory] = useState(searchParams.get("category") || "all")
+  const [verificationLevel, setVerificationLevel] = useState("all")
+  const [sortBy, setSortBy] = useState("price-asc")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
-  const filteredProducts = allProducts
-    .filter((product) => {
-      const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase())
-      const matchesCategory = category === "all" || product.category === category
-      const matchesRarity = rarity === "all" || product.rarity.toLowerCase() === rarity.toLowerCase()
-      return matchesSearch && matchesCategory && matchesRarity
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "price-low":
-          return a.price - b.price
-        case "price-high":
-          return b.price - a.price
-        case "name":
-          return a.name.localeCompare(b.name)
-        default:
-          return a.name.localeCompare(b.name)
-      }
-    })
+  useEffect(() => {
+    const categoryParam = searchParams.get("category")
+    if (categoryParam) {
+      setCategory(categoryParam)
+    }
+  }, [searchParams])
+
+  const filteredProducts = allProducts.filter((product) => {
+    const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase())
+    const matchesCategory = category === "all" || product.category === category
+    const matchesVerification =
+      verificationLevel === "all" || product.verificationLevel.toLowerCase() === verificationLevel.toLowerCase()
+    return matchesSearch && matchesCategory && matchesVerification
+  })
+
+  const sortedProducts = getSortedProducts(filteredProducts, sortBy)
 
   return (
     <div className="min-h-screen bg-background">
@@ -48,7 +47,7 @@ export default function ShopPage() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-card rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg border border-border">
+        <div className="bg-card/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg border border-border/50">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4">
             <div className="relative sm:col-span-2 lg:col-span-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -56,12 +55,12 @@ export default function ShopPage() {
                 placeholder="Search accounts..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 bg-background h-10 sm:h-11"
+                className="pl-10 bg-background/80 backdrop-blur-sm h-10 sm:h-11"
               />
             </div>
 
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="bg-background h-10 sm:h-11">
+              <SelectTrigger className="bg-background/80 backdrop-blur-sm h-10 sm:h-11">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -74,35 +73,37 @@ export default function ShopPage() {
               </SelectContent>
             </Select>
 
-            <Select value={rarity} onValueChange={setRarity}>
-              <SelectTrigger className="bg-background h-10 sm:h-11">
-                <SelectValue placeholder="Rarity" />
+            <Select value={verificationLevel} onValueChange={setVerificationLevel}>
+              <SelectTrigger className="bg-background/80 backdrop-blur-sm h-10 sm:h-11">
+                <SelectValue placeholder="Verification" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Rarities</SelectItem>
-                <SelectItem value="common">Common</SelectItem>
-                <SelectItem value="uncommon">Uncommon</SelectItem>
-                <SelectItem value="rare">Rare</SelectItem>
-                <SelectItem value="epic">Epic</SelectItem>
-                <SelectItem value="legendary">Legendary</SelectItem>
-                <SelectItem value="mythic">Mythic</SelectItem>
+                <SelectItem value="all">All Levels</SelectItem>
+                {Object.keys(verificationLevels).map((level) => (
+                  <SelectItem key={level} value={level.toLowerCase()}>
+                    {level}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="bg-background h-10 sm:h-11">
+              <SelectTrigger className="bg-background/80 backdrop-blur-sm h-10 sm:h-11">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="name">Name</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                <SelectItem value="name-asc">Name: A to Z</SelectItem>
+                <SelectItem value="name-desc">Name: Z to A</SelectItem>
+                <SelectItem value="verification-asc">Verification: Basic to Platinum</SelectItem>
+                <SelectItem value="verification-desc">Verification: Platinum to Basic</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-            <div className="text-sm text-muted-foreground">{filteredProducts.length} accounts found</div>
+            <div className="text-sm text-muted-foreground">{sortedProducts.length} accounts found</div>
             <div className="flex items-center gap-2">
               <Button
                 variant={viewMode === "grid" ? "default" : "outline"}
@@ -125,7 +126,7 @@ export default function ShopPage() {
         </div>
 
         {/* Products Grid */}
-        {filteredProducts.length > 0 ? (
+        {sortedProducts.length > 0 ? (
           <div
             className={
               viewMode === "grid"
@@ -133,34 +134,23 @@ export default function ShopPage() {
                 : "space-y-4 sm:space-y-6"
             }
           >
-            {filteredProducts.map((product) => {
-              const getGradient = (rarity: string) => {
-                switch (rarity) {
-                  case "Common":
-                    return "from-gray-500 to-gray-700"
-                  case "Uncommon":
-                    return "from-green-500 to-green-700"
-                  case "Rare":
-                    return "from-blue-500 to-blue-700"
-                  case "Epic":
-                    return "from-purple-500 to-purple-700"
-                  case "Legendary":
-                    return "from-orange-500 to-orange-700"
-                  case "Mythic":
-                    return "from-red-500 to-red-700"
-                  default:
-                    return "from-gray-500 to-gray-700"
-                }
-              }
-
+            {sortedProducts.map((product) => {
               const categoryInfo = productCategories.find((cat) => cat.id === product.category)
+              const verificationInfo = verificationLevels[product.verificationLevel]
 
               return (
-                <Link key={product.id} href={`/product/${product.id}`}>
-                  <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-card border-0 shadow-lg overflow-hidden cursor-pointer">
+                <Link
+                  key={product.id}
+                  href={`/product/${product.id}`}
+                  onClick={() => {
+                    // Scroll to top when navigating to product page
+                    window.scrollTo({ top: 0, behavior: "smooth" })
+                  }}
+                >
+                  <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-card/80 backdrop-blur-sm border-0 shadow-lg overflow-hidden cursor-pointer">
                     <CardContent className="p-6 sm:p-8">
                       <div
-                        className={`aspect-square bg-gradient-to-br ${getGradient(product.rarity)} rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-inner relative overflow-hidden transition-all duration-300 group-hover:shadow-2xl`}
+                        className={`aspect-square bg-gradient-to-br ${verificationInfo.gradient} rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-inner relative overflow-hidden transition-all duration-300 group-hover:shadow-2xl`}
                       >
                         <div className="absolute inset-0 bg-white/10 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20" />
                         {product.logo ? (
@@ -183,11 +173,11 @@ export default function ShopPage() {
                       <div className="space-y-4 sm:space-y-6">
                         <div className="flex items-center justify-between">
                           <Badge
-                            className={`${product.rarityColor} text-white font-semibold shadow-md px-2 sm:px-3 py-1 text-xs sm:text-sm transition-all duration-300 group-hover:scale-105`}
+                            className={`${product.verificationColor} text-white font-semibold shadow-md px-2 sm:px-3 py-1 text-xs sm:text-sm transition-all duration-300 group-hover:scale-105`}
                           >
-                            {product.rarity}
+                            {product.verificationLevel}
                           </Badge>
-                          <span className="text-xs sm:text-sm text-muted-foreground font-medium bg-muted px-2 sm:px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-muted/80">
+                          <span className="text-xs sm:text-sm text-muted-foreground font-medium bg-muted/80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-muted/60">
                             {categoryInfo?.name || product.category}
                           </span>
                         </div>
@@ -197,11 +187,12 @@ export default function ShopPage() {
                             {product.name}
                           </h3>
                           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                            Pre-verified {product.name} account with KYC completed. No ban risk, fast delivery.
+                            Pre-verified {product.name} account with {product.verificationLevel.toLowerCase()}{" "}
+                            verification completed. No ban risk, fast delivery.
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-border">
+                        <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-border/50">
                           <div className="flex items-center gap-2 sm:gap-3">
                             <span className="text-2xl sm:text-3xl font-bold text-card-foreground">
                               ${product.price}
