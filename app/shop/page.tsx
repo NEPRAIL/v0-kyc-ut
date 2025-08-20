@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Star, Search, Filter, Grid, List } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { allProducts, productCategories } from "@/lib/data/products"
 
 export default function ShopPage() {
@@ -155,60 +156,69 @@ export default function ShopPage() {
               const categoryInfo = productCategories.find((cat) => cat.id === product.category)
 
               return (
-                <Card
-                  key={product.id}
-                  className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-card border-0 shadow-lg overflow-hidden"
-                >
-                  <CardContent className="p-6 sm:p-8">
-                    <div
-                      className={`aspect-square bg-gradient-to-br ${getGradient(product.rarity)} rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-inner relative overflow-hidden transition-all duration-300 group-hover:shadow-2xl`}
-                    >
-                      <div className="absolute inset-0 bg-white/10 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20" />
-                      <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white relative z-10 group-hover:scale-110 transition-transform duration-300">
-                        {categoryInfo?.emoji || "🏪"}
-                      </div>
-                    </div>
-
-                    <div className="space-y-4 sm:space-y-6">
-                      <div className="flex items-center justify-between">
-                        <Badge
-                          className={`${product.rarityColor} text-white font-semibold shadow-md px-2 sm:px-3 py-1 text-xs sm:text-sm transition-all duration-300 group-hover:scale-105`}
-                        >
-                          {product.rarity}
-                        </Badge>
-                        <span className="text-xs sm:text-sm text-muted-foreground font-medium bg-muted px-2 sm:px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-muted/80">
-                          {categoryInfo?.name || product.category}
-                        </span>
+                <Link key={product.id} href={`/product/${product.id}`}>
+                  <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-card border-0 shadow-lg overflow-hidden cursor-pointer">
+                    <CardContent className="p-6 sm:p-8">
+                      <div
+                        className={`aspect-square bg-gradient-to-br ${getGradient(product.rarity)} rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-inner relative overflow-hidden transition-all duration-300 group-hover:shadow-2xl`}
+                      >
+                        <div className="absolute inset-0 bg-white/10 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20" />
+                        {product.logo ? (
+                          <div className="relative z-10 w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 group-hover:scale-110 transition-transform duration-300">
+                            <Image
+                              src={product.logo || "/placeholder.svg"}
+                              alt={`${product.name} logo`}
+                              fill
+                              className="object-contain filter brightness-0 invert"
+                              sizes="(max-width: 768px) 64px, (max-width: 1024px) 80px, 96px"
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white relative z-10 group-hover:scale-110 transition-transform duration-300">
+                            {categoryInfo?.emoji || "🏪"}
+                          </div>
+                        )}
                       </div>
 
-                      <div>
-                        <h3 className="text-xl sm:text-2xl font-bold text-card-foreground mb-2 sm:mb-3 transition-colors duration-300 group-hover:text-primary">
-                          {product.name}
-                        </h3>
-                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                          Pre-verified {product.name} account with KYC completed. No ban risk, fast delivery.
-                        </p>
-                      </div>
+                      <div className="space-y-4 sm:space-y-6">
+                        <div className="flex items-center justify-between">
+                          <Badge
+                            className={`${product.rarityColor} text-white font-semibold shadow-md px-2 sm:px-3 py-1 text-xs sm:text-sm transition-all duration-300 group-hover:scale-105`}
+                          >
+                            {product.rarity}
+                          </Badge>
+                          <span className="text-xs sm:text-sm text-muted-foreground font-medium bg-muted px-2 sm:px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-muted/80">
+                            {categoryInfo?.name || product.category}
+                          </span>
+                        </div>
 
-                      <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-border">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <span className="text-2xl sm:text-3xl font-bold text-card-foreground">${product.price}</span>
-                          <div className="flex items-center text-yellow-500">
-                            <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                            <span className="text-xs sm:text-sm ml-1 text-muted-foreground font-medium">4.9</span>
+                        <div>
+                          <h3 className="text-xl sm:text-2xl font-bold text-card-foreground mb-2 sm:mb-3 transition-colors duration-300 group-hover:text-primary">
+                            {product.name}
+                          </h3>
+                          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                            Pre-verified {product.name} account with KYC completed. No ban risk, fast delivery.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-border">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <span className="text-2xl sm:text-3xl font-bold text-card-foreground">
+                              ${product.price}
+                            </span>
+                            <div className="flex items-center text-yellow-500">
+                              <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                              <span className="text-xs sm:text-sm ml-1 text-muted-foreground font-medium">4.9</span>
+                            </div>
+                          </div>
+                          <div className="text-xs sm:text-sm text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            Click to view →
                           </div>
                         </div>
-                        <Button
-                          asChild
-                          size="sm"
-                          className="bg-secondary hover:bg-secondary/90 shadow-md px-4 sm:px-6 text-xs sm:text-sm transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                        >
-                          <Link href={`/product/${product.id}`}>View Details</Link>
-                        </Button>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Link>
               )
             })}
           </div>

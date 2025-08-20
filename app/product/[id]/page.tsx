@@ -3,72 +3,133 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Star, ArrowLeft, Shield, Zap, TrendingUp, CheckCircle } from "lucide-react"
+import { Star, ArrowLeft, Shield, Zap, CheckCircle, Clock, CreditCard } from "lucide-react"
 import { notFound } from "next/navigation"
+import { allProducts } from "@/lib/data/products"
+import Image from "next/image"
 
-const products = [
-  {
-    id: "1",
-    name: "KuCoin Token",
-    description:
-      "Premium cryptocurrency exchange access token with advanced trading features and institutional-grade security protocols.",
-    fullDescription:
-      "The KuCoin Token provides exclusive access to advanced trading features on one of the world's leading cryptocurrency exchanges. This premium access token includes reduced trading fees, priority customer support, advanced charting tools, and access to exclusive trading pairs. Perfect for professional traders and institutions looking to maximize their trading potential.",
-    price: "299.99",
-    rarity: "Epic",
-    rarityColor: "bg-purple-500",
-    logo: "https://cryptologos.cc/logos/kucoin-shares-kcs-logo.png",
-    category: "Crypto Exchange",
-    gradient: "from-purple-500 to-purple-700",
-    rating: 4.9,
-    reviews: 234,
-    features: [
-      "Reduced trading fees (up to 50% discount)",
-      "Priority customer support",
-      "Advanced charting and analytics tools",
-      "Access to exclusive trading pairs",
-      "Institutional-grade API access",
-      "Enhanced security features",
+function generateProductDetails(product: any) {
+  const baseFeatures = [
+    "KYC verification completed",
+    "No ban risk guarantee",
+    "Fast delivery (1-24 hours)",
+    "24/7 customer support",
+    "Account recovery assistance",
+    "Secure handover process",
+  ]
+
+  const categorySpecificFeatures: Record<string, string[]> = {
+    "neo-banks": ["Digital banking access", "Mobile app ready", "International transfers", "Multi-currency support"],
+    "business-banks": [
+      "Business account privileges",
+      "Corporate banking features",
+      "Higher transaction limits",
+      "Professional support",
     ],
-    specifications: {
-      "Access Level": "Premium",
-      Validity: "Lifetime",
-      Support: "24/7 Priority",
-      "API Limits": "Enhanced",
-      "Trading Pairs": "All + Exclusive",
-    },
-  },
-  {
-    id: "2",
-    name: "PayPal Premium",
-    description: "Enhanced payment processing privileges with global merchant access and reduced transaction fees.",
-    fullDescription:
-      "PayPal Premium access token unlocks enhanced payment processing capabilities for businesses and individuals. Enjoy reduced transaction fees, higher processing limits, advanced fraud protection, and priority dispute resolution. This token is perfect for e-commerce businesses, freelancers, and anyone who processes significant payment volumes.",
-    price: "199.99",
-    rarity: "Rare",
-    rarityColor: "bg-blue-500",
-    logo: "https://logos-world.net/wp-content/uploads/2020/07/PayPal-Logo.png",
-    category: "Payment Gateway",
-    gradient: "from-blue-500 to-blue-700",
-    rating: 4.8,
-    reviews: 189,
-    features: [
-      "Reduced transaction fees",
-      "Higher processing limits",
-      "Advanced fraud protection",
-      "Priority dispute resolution",
-      "Multi-currency support",
-      "Enhanced reporting tools",
+    "crypto-exchanges": [
+      "Trading platform access",
+      "Reduced trading fees",
+      "Advanced order types",
+      "API access available",
     ],
-    specifications: {
-      "Fee Reduction": "Up to 30%",
-      "Processing Limit": "Enhanced",
-      Support: "Priority",
-      Currencies: "Global",
-      Integration: "Full API",
-    },
-  },
-]
+    "custom-name-banks": [
+      "Personalized account setup",
+      "Custom naming options",
+      "Flexible configurations",
+      "Tailored solutions",
+    ],
+    "spain-banks": [
+      "Spanish banking compliance",
+      "SEPA transfers enabled",
+      "Local banking features",
+      "Spanish customer support",
+    ],
+    "italy-banks": [
+      "Italian banking compliance",
+      "SEPA transfers enabled",
+      "Local banking features",
+      "Italian customer support",
+    ],
+    "germany-banks": [
+      "German banking compliance",
+      "SEPA transfers enabled",
+      "Premium banking features",
+      "German customer support",
+    ],
+  }
+
+  const features = [...baseFeatures, ...(categorySpecificFeatures[product.category] || [])]
+
+  const specifications = {
+    "Account Type": product.category.replace("-", " ").replace(/\b\w/g, (l: string) => l.toUpperCase()),
+    "Verification Status": "Fully Completed",
+    "Delivery Time": "1-24 hours",
+    Support: "24/7 Available",
+    Warranty: "30-day guarantee",
+    Region: getRegionFromCategory(product.category),
+  }
+
+  const fullDescription = generateDescription(product)
+
+  return {
+    ...product,
+    features,
+    specifications,
+    fullDescription,
+    rating: generateRating(product.rarity),
+    reviews: generateReviewCount(product.price),
+  }
+}
+
+function generateDescription(product: any): string {
+  const descriptions: Record<string, string> = {
+    "neo-banks": `Pre-verified ${product.name} digital banking account with complete KYC verification. This modern banking solution offers seamless digital transactions, mobile banking capabilities, and international transfer options. Perfect for individuals and businesses looking for flexible, technology-driven banking services without the hassle of lengthy verification processes.`,
+    "business-banks": `Professional ${product.name} business banking account with full corporate verification completed. This premium business solution provides enhanced transaction limits, corporate banking features, and dedicated business support. Ideal for entrepreneurs, companies, and enterprises requiring immediate access to professional banking services.`,
+    "crypto-exchanges": `Fully verified ${product.name} cryptocurrency exchange account with trading privileges activated. This account provides immediate access to crypto trading, reduced fees, advanced trading tools, and secure wallet services. Perfect for traders, investors, and crypto enthusiasts who want to start trading immediately without verification delays.`,
+    "custom-name-banks": `Personalized ${product.name} banking account with custom configuration and full KYC completion. This tailored banking solution offers flexible account setup, custom naming options, and specialized features based on your requirements. Ideal for users seeking personalized banking experiences with immediate access.`,
+    "spain-banks": `Verified ${product.name} Spanish banking account with full compliance and KYC completion. This account provides access to Spanish banking services, SEPA transfers, local payment methods, and Spanish customer support. Perfect for individuals and businesses operating in Spain or requiring Spanish banking services.`,
+    "italy-banks": `Authenticated ${product.name} Italian banking account with complete verification and regulatory compliance. This account offers Italian banking privileges, SEPA integration, local payment solutions, and Italian language support. Ideal for users needing immediate access to Italian banking services.`,
+    "germany-banks": `Premium ${product.name} German banking account with full verification and compliance standards met. This high-tier account provides access to German banking excellence, SEPA transfers, premium features, and German customer service. Perfect for users requiring top-tier European banking services.`,
+  }
+
+  return (
+    descriptions[product.category] ||
+    `Pre-verified ${product.name} account with complete KYC verification and immediate access to all platform features.`
+  )
+}
+
+function getRegionFromCategory(category: string): string {
+  const regions: Record<string, string> = {
+    "neo-banks": "Global",
+    "business-banks": "International",
+    "crypto-exchanges": "Worldwide",
+    "custom-name-banks": "Flexible",
+    "spain-banks": "Spain/EU",
+    "italy-banks": "Italy/EU",
+    "germany-banks": "Germany/EU",
+  }
+  return regions[category] || "Global"
+}
+
+function generateRating(rarity: string): number {
+  const ratings: Record<string, number> = {
+    Common: 4.6,
+    Uncommon: 4.7,
+    Rare: 4.8,
+    Epic: 4.9,
+    Legendary: 4.9,
+    Mythic: 5.0,
+  }
+  return ratings[rarity] || 4.5
+}
+
+function generateReviewCount(price: number): number {
+  // Higher priced items tend to have fewer but more detailed reviews
+  if (price >= 1000) return Math.floor(Math.random() * 50) + 25
+  if (price >= 500) return Math.floor(Math.random() * 100) + 50
+  if (price >= 200) return Math.floor(Math.random() * 200) + 100
+  return Math.floor(Math.random() * 300) + 150
+}
 
 interface ProductPageProps {
   params: {
@@ -77,11 +138,13 @@ interface ProductPageProps {
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
-  const product = products.find((p) => p.id === params.id)
+  const baseProduct = allProducts.find((p) => p.id === params.id)
 
-  if (!product) {
+  if (!baseProduct) {
     notFound()
   }
+
+  const product = generateProductDetails(baseProduct)
 
   return (
     <div className="min-h-screen bg-background">
@@ -112,14 +175,22 @@ export default function ProductPage({ params }: ProductPageProps) {
             <Card className="overflow-hidden">
               <CardContent className="p-0">
                 <div
-                  className={`aspect-square bg-gradient-to-br ${product.gradient} flex items-center justify-center relative overflow-hidden`}
+                  className={`aspect-square bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center relative overflow-hidden`}
                 >
                   <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
-                  <img
-                    src={product.logo || "/placeholder.svg"}
-                    alt={product.name}
-                    className="w-48 h-48 object-contain filter drop-shadow-2xl relative z-10"
-                  />
+                  {product.logo ? (
+                    <Image
+                      src={product.logo || "/placeholder.svg"}
+                      alt={product.name}
+                      width={192}
+                      height={192}
+                      className="object-contain filter drop-shadow-2xl relative z-10 bg-white/90 rounded-2xl p-4"
+                    />
+                  ) : (
+                    <div className="w-48 h-48 bg-white/20 rounded-2xl flex items-center justify-center relative z-10">
+                      <span className="text-4xl font-bold text-white">{product.name.charAt(0)}</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -129,7 +200,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               <CardContent className="p-6">
                 <h3 className="text-xl font-bold text-foreground mb-4">Key Features</h3>
                 <div className="space-y-3">
-                  {product.features.map((feature, index) => (
+                  {product.features.map((feature: string, index: number) => (
                     <div key={index} className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
                       <span className="text-muted-foreground">{feature}</span>
@@ -148,7 +219,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                   {product.rarity}
                 </Badge>
                 <span className="text-muted-foreground font-medium bg-muted px-4 py-2 rounded-full text-sm">
-                  {product.category}
+                  {product.category.replace("-", " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}
                 </span>
               </div>
 
@@ -168,7 +239,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <span className="text-5xl font-bold text-foreground">${product.price}</span>
                 <div className="text-sm text-muted-foreground">
                   <div>One-time payment</div>
-                  <div>Lifetime access</div>
+                  <div>Instant delivery</div>
                 </div>
               </div>
 
@@ -185,18 +256,18 @@ export default function ProductPage({ params }: ProductPageProps) {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                 <div className="text-center p-4 bg-card rounded-lg border border-border">
                   <Shield className="w-8 h-8 text-primary mx-auto mb-2" />
-                  <div className="font-semibold text-sm">Secure Payment</div>
-                  <div className="text-xs text-muted-foreground">Crypto only</div>
+                  <div className="font-semibold text-sm">No Ban Risk</div>
+                  <div className="text-xs text-muted-foreground">Guaranteed safe</div>
                 </div>
                 <div className="text-center p-4 bg-card rounded-lg border border-border">
-                  <Zap className="w-8 h-8 text-secondary mx-auto mb-2" />
-                  <div className="font-semibold text-sm">Instant Access</div>
-                  <div className="text-xs text-muted-foreground">Immediate delivery</div>
+                  <Clock className="w-8 h-8 text-secondary mx-auto mb-2" />
+                  <div className="font-semibold text-sm">Fast Delivery</div>
+                  <div className="text-xs text-muted-foreground">1-24 hours</div>
                 </div>
                 <div className="text-center p-4 bg-card rounded-lg border border-border">
-                  <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                  <div className="font-semibold text-sm">Lifetime Support</div>
-                  <div className="text-xs text-muted-foreground">24/7 assistance</div>
+                  <CreditCard className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                  <div className="font-semibold text-sm">Best Pricing</div>
+                  <div className="text-xs text-muted-foreground">Market leading</div>
                 </div>
               </div>
             </div>
@@ -204,7 +275,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             {/* Specifications */}
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-foreground mb-4">Specifications</h3>
+                <h3 className="text-xl font-bold text-foreground mb-4">Account Details</h3>
                 <div className="space-y-4">
                   {Object.entries(product.specifications).map(([key, value], index) => (
                     <div key={index}>

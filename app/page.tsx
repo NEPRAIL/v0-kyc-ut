@@ -4,14 +4,18 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FadeIn } from "@/components/ui/fade-in"
 import { Star, Shield, Zap, TrendingUp, ArrowRight, Sparkles } from "lucide-react"
+import Image from "next/image"
 import { getFeaturedProducts } from "@/lib/data/products"
+import { ScrollGradient } from "@/components/scroll-gradient"
 
 const featuredBrands = getFeaturedProducts()
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+      <ScrollGradient />
+
+      <div className="relative overflow-hidden bg-gradient-scroll">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(22,78,99,0.1),transparent_70%)] bg-transparent" />
 
@@ -88,58 +92,69 @@ export default function HomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {featuredBrands.map((brand, index) => (
             <FadeIn key={brand.id} delay={index * 100}>
-              <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-card border-0 shadow-lg overflow-hidden cursor-pointer">
-                <CardContent className="p-6 sm:p-8">
-                  <div
-                    className={`aspect-square bg-gradient-to-br ${brand.gradient} rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-inner relative overflow-hidden transition-all duration-300 group-hover:shadow-2xl`}
-                  >
-                    <div className="absolute inset-0 bg-white/10 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20" />
-                    <img
-                      src={brand.logo || "/placeholder.svg"}
-                      alt={brand.name}
-                      className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain filter drop-shadow-lg group-hover:scale-110 transition-transform duration-300 relative z-10"
-                    />
-                  </div>
-
-                  <div className="space-y-4 sm:space-y-6">
-                    <div className="flex items-center justify-between">
-                      <Badge
-                        className={`${brand.rarityColor} text-white font-semibold shadow-md px-2 sm:px-3 py-1 text-xs sm:text-sm transition-all duration-300 group-hover:scale-105`}
-                      >
-                        {brand.rarity}
-                      </Badge>
-                      <span className="text-xs sm:text-sm text-muted-foreground font-medium bg-muted px-2 sm:px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-muted/80">
-                        {brand.category}
-                      </span>
+              <Link href={`/product/${brand.id}`}>
+                <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-card border-0 shadow-lg overflow-hidden cursor-pointer">
+                  <CardContent className="p-6 sm:p-8">
+                    <div
+                      className={`aspect-square bg-gradient-to-br ${brand.gradient} rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-inner relative overflow-hidden transition-all duration-300 group-hover:shadow-2xl`}
+                    >
+                      <div className="absolute inset-0 bg-white/10 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20" />
+                      {brand.logo ? (
+                        <div className="relative z-10 w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 group-hover:scale-110 transition-transform duration-300">
+                          <Image
+                            src={brand.logo || "/placeholder.svg"}
+                            alt={`${brand.name} logo`}
+                            fill
+                            className="object-contain filter brightness-0 invert"
+                            sizes="(max-width: 768px) 64px, (max-width: 1024px) 80px, 96px"
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white relative z-10 group-hover:scale-110 transition-transform duration-300">
+                          {brand.name.charAt(0)}
+                        </div>
+                      )}
                     </div>
 
-                    <div>
-                      <h3 className="text-xl sm:text-2xl font-bold text-card-foreground mb-2 sm:mb-3 transition-colors duration-300 group-hover:text-primary">
-                        {brand.name}
-                      </h3>
-                      <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">{brand.description}</p>
-                    </div>
+                    <div className="space-y-4 sm:space-y-6">
+                      <div className="flex items-center justify-between">
+                        <Badge
+                          className={`${brand.rarityColor} text-white font-semibold shadow-md px-2 sm:px-3 py-1 text-xs sm:text-sm transition-all duration-300 group-hover:scale-105`}
+                        >
+                          {brand.rarity}
+                        </Badge>
+                        <span className="text-xs sm:text-sm text-muted-foreground font-medium bg-muted px-2 sm:px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-muted/80">
+                          {brand.category}
+                        </span>
+                      </div>
 
-                    <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-border">
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <span className="text-2xl sm:text-3xl font-bold text-card-foreground">${brand.price}</span>
-                        <div className="flex items-center text-yellow-500">
-                          <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                          <span className="text-xs sm:text-sm ml-1 text-muted-foreground font-medium">
-                            {brand.rating}
-                          </span>
+                      <div>
+                        <h3 className="text-xl sm:text-2xl font-bold text-card-foreground mb-2 sm:mb-3 transition-colors duration-300 group-hover:text-primary">
+                          {brand.name}
+                        </h3>
+                        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                          {brand.description}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-border">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <span className="text-2xl sm:text-3xl font-bold text-card-foreground">${brand.price}</span>
+                          <div className="flex items-center text-yellow-500">
+                            <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                            <span className="text-xs sm:text-sm ml-1 text-muted-foreground font-medium">
+                              {brand.rating}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-xs sm:text-sm text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          Click to view →
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        className="bg-secondary hover:bg-secondary/90 shadow-md px-4 sm:px-6 text-xs sm:text-sm transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                      >
-                        View Details
-                      </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             </FadeIn>
           ))}
         </div>
