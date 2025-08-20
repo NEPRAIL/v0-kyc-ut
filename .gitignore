@@ -25,3 +25,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Logo pipeline
+assets/logo_report.csv
+public/logos/*
+!public/logos/.keep
+.venv/

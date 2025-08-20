@@ -132,13 +132,14 @@ function generateReviewCount(price: number): number {
 }
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
-export default function ProductPage({ params }: ProductPageProps) {
-  const baseProduct = allProducts.find((p) => p.id === params.id)
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { id } = await params
+  const baseProduct = allProducts.find((p) => p.id === id)
 
   if (!baseProduct) {
     notFound()
@@ -235,14 +236,6 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               <p className="text-lg text-muted-foreground leading-relaxed mb-8">{product.fullDescription}</p>
 
-              <div className="flex items-center gap-6 mb-8">
-                <span className="text-5xl font-bold text-foreground">${product.price}</span>
-                <div className="text-sm text-muted-foreground">
-                  <div>One-time payment</div>
-                  <div>Instant delivery</div>
-                </div>
-              </div>
-
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Button size="lg" className="flex-1 bg-primary hover:bg-primary/90 text-lg py-6">
                   <Zap className="w-5 h-5 mr-2" />
@@ -294,4 +287,20 @@ export default function ProductPage({ params }: ProductPageProps) {
       </div>
     </div>
   )
+}
+
+export async function generateMetadata({ params }: ProductPageProps) {
+  const { id } = await params
+  const product = allProducts.find((p) => p.id === id)
+
+  if (!product) {
+    return {
+      title: "Product Not Found",
+    }
+  }
+
+  return {
+    title: `${product.name} - KYCut Shop`,
+    description: `Pre-verified ${product.name} account with complete KYC verification. ${product.category} account available for immediate delivery.`,
+  }
 }

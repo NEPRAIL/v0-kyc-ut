@@ -50,30 +50,48 @@ export function Header() {
                 <NavigationMenuContent>
                   <div className="grid gap-3 p-6 w-[400px] animate-in fade-in-0 zoom-in-95">
                     <Link
-                      href="/shop?category=crypto"
+                      href="/shop?category=neo-banks"
                       className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground"
                     >
-                      <div className="text-sm font-medium leading-none">Crypto Exchange</div>
+                      <div className="text-sm font-medium leading-none">Neo-Banks 🏪</div>
                       <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Premium trading platform access tokens
+                        Modern digital banking solutions
                       </p>
                     </Link>
                     <Link
-                      href="/shop?category=payment"
+                      href="/shop?category=business-bank"
                       className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground"
                     >
-                      <div className="text-sm font-medium leading-none">Payment Gateway</div>
+                      <div className="text-sm font-medium leading-none">Business Banks 👤</div>
                       <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Enhanced payment processing privileges
+                        Professional business banking accounts
                       </p>
                     </Link>
                     <Link
-                      href="/shop?category=ecommerce"
+                      href="/shop?category=crypto-exchanges"
                       className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground"
                     >
-                      <div className="text-sm font-medium leading-none">E-commerce</div>
+                      <div className="text-sm font-medium leading-none">Crypto Exchanges 🪙</div>
                       <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Marketplace seller benefits and tools
+                        Premium trading platform access
+                      </p>
+                    </Link>
+                    <Link
+                      href="/shop?category=custom-name-banks"
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground"
+                    >
+                      <div className="text-sm font-medium leading-none">Custom Name Banks 📊</div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Personalized banking solutions
+                      </p>
+                    </Link>
+                    <Link
+                      href="/shop?category=european-banks"
+                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-accent hover:text-accent-foreground hover:scale-105 focus:bg-accent focus:text-accent-foreground"
+                    >
+                      <div className="text-sm font-medium leading-none">European Banks 🇪🇺</div>
+                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                        Spain, Italy, Germany banking access
                       </p>
                     </Link>
                   </div>

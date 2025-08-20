@@ -6,6 +6,7 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
+    "logos": "python3 scripts/fetch_logos.py",
     "start": "next start"
   },
   "dependencies": {

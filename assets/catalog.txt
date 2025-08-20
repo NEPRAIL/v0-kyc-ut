@@ -1,0 +1,41 @@
+# KYCut Product Catalog (three-pipe format: NAME | $PRICE | filename.svg)
+# NEO-BANKS 🏪
+MOONPAY | $90 | moonpay-logo.svg
+SKRILL | $120 | skrill-logo.svg
+NETELLER | $110 | neteller-logo.svg
+BITSA | $95 | bitsa-logo.svg
+WISE | $150 | wise-logo.svg
+TRUSTEE PLUS | $200 | trustee-plus-logo.svg
+WESTERN UNION | $180 | western-union-logo.svg
+XAPO BANK | $400 | xapo-bank-logo.svg
+PAYSERA | $130 | paysera-logo.svg
+ZEN | $160 | zen-logo.svg
+BUNQ | $250 | bunq-logo.svg
+SWISSQUOTE | $350 | swissquote-logo.svg
+
+# BUSINESS BANK 👤
+PAYPAL BUSINESS | $350 | paypal-business-logo.svg
+STRIPE | $500 | stripe-logo.svg
+KRAKEN BUSINESS | $800 | kraken-business-logo.svg
+REVOLUT BUSINESS | $600 | revolut-business-logo.svg
+REVOLUT BUSINESS MERCHANT | $750 | revolut-business-merchant-logo.svg
+N26 BUSINESS | $450 | n26-business-logo.svg
+AIRWALLEX BUSINESS WITHOUT MERCHANT | $1200 | airwallex-business-logo.svg
+AIRWALLEX BUSINESS WITH MERCHANT | $1750 | airwallex-business-merchant-logo.svg
+
+# CRYPTO-EXCHANGES 🪙
+KUCOIN | $75 | kucoin-logo.svg
+GATE IO | $80 | gate-io-logo.svg
+MEXC | $85 | mexc-logo.svg
+BYBIT | $90 | bybit-logo.svg
+COINBASE | $100 | coinbase-logo.svg
+BLOCKCHAIN | $95 | blockchain-logo.svg
+CRYPTO COM | $85 | crypto-com-logo.svg
+NEXO | $90 | nexo-logo.svg
+WHITEBIT | $75 | whitebit-logo.svg
+BITMART | $80 | bitmart-logo.svg
+QUPPY | $85 | quppy-logo.svg
+BIT2ME | $90 | bit2me-logo.svg
+BANXE | $95 | banxe-logo.svg
+
+# Add more categories as needed...
