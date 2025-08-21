@@ -38,16 +38,16 @@ export default function ShopPage() {
   const sortedProducts = getSortedProducts(filteredProducts, sortBy)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-4">KYCut Marketplace</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">KYCut Marketplace</h1>
           <p className="text-xl text-muted-foreground">Browse 100+ pre-verified accounts across 7 categories</p>
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-card/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg border border-border/50">
+        <div className="card-professional rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-lg border border-white/10">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4">
             <div className="relative sm:col-span-2 lg:col-span-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -55,15 +55,15 @@ export default function ShopPage() {
                 placeholder="Search accounts..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 bg-background/80 backdrop-blur-sm h-10 sm:h-11"
+                className="pl-10 bg-input text-white placeholder:text-muted-foreground border-white/20 h-10 sm:h-11"
               />
             </div>
 
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="bg-background/80 backdrop-blur-sm h-10 sm:h-11">
+              <SelectTrigger className="bg-input text-white border-white/20 h-10 sm:h-11">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="card-professional border-white/10">
                 <SelectItem value="all">All Categories</SelectItem>
                 {productCategories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
@@ -74,10 +74,10 @@ export default function ShopPage() {
             </Select>
 
             <Select value={verificationLevel} onValueChange={setVerificationLevel}>
-              <SelectTrigger className="bg-background/80 backdrop-blur-sm h-10 sm:h-11">
+              <SelectTrigger className="bg-input text-white border-white/20 h-10 sm:h-11">
                 <SelectValue placeholder="Verification" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="card-professional border-white/10">
                 <SelectItem value="all">All Levels</SelectItem>
                 {Object.keys(verificationLevels).map((level) => (
                   <SelectItem key={level} value={level.toLowerCase()}>
@@ -88,10 +88,10 @@ export default function ShopPage() {
             </Select>
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="bg-background/80 backdrop-blur-sm h-10 sm:h-11">
+              <SelectTrigger className="bg-input text-white border-white/20 h-10 sm:h-11">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="card-professional border-white/10">
                 <SelectItem value="price-asc">Price: Low to High</SelectItem>
                 <SelectItem value="price-desc">Price: High to Low</SelectItem>
                 <SelectItem value="name-asc">Name: A to Z</SelectItem>
@@ -109,7 +109,7 @@ export default function ShopPage() {
                 variant={viewMode === "grid" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("grid")}
-                className="px-3 py-2"
+                className="px-3 py-2 bg-primary hover:bg-primary/90 text-white border-white/20"
               >
                 <Grid className="w-4 h-4" />
               </Button>
@@ -117,7 +117,7 @@ export default function ShopPage() {
                 variant={viewMode === "list" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("list")}
-                className="px-3 py-2"
+                className="px-3 py-2 bg-primary hover:bg-primary/90 text-white border-white/20"
               >
                 <List className="w-4 h-4" />
               </Button>
@@ -147,7 +147,7 @@ export default function ShopPage() {
                     window.scrollTo({ top: 0, behavior: "smooth" })
                   }}
                 >
-                  <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-card/80 backdrop-blur-sm border-0 shadow-lg overflow-hidden cursor-pointer">
+                  <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 card-professional overflow-hidden cursor-pointer">
                     <CardContent className="p-6 sm:p-8">
                       <div
                         className={`aspect-square bg-gradient-to-br ${verificationInfo.gradient} rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-inner relative overflow-hidden transition-all duration-300 group-hover:shadow-2xl`}
@@ -177,13 +177,13 @@ export default function ShopPage() {
                           >
                             {product.verificationLevel}
                           </Badge>
-                          <span className="text-xs sm:text-sm text-muted-foreground font-medium bg-muted/80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-muted/60">
+                          <span className="text-xs sm:text-sm text-muted-foreground font-medium bg-secondary/20 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full transition-all duration-300 group-hover:bg-secondary/30">
                             {categoryInfo?.name || product.category}
                           </span>
                         </div>
 
                         <div>
-                          <h3 className="text-xl sm:text-2xl font-bold text-card-foreground mb-2 sm:mb-3 transition-colors duration-300 group-hover:text-primary">
+                          <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3 transition-colors duration-300 group-hover:text-primary">
                             {product.name}
                           </h3>
                           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
@@ -192,11 +192,9 @@ export default function ShopPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-border/50">
+                        <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-white/10">
                           <div className="flex items-center gap-2 sm:gap-3">
-                            <span className="text-2xl sm:text-3xl font-bold text-card-foreground">
-                              ${product.price}
-                            </span>
+                            <span className="text-2xl sm:text-3xl font-bold text-primary">${product.price}</span>
                             <div className="flex items-center text-yellow-500">
                               <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                               <span className="text-xs sm:text-sm ml-1 text-muted-foreground font-medium">4.9</span>
@@ -216,7 +214,7 @@ export default function ShopPage() {
         ) : (
           <div className="text-center py-12 sm:py-16">
             <Filter className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-2">No accounts found</h3>
+            <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">No accounts found</h3>
             <p className="text-muted-foreground px-4 sm:px-0">Try adjusting your search or filters</p>
           </div>
         )}

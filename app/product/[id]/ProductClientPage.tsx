@@ -159,23 +159,22 @@ export default function ProductClientPage({ params }: ProductPageProps) {
   const product = generateProductDetails(baseProduct)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-navy-900">
       <ScrollToTop />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
-          <Link href="/" className="hover:text-primary transition-colors">
+        <div className="flex items-center gap-2 text-sm text-slate-300 mb-8">
+          <Link href="/" className="hover:text-white transition-colors">
             Home
           </Link>
           <span>/</span>
-          <Link href="/shop" className="hover:text-primary transition-colors">
+          <Link href="/shop" className="hover:text-white transition-colors">
             Shop
           </Link>
           <span>/</span>
-          <span className="text-foreground">{product.name}</span>
+          <span className="text-white">{product.name}</span>
         </div>
 
-        <Button asChild variant="ghost" className="mb-8">
+        <Button asChild variant="ghost" className="mb-8 text-white hover:bg-white/10">
           <Link href="/shop">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Shop
@@ -185,7 +184,7 @@ export default function ProductClientPage({ params }: ProductPageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Image */}
           <div className="space-y-6">
-            <Card className="overflow-hidden bg-card/80 backdrop-blur-sm">
+            <Card className="overflow-hidden card-professional">
               <CardContent className="p-0">
                 <div
                   className={`aspect-square bg-gradient-to-br ${verificationLevels[product.verificationLevel].gradient} flex items-center justify-center relative overflow-hidden`}
@@ -208,15 +207,14 @@ export default function ProductClientPage({ params }: ProductPageProps) {
               </CardContent>
             </Card>
 
-            {/* Features */}
-            <Card className="bg-card/80 backdrop-blur-sm">
+            <Card className="card-professional">
               <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-foreground mb-4">Key Features</h3>
+                <h3 className="text-xl font-bold text-white mb-4">Key Features</h3>
                 <div className="space-y-3">
                   {product.features.map((feature: string, index: number) => (
                     <div key={index} className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-muted-foreground">{feature}</span>
+                      <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-slate-300">{feature}</span>
                     </div>
                   ))}
                 </div>
@@ -231,65 +229,70 @@ export default function ProductClientPage({ params }: ProductPageProps) {
                 <Badge className={`${product.verificationColor} text-white font-semibold shadow-md px-4 py-2 text-sm`}>
                   {product.verificationLevel}
                 </Badge>
-                <span className="text-muted-foreground font-medium bg-muted/80 backdrop-blur-sm px-4 py-2 rounded-full text-sm">
+                <span className="text-slate-300 font-medium bg-slate-800/80 backdrop-blur-sm px-4 py-2 rounded-full text-sm border border-slate-700">
                   {product.category.replace("-", " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}
                 </span>
               </div>
 
-              <h1 className="text-4xl font-bold text-foreground mb-4">{product.name}</h1>
+              <h1 className="text-4xl font-bold text-white mb-4">{product.name}</h1>
 
               <div className="flex items-center gap-4 mb-6">
-                <div className="flex items-center text-yellow-500">
+                <div className="flex items-center text-yellow-400">
                   <Star className="w-5 h-5 fill-current" />
                   <span className="ml-2 font-semibold">{product.rating}</span>
                 </div>
-                <span className="text-muted-foreground">({product.reviews} reviews)</span>
-                <div className="text-3xl font-bold text-primary">${product.price}</div>
+                <span className="text-slate-300">({product.reviews} reviews)</span>
+                <div className="text-3xl font-bold text-blue-400">${product.price}</div>
               </div>
 
-              <p className="text-lg text-muted-foreground leading-relaxed mb-8">{product.fullDescription}</p>
+              <p className="text-lg text-slate-300 leading-relaxed mb-8">{product.fullDescription}</p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Button size="lg" className="flex-1 bg-primary hover:bg-primary/90 text-lg py-6">
+                <Button size="lg" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-lg py-6">
                   <Zap className="w-5 h-5 mr-2" />
                   Purchase Now
                 </Button>
-                <Button variant="outline" size="lg" className="flex-1 text-lg py-6 bg-transparent backdrop-blur-sm">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex-1 text-lg py-6 text-white border-slate-600 hover:bg-white/10 bg-transparent"
+                >
                   Add to Cart
                 </Button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                <div className="text-center p-4 bg-card/80 backdrop-blur-sm rounded-lg border border-border/50">
-                  <Shield className="w-8 h-8 text-primary mx-auto mb-2" />
-                  <div className="font-semibold text-sm">No Ban Risk</div>
-                  <div className="text-xs text-muted-foreground">Guaranteed safe</div>
+                <div className="text-center p-4 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-700">
+                  <Shield className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                  <div className="font-semibold text-sm text-white">No Ban Risk</div>
+                  <div className="text-xs text-slate-400">Guaranteed safe</div>
                 </div>
-                <div className="text-center p-4 bg-card/80 backdrop-blur-sm rounded-lg border border-border/50">
-                  <Clock className="w-8 h-8 text-secondary mx-auto mb-2" />
-                  <div className="font-semibold text-sm">Fast Delivery</div>
-                  <div className="text-xs text-muted-foreground">1-24 hours</div>
+                <div className="text-center p-4 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-700">
+                  <Clock className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                  <div className="font-semibold text-sm text-white">Fast Delivery</div>
+                  <div className="text-xs text-slate-400">1-24 hours</div>
                 </div>
-                <div className="text-center p-4 bg-card/80 backdrop-blur-sm rounded-lg border border-border/50">
-                  <CreditCard className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                  <div className="font-semibold text-sm">Best Pricing</div>
-                  <div className="text-xs text-muted-foreground">Market leading</div>
+                <div className="text-center p-4 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-700">
+                  <CreditCard className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                  <div className="font-semibold text-sm text-white">Best Pricing</div>
+                  <div className="text-xs text-slate-400">Market leading</div>
                 </div>
               </div>
             </div>
 
-            {/* Specifications */}
-            <Card className="bg-card/80 backdrop-blur-sm">
+            <Card className="card-professional">
               <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-foreground mb-4">Account Details</h3>
+                <h3 className="text-xl font-bold text-white mb-4">Account Details</h3>
                 <div className="space-y-4">
                   {Object.entries(product.specifications).map(([key, value], index) => (
                     <div key={index}>
                       <div className="flex justify-between items-center py-2">
-                        <span className="font-medium text-foreground">{key}</span>
-                        <span className="text-muted-foreground">{value}</span>
+                        <span className="font-medium text-white">{key}</span>
+                        <span className="text-slate-300">{value}</span>
                       </div>
-                      {index < Object.entries(product.specifications).length - 1 && <Separator />}
+                      {index < Object.entries(product.specifications).length - 1 && (
+                        <Separator className="bg-slate-700" />
+                      )}
                     </div>
                   ))}
                 </div>

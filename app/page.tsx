@@ -14,14 +14,14 @@ const featuredBrands = getFeaturedProducts()
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <ScrollGradient />
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-scroll">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.1),transparent_70%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(139,92,246,0.08),transparent_50%)]" />
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-card to-background" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.05),transparent_50%)]" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32">
           <div className="text-center space-y-8 sm:space-y-12">
@@ -29,32 +29,30 @@ export default function HomePage() {
               <FadeIn delay={200}>
                 <div className="flex items-center justify-center gap-2 mb-6">
                   <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                  <span className="text-sm sm:text-base font-semibold text-primary/80 tracking-wider uppercase">
+                  <span className="text-sm sm:text-base font-semibold text-primary tracking-wider uppercase">
                     Premium KYC Marketplace
                   </span>
-                  <div className="w-2 h-2 bg-secondary rounded-full animate-pulse" />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                 </div>
                 <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tight leading-none">
-                  <span className="bg-gradient-to-r from-primary via-purple-500 to-secondary bg-clip-text text-transparent drop-shadow-sm">
-                    KYCut
-                  </span>
+                  <span className="text-white drop-shadow-lg">KYCut</span>
                 </h1>
               </FadeIn>
 
               <FadeIn delay={400}>
                 <div className="flex items-center justify-center gap-3 mb-6">
-                  <Award className="w-5 h-5 text-amber-500" />
+                  <Award className="w-5 h-5 text-primary" />
                   <span className="text-sm sm:text-lg font-semibold text-muted-foreground tracking-wide">
                     Trusted by 10,000+ Users Worldwide
                   </span>
-                  <Award className="w-5 h-5 text-amber-500" />
+                  <Award className="w-5 h-5 text-primary" />
                 </div>
               </FadeIn>
 
               <FadeIn delay={600}>
                 <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-2xl sm:max-w-3xl lg:max-w-4xl mx-auto leading-relaxed font-medium px-4 sm:px-0">
                   Skip the KYC verification process with our pre-verified accounts.
-                  <span className="text-primary font-semibold"> No ban risk, instant delivery, premium quality.</span>
+                  <span className="text-white font-semibold"> No ban risk, instant delivery, premium quality.</span>
                 </p>
               </FadeIn>
             </FadeIn>
@@ -64,7 +62,7 @@ export default function HomePage() {
                 <Button
                   asChild
                   size="lg"
-                  className="w-full sm:w-auto text-lg sm:text-xl px-8 sm:px-12 py-4 sm:py-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 group"
+                  className="w-full sm:w-auto text-lg sm:text-xl px-8 sm:px-12 py-4 sm:py-5 bg-primary hover:bg-primary/90 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 group"
                 >
                   <Link href="/shop">
                     <Zap className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
@@ -76,7 +74,7 @@ export default function HomePage() {
                   asChild
                   variant="outline"
                   size="lg"
-                  className="w-full sm:w-auto text-lg sm:text-xl px-8 sm:px-12 py-4 sm:py-5 border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 bg-background/80 backdrop-blur-sm hover:scale-105"
+                  className="w-full sm:w-auto text-lg sm:text-xl px-8 sm:px-12 py-4 sm:py-5 border-2 border-white/20 hover:border-white/40 hover:bg-white/10 text-white transition-all duration-300 hover:scale-105 bg-transparent"
                 >
                   <Link href="/login">
                     <Shield className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
@@ -113,10 +111,10 @@ export default function HomePage() {
         <FadeIn className="text-center mb-12 sm:mb-16 lg:mb-20">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-primary animate-pulse" />
-            <span className="text-sm font-semibold text-primary/80 tracking-wider uppercase">Featured</span>
+            <span className="text-sm font-semibold text-primary tracking-wider uppercase">Featured</span>
             <Sparkles className="w-5 h-5 text-primary animate-pulse" />
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
             Premium Verified Accounts
           </h2>
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl sm:max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
@@ -131,7 +129,7 @@ export default function HomePage() {
             return (
               <FadeIn key={brand.id} delay={index * 100}>
                 <Link href={`/product/${brand.id}`} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-                  <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-card/80 backdrop-blur-sm border-0 shadow-lg overflow-hidden cursor-pointer">
+                  <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 card-professional overflow-hidden cursor-pointer">
                     <CardContent className="p-6 sm:p-8">
                       <div
                         className={`aspect-square bg-gradient-to-br ${verificationInfo.gradient} rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-inner relative overflow-hidden transition-all duration-300 group-hover:shadow-2xl`}
@@ -164,13 +162,13 @@ export default function HomePage() {
                           >
                             {brand.verificationLevel}
                           </Badge>
-                          <span className="text-xs sm:text-sm text-muted-foreground font-medium bg-muted/80 backdrop-blur-sm px-3 py-1.5 rounded-full transition-all duration-300 group-hover:bg-muted/60">
+                          <span className="text-xs sm:text-sm text-muted-foreground font-medium bg-secondary/20 backdrop-blur-sm px-3 py-1.5 rounded-full transition-all duration-300 group-hover:bg-secondary/30">
                             {brand.category.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                           </span>
                         </div>
 
                         <div>
-                          <h3 className="text-xl sm:text-2xl font-bold text-card-foreground mb-2 sm:mb-3 transition-colors duration-300 group-hover:text-primary">
+                          <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3 transition-colors duration-300 group-hover:text-primary">
                             {brand.name}
                           </h3>
                           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
@@ -178,7 +176,7 @@ export default function HomePage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-border/50">
+                        <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-white/10">
                           <div className="flex items-center gap-2 sm:gap-3">
                             <span className="text-2xl sm:text-3xl font-bold text-primary">${brand.price}</span>
                             <div className="flex items-center text-yellow-500">
@@ -207,7 +205,7 @@ export default function HomePage() {
             asChild
             variant="outline"
             size="lg"
-            className="text-lg px-8 py-4 border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 bg-background/80 backdrop-blur-sm hover:scale-105"
+            className="text-lg px-8 py-4 border-2 border-white/20 hover:border-white/40 hover:bg-white/10 text-white transition-all duration-300 hover:scale-105 bg-transparent"
           >
             <Link href="/shop">
               View All Products
@@ -218,12 +216,10 @@ export default function HomePage() {
       </div>
 
       {/* Features Section */}
-      <div className="bg-gradient-to-r from-card/50 to-card/30 backdrop-blur-sm border-t border-border/50">
+      <div className="bg-card/30 backdrop-blur-sm border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
           <FadeIn className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6">
-              Why Choose KYCut?
-            </h2>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">Why Choose KYCut?</h2>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               The most trusted marketplace for pre-verified accounts with unmatched quality and service
             </p>
@@ -263,10 +259,10 @@ export default function HomePage() {
                   >
                     <feature.icon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-card-foreground mb-4 transition-colors duration-300 group-hover:text-primary">
+                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 transition-colors duration-300 group-hover:text-primary">
                     {feature.title}
                   </h3>
-                  <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-6 px-4 sm:px-0 transition-colors duration-300 group-hover:text-foreground">
+                  <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-6 px-4 sm:px-0 transition-colors duration-300 group-hover:text-white">
                     {feature.description}
                   </p>
                   <div className="space-y-2">
@@ -285,17 +281,17 @@ export default function HomePage() {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border-t border-border/50">
+      <div className="bg-primary/10 border-t border-white/10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 text-center">
           <FadeIn>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">Ready to Get Started?</h2>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">Ready to Get Started?</h2>
             <p className="text-lg sm:text-xl text-muted-foreground mb-8 leading-relaxed">
               Join thousands of satisfied customers who trust KYCut for their pre-verified account needs
             </p>
             <Button
               asChild
               size="lg"
-              className="text-xl px-12 py-5 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group"
+              className="text-xl px-12 py-5 bg-primary hover:bg-primary/90 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group"
             >
               <Link href="/shop">
                 <Sparkles className="w-6 h-6 mr-3" />
