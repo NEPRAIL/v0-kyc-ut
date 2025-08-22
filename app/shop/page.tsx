@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Star, Search, Filter, Grid, List } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
 import { allProducts, productCategories, getSortedProducts, verificationLevels } from "@/lib/data/products"
+import { ProductImage } from "@/components/product-image"
 
 export default function ShopPage() {
   const searchParams = useSearchParams()
@@ -153,21 +153,14 @@ export default function ShopPage() {
                         className={`aspect-square bg-gradient-to-br ${verificationInfo.gradient} rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-inner relative overflow-hidden transition-all duration-300 group-hover:shadow-2xl`}
                       >
                         <div className="absolute inset-0 bg-white/10 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20" />
-                        {product.logo ? (
-                          <div className="relative z-10 w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 group-hover:scale-110 transition-transform duration-300">
-                            <Image
-                              src={product.logo || "/placeholder.svg"}
-                              alt={`${product.name} logo`}
-                              fill
-                              className="object-contain filter brightness-0 invert"
-                              sizes="(max-width: 768px) 64px, (max-width: 1024px) 80px, 96px"
-                            />
-                          </div>
-                        ) : (
-                          <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white relative z-10 group-hover:scale-110 transition-transform duration-300">
-                            {categoryInfo?.emoji || "🏪"}
-                          </div>
-                        )}
+                        <div className="relative z-10 w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 group-hover:scale-110 transition-transform duration-300">
+                          <ProductImage
+                            src={product.thumbnail}
+                            alt={product.name}
+                            type="thumbnail"
+                            className="object-contain filter brightness-0 invert"
+                          />
+                        </div>
                       </div>
 
                       <div className="space-y-4 sm:space-y-6">

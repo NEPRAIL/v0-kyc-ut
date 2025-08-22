@@ -120,44 +120,7 @@ export default function AboutPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-white mb-6">Meet Our Team</h2>
-          <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-            Experienced professionals from fintech, blockchain, and cybersecurity backgrounds
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {teamMembers.map((member, index) => (
-            <Card
-              key={index}
-              className="text-center card-professional hover:bg-navy-700/50 transition-all duration-300"
-            >
-              <CardContent className="p-8">
-                <div className="w-32 h-32 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full mx-auto mb-6 flex items-center justify-center overflow-hidden">
-                  <img
-                    src={member.avatar || "/placeholder.svg"}
-                    alt={member.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      target.style.display = "none"
-                      target.nextElementSibling?.classList.remove("hidden")
-                    }}
-                  />
-                  <div className="hidden w-16 h-16 text-white">
-                    <Users className="w-full h-full" />
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-2">{member.name}</h3>
-                <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 mb-4">{member.role}</Badge>
-                <p className="text-slate-300 leading-relaxed">{member.description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      
 
       <div className="bg-gradient-to-r from-blue-600 to-blue-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">

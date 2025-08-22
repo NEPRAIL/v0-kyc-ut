@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Star, ArrowLeft, Shield, Zap, CheckCircle, Clock, CreditCard } from "lucide-react"
 import { notFound } from "next/navigation"
 import { allProducts, verificationLevels } from "@/lib/data/products"
-import Image from "next/image"
+import { ProductImage } from "@/components/product-image"
 
 function ScrollToTop() {
   useEffect(() => {
@@ -190,19 +190,14 @@ export default function ProductClientPage({ params }: ProductPageProps) {
                   className={`aspect-square bg-gradient-to-br ${verificationLevels[product.verificationLevel].gradient} flex items-center justify-center relative overflow-hidden`}
                 >
                   <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
-                  {product.logo ? (
-                    <Image
-                      src={product.logo || "/placeholder.svg"}
+                  <div className="w-48 h-48 relative z-10">
+                    <ProductImage
+                      src={product.detailImage}
                       alt={product.name}
-                      width={192}
-                      height={192}
-                      className="object-contain filter drop-shadow-2xl relative z-10 bg-white/90 rounded-2xl p-4"
+                      type="detail"
+                      className="object-contain filter drop-shadow-2xl bg-white/90 rounded-2xl p-4"
                     />
-                  ) : (
-                    <div className="w-48 h-48 bg-white/20 rounded-2xl flex items-center justify-center relative z-10">
-                      <span className="text-4xl font-bold text-white">{product.name.charAt(0)}</span>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

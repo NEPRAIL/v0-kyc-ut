@@ -104,7 +104,24 @@ function getLogoPath(productId: string): string {
   return logoMap[productId] || `/logos/${productId}.svg`
 }
 
-export const allProducts = [
+const getImagePath = (productId: string, type: "thumbnail" | "detail" = "thumbnail"): string => {
+  // For now, use original images for both thumbnail and detail since that's where the logos are
+  return `/product-images/original/${productId}.png`
+}
+
+interface Product {
+  id: string
+  name: string
+  price: number
+  category: string
+  verificationLevel: keyof typeof verificationLevels
+  verificationColor: string
+  logo: string
+  thumbnail: string // For product listings
+  detailImage: string // For product detail pages
+}
+
+export const allProducts: Product[] = [
   // Neo-Banks
   {
     id: "moonpay",
@@ -114,6 +131,8 @@ export const allProducts = [
     verificationLevel: "Basic" as keyof typeof verificationLevels,
     verificationColor: "bg-slate-500",
     logo: getLogoPath("moonpay"),
+    thumbnail: getImagePath("moonpay", "thumbnail"),
+    detailImage: getImagePath("moonpay", "detail"),
   },
   {
     id: "skrill",
@@ -123,6 +142,8 @@ export const allProducts = [
     verificationLevel: "Basic" as keyof typeof verificationLevels,
     verificationColor: "bg-slate-500",
     logo: getLogoPath("skrill"),
+    thumbnail: getImagePath("skrill", "thumbnail"),
+    detailImage: getImagePath("skrill", "detail"),
   },
   {
     id: "neteller",
@@ -132,6 +153,8 @@ export const allProducts = [
     verificationLevel: "Basic" as keyof typeof verificationLevels,
     verificationColor: "bg-slate-500",
     logo: getLogoPath("neteller"),
+    thumbnail: getImagePath("neteller", "thumbnail"),
+    detailImage: getImagePath("neteller", "detail"),
   },
   {
     id: "bitsa",
@@ -141,6 +164,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("bitsa"),
+    thumbnail: getImagePath("bitsa", "thumbnail"),
+    detailImage: getImagePath("bitsa", "detail"),
   },
   {
     id: "wise",
@@ -150,6 +175,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("wise"),
+    thumbnail: getImagePath("wise", "thumbnail"),
+    detailImage: getImagePath("wise", "detail"),
   },
   {
     id: "lama",
@@ -159,6 +186,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("lama"),
+    thumbnail: getImagePath("lama", "thumbnail"),
+    detailImage: getImagePath("lama", "detail"),
   },
   {
     id: "trustee-plus",
@@ -168,6 +197,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("trustee-plus"),
+    thumbnail: getImagePath("trustee-plus", "thumbnail"),
+    detailImage: getImagePath("trustee-plus", "detail"),
   },
   {
     id: "bilderlings",
@@ -177,6 +208,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("bilderlings"),
+    thumbnail: getImagePath("bilderlings", "thumbnail"),
+    detailImage: getImagePath("bilderlings", "detail"),
   },
   {
     id: "wirrex",
@@ -186,6 +219,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("wirrex"),
+    thumbnail: getImagePath("wirrex", "thumbnail"),
+    detailImage: getImagePath("wirrex", "detail"),
   },
   {
     id: "redotpay",
@@ -195,6 +230,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("redotpay"),
+    thumbnail: getImagePath("redotpay", "thumbnail"),
+    detailImage: getImagePath("redotpay", "detail"),
   },
   {
     id: "cfps",
@@ -204,6 +241,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("cfps"),
+    thumbnail: getImagePath("cfps", "thumbnail"),
+    detailImage: getImagePath("cfps", "detail"),
   },
   {
     id: "sumeria",
@@ -213,6 +252,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("sumeria"),
+    thumbnail: getImagePath("sumeria", "thumbnail"),
+    detailImage: getImagePath("sumeria", "detail"),
   },
   {
     id: "genome",
@@ -222,6 +263,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("genome"),
+    thumbnail: getImagePath("genome", "thumbnail"),
+    detailImage: getImagePath("genome", "detail"),
   },
   {
     id: "western-union",
@@ -231,6 +274,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("western-union"),
+    thumbnail: getImagePath("western-union", "thumbnail"),
+    detailImage: getImagePath("western-union", "detail"),
   },
   {
     id: "xapo-bank",
@@ -240,6 +285,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("xapo-bank"),
+    thumbnail: getImagePath("xapo-bank", "thumbnail"),
+    detailImage: getImagePath("xapo-bank", "detail"),
   },
   {
     id: "spectrecoin",
@@ -249,6 +296,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("spectrecoin"),
+    thumbnail: getImagePath("spectrecoin", "thumbnail"),
+    detailImage: getImagePath("spectrecoin", "detail"),
   },
   {
     id: "bnka-se",
@@ -258,6 +307,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("bnka-se"),
+    thumbnail: getImagePath("bnka-se", "thumbnail"),
+    detailImage: getImagePath("bnka-se", "detail"),
   },
   {
     id: "preyus",
@@ -267,6 +318,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("preyus"),
+    thumbnail: getImagePath("preyus", "thumbnail"),
+    detailImage: getImagePath("preyus", "detail"),
   },
   {
     id: "blackcatcard",
@@ -276,6 +329,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("blackcatcard"),
+    thumbnail: getImagePath("blackcatcard", "thumbnail"),
+    detailImage: getImagePath("blackcatcard", "detail"),
   },
   {
     id: "swissmoney",
@@ -285,6 +340,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("swissmoney"),
+    thumbnail: getImagePath("swissmoney", "thumbnail"),
+    detailImage: getImagePath("swissmoney", "detail"),
   },
   {
     id: "nagapay",
@@ -294,6 +351,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("nagapay"),
+    thumbnail: getImagePath("nagapay", "thumbnail"),
+    detailImage: getImagePath("nagapay", "detail"),
   },
   {
     id: "vivid",
@@ -303,6 +362,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("vivid"),
+    thumbnail: getImagePath("vivid", "thumbnail"),
+    detailImage: getImagePath("vivid", "detail"),
   },
   {
     id: "paysera",
@@ -312,6 +373,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("paysera"),
+    thumbnail: getImagePath("paysera", "thumbnail"),
+    detailImage: getImagePath("paysera", "detail"),
   },
   {
     id: "wu-plus",
@@ -321,6 +384,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("wu-plus"),
+    thumbnail: getImagePath("wu-plus", "thumbnail"),
+    detailImage: getImagePath("wu-plus", "detail"),
   },
   {
     id: "bankera",
@@ -330,6 +395,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("bankera"),
+    thumbnail: getImagePath("bankera", "thumbnail"),
+    detailImage: getImagePath("bankera", "detail"),
   },
   {
     id: "icard",
@@ -339,6 +406,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("icard"),
+    thumbnail: getImagePath("icard", "thumbnail"),
+    detailImage: getImagePath("icard", "detail"),
   },
   {
     id: "dukascopy",
@@ -348,6 +417,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("dukascopy"),
+    thumbnail: getImagePath("dukascopy", "thumbnail"),
+    detailImage: getImagePath("dukascopy", "detail"),
   },
   {
     id: "zen",
@@ -357,6 +428,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("zen"),
+    thumbnail: getImagePath("zen", "thumbnail"),
+    detailImage: getImagePath("zen", "detail"),
   },
   {
     id: "bunq",
@@ -366,6 +439,8 @@ export const allProducts = [
     verificationLevel: "Elite" as keyof typeof verificationLevels,
     verificationColor: "bg-amber-500",
     logo: getLogoPath("bunq"),
+    thumbnail: getImagePath("bunq", "thumbnail"),
+    detailImage: getImagePath("bunq", "detail"),
   },
   {
     id: "swissquote",
@@ -375,6 +450,8 @@ export const allProducts = [
     verificationLevel: "Elite" as keyof typeof verificationLevels,
     verificationColor: "bg-amber-500",
     logo: getLogoPath("swissquote"),
+    thumbnail: getImagePath("swissquote", "thumbnail"),
+    detailImage: getImagePath("swissquote", "detail"),
   },
 
   // Business Banks
@@ -386,6 +463,8 @@ export const allProducts = [
     verificationLevel: "Elite" as keyof typeof verificationLevels,
     verificationColor: "bg-amber-500",
     logo: getLogoPath("paypal-business"),
+    thumbnail: getImagePath("paypal-business", "thumbnail"),
+    detailImage: getImagePath("paypal-business", "detail"),
   },
   {
     id: "wise-business",
@@ -395,6 +474,8 @@ export const allProducts = [
     verificationLevel: "Elite" as keyof typeof verificationLevels,
     verificationColor: "bg-amber-500",
     logo: getLogoPath("wise-business"),
+    thumbnail: getImagePath("wise-business", "thumbnail"),
+    detailImage: getImagePath("wise-business", "detail"),
   },
   {
     id: "sumup-business",
@@ -404,6 +485,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("sumup-business"),
+    thumbnail: getImagePath("sumup-business", "thumbnail"),
+    detailImage: getImagePath("sumup-business", "detail"),
   },
   {
     id: "payoneer-business",
@@ -413,6 +496,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("payoneer-business"),
+    thumbnail: getImagePath("payoneer-business", "thumbnail"),
+    detailImage: getImagePath("payoneer-business", "detail"),
   },
   {
     id: "stripe-business",
@@ -422,6 +507,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("stripe-business"),
+    thumbnail: getImagePath("stripe-business", "thumbnail"),
+    detailImage: getImagePath("stripe-business", "detail"),
   },
   {
     id: "okeo",
@@ -431,6 +518,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("okeo"),
+    thumbnail: getImagePath("okeo", "thumbnail"),
+    detailImage: getImagePath("okeo", "detail"),
   },
   {
     id: "kraken-business",
@@ -440,6 +529,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("kraken-business"),
+    thumbnail: getImagePath("kraken-business", "thumbnail"),
+    detailImage: getImagePath("kraken-business", "detail"),
   },
   {
     id: "wallester-business",
@@ -449,6 +540,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("wallester-business"),
+    thumbnail: getImagePath("wallester-business", "thumbnail"),
+    detailImage: getImagePath("wallester-business", "detail"),
   },
   {
     id: "revolut-business",
@@ -458,6 +551,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("revolut-business"),
+    thumbnail: getImagePath("revolut-business", "thumbnail"),
+    detailImage: getImagePath("revolut-business", "detail"),
   },
   {
     id: "alior-business",
@@ -467,6 +562,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("alior-business"),
+    thumbnail: getImagePath("alior-business", "thumbnail"),
+    detailImage: getImagePath("alior-business", "detail"),
   },
   {
     id: "santander-pl",
@@ -476,6 +573,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("santander-pl"),
+    thumbnail: getImagePath("santander-pl", "thumbnail"),
+    detailImage: getImagePath("santander-pl", "detail"),
   },
   {
     id: "finom-nl",
@@ -485,6 +584,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("finom-nl"),
+    thumbnail: getImagePath("finom-nl", "thumbnail"),
+    detailImage: getImagePath("finom-nl", "detail"),
   },
   {
     id: "monzo-business",
@@ -494,6 +595,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("monzo-business"),
+    thumbnail: getImagePath("monzo-business", "thumbnail"),
+    detailImage: getImagePath("monzo-business", "detail"),
   },
   {
     id: "vivid-business",
@@ -503,6 +606,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("vivid-business"),
+    thumbnail: getImagePath("vivid-business", "thumbnail"),
+    detailImage: getImagePath("vivid-business", "detail"),
   },
   {
     id: "velo-pl",
@@ -512,6 +617,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("velo-pl"),
+    thumbnail: getImagePath("velo-pl", "thumbnail"),
+    detailImage: getImagePath("velo-pl", "detail"),
   },
   {
     id: "ing-pl",
@@ -521,6 +628,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("ing-pl"),
+    thumbnail: getImagePath("ing-pl", "thumbnail"),
+    detailImage: getImagePath("ing-pl", "detail"),
   },
   {
     id: "millenium-business",
@@ -530,6 +639,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("millenium-business"),
+    thumbnail: getImagePath("millenium-business", "thumbnail"),
+    detailImage: getImagePath("millenium-business", "detail"),
   },
   {
     id: "mypos-eu",
@@ -539,6 +650,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("mypos-eu"),
+    thumbnail: getImagePath("mypos-eu", "thumbnail"),
+    detailImage: getImagePath("mypos-eu", "detail"),
   },
   {
     id: "zempler",
@@ -548,6 +661,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("zempler"),
+    thumbnail: getImagePath("zempler", "thumbnail"),
+    detailImage: getImagePath("zempler", "detail"),
   },
   {
     id: "wamo-business-uk",
@@ -557,6 +672,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("wamo-business-uk"),
+    thumbnail: getImagePath("wamo-business-uk", "thumbnail"),
+    detailImage: getImagePath("wamo-business-uk", "detail"),
   },
   {
     id: "n26-business",
@@ -566,6 +683,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("n26-business"),
+    thumbnail: getImagePath("n26-business", "thumbnail"),
+    detailImage: getImagePath("n26-business", "detail"),
   },
   {
     id: "airwallex-business",
@@ -575,6 +694,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("airwallex-business"),
+    thumbnail: getImagePath("airwallex-business", "thumbnail"),
+    detailImage: getImagePath("airwallex-business", "detail"),
   },
   {
     id: "revolut-business-merchant",
@@ -584,6 +705,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("revolut-business-merchant"),
+    thumbnail: getImagePath("revolut-business-merchant", "thumbnail"),
+    detailImage: getImagePath("revolut-business-merchant", "detail"),
   },
 
   // Crypto Exchanges
@@ -595,6 +718,8 @@ export const allProducts = [
     verificationLevel: "Basic" as keyof typeof verificationLevels,
     verificationColor: "bg-slate-500",
     logo: getLogoPath("kucoin-crypto"),
+    thumbnail: getImagePath("kucoin-crypto", "thumbnail"),
+    detailImage: getImagePath("kucoin-crypto", "detail"),
   },
   {
     id: "bingx",
@@ -604,6 +729,8 @@ export const allProducts = [
     verificationLevel: "Basic" as keyof typeof verificationLevels,
     verificationColor: "bg-slate-500",
     logo: getLogoPath("bingx"),
+    thumbnail: getImagePath("bingx", "thumbnail"),
+    detailImage: getImagePath("bingx", "detail"),
   },
   {
     id: "gate-io",
@@ -613,6 +740,8 @@ export const allProducts = [
     verificationLevel: "Basic" as keyof typeof verificationLevels,
     verificationColor: "bg-slate-500",
     logo: getLogoPath("gate-io"),
+    thumbnail: getImagePath("gate-io", "thumbnail"),
+    detailImage: getImagePath("gate-io", "detail"),
   },
   {
     id: "mexc",
@@ -622,6 +751,8 @@ export const allProducts = [
     verificationLevel: "Basic" as keyof typeof verificationLevels,
     verificationColor: "bg-slate-500",
     logo: getLogoPath("mexc"),
+    thumbnail: getImagePath("mexc", "thumbnail"),
+    detailImage: getImagePath("mexc", "detail"),
   },
   {
     id: "bybit-crypto",
@@ -631,6 +762,8 @@ export const allProducts = [
     verificationLevel: "Basic" as keyof typeof verificationLevels,
     verificationColor: "bg-slate-500",
     logo: getLogoPath("bybit-crypto"),
+    thumbnail: getImagePath("bybit-crypto", "thumbnail"),
+    detailImage: getImagePath("bybit-crypto", "detail"),
   },
   {
     id: "kraken-crypto",
@@ -640,6 +773,8 @@ export const allProducts = [
     verificationLevel: "Basic" as keyof typeof verificationLevels,
     verificationColor: "bg-slate-500",
     logo: getLogoPath("kraken-crypto"),
+    thumbnail: getImagePath("kraken-crypto", "thumbnail"),
+    detailImage: getImagePath("kraken-crypto", "detail"),
   },
   {
     id: "bit2me-crypto",
@@ -649,6 +784,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("bit2me-crypto"),
+    thumbnail: getImagePath("bit2me-crypto", "thumbnail"),
+    detailImage: getImagePath("bit2me-crypto", "detail"),
   },
   {
     id: "banxe",
@@ -658,6 +795,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("banxe"),
+    thumbnail: getImagePath("banxe", "thumbnail"),
+    detailImage: getImagePath("banxe", "detail"),
   },
   {
     id: "coinbase-crypto",
@@ -667,6 +806,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("coinbase-crypto"),
+    thumbnail: getImagePath("coinbase-crypto", "thumbnail"),
+    detailImage: getImagePath("coinbase-crypto", "detail"),
   },
   {
     id: "quppy",
@@ -676,6 +817,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("quppy"),
+    thumbnail: getImagePath("quppy", "thumbnail"),
+    detailImage: getImagePath("quppy", "detail"),
   },
   {
     id: "bitmart",
@@ -685,6 +828,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("bitmart"),
+    thumbnail: getImagePath("bitmart", "thumbnail"),
+    detailImage: getImagePath("bitmart", "detail"),
   },
   {
     id: "whitebit",
@@ -694,6 +839,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("whitebit"),
+    thumbnail: getImagePath("whitebit", "thumbnail"),
+    detailImage: getImagePath("whitebit", "detail"),
   },
   {
     id: "blockchain",
@@ -703,6 +850,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("blockchain"),
+    thumbnail: getImagePath("blockchain", "thumbnail"),
+    detailImage: getImagePath("blockchain", "detail"),
   },
   {
     id: "crypto-com",
@@ -712,6 +861,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("crypto-com"),
+    thumbnail: getImagePath("crypto-com", "thumbnail"),
+    detailImage: getImagePath("crypto-com", "detail"),
   },
   {
     id: "plena",
@@ -721,6 +872,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("plena"),
+    thumbnail: getImagePath("plena", "thumbnail"),
+    detailImage: getImagePath("plena", "detail"),
   },
   {
     id: "nexo",
@@ -730,6 +883,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("nexo"),
+    thumbnail: getImagePath("nexo", "thumbnail"),
+    detailImage: getImagePath("nexo", "detail"),
   },
   {
     id: "binance-crypto",
@@ -739,6 +894,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("binance-crypto"),
+    thumbnail: getImagePath("binance-crypto", "thumbnail"),
+    detailImage: getImagePath("binance-crypto", "detail"),
   },
 
   // Custom Name Banks
@@ -750,6 +907,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("paysafecard"),
+    thumbnail: getImagePath("paysafecard", "thumbnail"),
+    detailImage: getImagePath("paysafecard", "detail"),
   },
   {
     id: "kraken-custom",
@@ -759,6 +918,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("kraken-custom"),
+    thumbnail: getImagePath("kraken-custom", "thumbnail"),
+    detailImage: getImagePath("kraken-custom", "detail"),
   },
   {
     id: "skrill-custom",
@@ -768,6 +929,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("skrill-custom"),
+    thumbnail: getImagePath("skrill-custom", "thumbnail"),
+    detailImage: getImagePath("skrill-custom", "detail"),
   },
   {
     id: "neteller-custom",
@@ -777,6 +940,8 @@ export const allProducts = [
     verificationLevel: "Enhanced" as keyof typeof verificationLevels,
     verificationColor: "bg-emerald-500",
     logo: getLogoPath("neteller-custom"),
+    thumbnail: getImagePath("neteller-custom", "thumbnail"),
+    detailImage: getImagePath("neteller-custom", "detail"),
   },
   {
     id: "crypto-com-custom",
@@ -786,6 +951,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("crypto-com-custom"),
+    thumbnail: getImagePath("crypto-com-custom", "thumbnail"),
+    detailImage: getImagePath("crypto-com-custom", "detail"),
   },
   {
     id: "simple",
@@ -795,6 +962,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("simple"),
+    thumbnail: getImagePath("simple", "thumbnail"),
+    detailImage: getImagePath("simple", "detail"),
   },
   {
     id: "coinmerce",
@@ -804,6 +973,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("coinmerce"),
+    thumbnail: getImagePath("coinmerce", "thumbnail"),
+    detailImage: getImagePath("coinmerce", "detail"),
   },
   {
     id: "in1",
@@ -813,6 +984,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("in1"),
+    thumbnail: getImagePath("in1", "thumbnail"),
+    detailImage: getImagePath("in1", "detail"),
   },
   {
     id: "cbtc",
@@ -822,6 +995,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("cbtc"),
+    thumbnail: getImagePath("cbtc", "thumbnail"),
+    detailImage: getImagePath("cbtc", "detail"),
   },
   {
     id: "coinbase-custom",
@@ -831,6 +1006,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("coinbase-custom"),
+    thumbnail: getImagePath("coinbase-custom", "thumbnail"),
+    detailImage: getImagePath("coinbase-custom", "detail"),
   },
   {
     id: "wise-custom",
@@ -840,6 +1017,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("wise-custom"),
+    thumbnail: getImagePath("wise-custom", "thumbnail"),
+    detailImage: getImagePath("wise-custom", "detail"),
   },
   {
     id: "grey",
@@ -849,6 +1028,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("grey"),
+    thumbnail: getImagePath("grey", "thumbnail"),
+    detailImage: getImagePath("grey", "detail"),
   },
   {
     id: "bit2me-custom",
@@ -858,6 +1039,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("bit2me-custom"),
+    thumbnail: getImagePath("bit2me-custom", "thumbnail"),
+    detailImage: getImagePath("bit2me-custom", "detail"),
   },
   {
     id: "kucoin-custom",
@@ -867,6 +1050,8 @@ export const allProducts = [
     verificationLevel: "Premium" as keyof typeof verificationLevels,
     verificationColor: "bg-blue-500",
     logo: getLogoPath("kucoin-custom"),
+    thumbnail: getImagePath("kucoin-custom", "thumbnail"),
+    detailImage: getImagePath("kucoin-custom", "detail"),
   },
   {
     id: "blockchain-custom",
@@ -876,6 +1061,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("blockchain-custom"),
+    thumbnail: getImagePath("blockchain-custom", "thumbnail"),
+    detailImage: getImagePath("blockchain-custom", "detail"),
   },
   {
     id: "strike-eu-uk",
@@ -885,6 +1072,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("strike-eu-uk"),
+    thumbnail: getImagePath("strike-eu-uk", "thumbnail"),
+    detailImage: getImagePath("strike-eu-uk", "detail"),
   },
   {
     id: "bybit-custom",
@@ -894,6 +1083,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("bybit-custom"),
+    thumbnail: getImagePath("bybit-custom", "thumbnail"),
+    detailImage: getImagePath("bybit-custom", "detail"),
   },
   {
     id: "paysera-custom",
@@ -903,6 +1094,8 @@ export const allProducts = [
     verificationLevel: "Elite" as keyof typeof verificationLevels,
     verificationColor: "bg-amber-500",
     logo: getLogoPath("paysera-custom"),
+    thumbnail: getImagePath("paysera-custom", "thumbnail"),
+    detailImage: getImagePath("paysera-custom", "detail"),
   },
   {
     id: "zen-custom",
@@ -912,6 +1105,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("zen-custom"),
+    thumbnail: getImagePath("zen-custom", "thumbnail"),
+    detailImage: getImagePath("zen-custom", "detail"),
   },
 
   // Spain Banks
@@ -923,6 +1118,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("bet365-es"),
+    thumbnail: getImagePath("bet365-es", "thumbnail"),
+    detailImage: getImagePath("bet365-es", "detail"),
   },
   {
     id: "plazo-es",
@@ -932,6 +1129,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("plazo-es"),
+    thumbnail: getImagePath("plazo-es", "thumbnail"),
+    detailImage: getImagePath("plazo-es", "detail"),
   },
   {
     id: "bnext-es",
@@ -941,6 +1140,8 @@ export const allProducts = [
     verificationLevel: "Elite" as keyof typeof verificationLevels,
     verificationColor: "bg-amber-500",
     logo: getLogoPath("bnext-es"),
+    thumbnail: getImagePath("bnext-es", "thumbnail"),
+    detailImage: getImagePath("bnext-es", "detail"),
   },
   {
     id: "b100-es",
@@ -950,6 +1151,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("b100-es"),
+    thumbnail: getImagePath("b100-es", "thumbnail"),
+    detailImage: getImagePath("b100-es", "detail"),
   },
   {
     id: "imagin-es",
@@ -959,6 +1162,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("imagin-es"),
+    thumbnail: getImagePath("imagin-es", "thumbnail"),
+    detailImage: getImagePath("imagin-es", "detail"),
   },
   {
     id: "santander-es",
@@ -968,6 +1173,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("santander-es"),
+    thumbnail: getImagePath("santander-es", "thumbnail"),
+    detailImage: getImagePath("santander-es", "detail"),
   },
   {
     id: "evobanco-es",
@@ -977,6 +1184,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("evobanco-es"),
+    thumbnail: getImagePath("evobanco-es", "thumbnail"),
+    detailImage: getImagePath("evobanco-es", "detail"),
   },
   {
     id: "ing-es",
@@ -986,6 +1195,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("ing-es"),
+    thumbnail: getImagePath("ing-es", "thumbnail"),
+    detailImage: getImagePath("ing-es", "detail"),
   },
   {
     id: "n26-es",
@@ -995,6 +1206,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("n26-es"),
+    thumbnail: getImagePath("n26-es", "thumbnail"),
+    detailImage: getImagePath("n26-es", "detail"),
   },
   {
     id: "bbva-es",
@@ -1004,6 +1217,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("bbva-es"),
+    thumbnail: getImagePath("bbva-es", "thumbnail"),
+    detailImage: getImagePath("bbva-es", "detail"),
   },
   {
     id: "caixa-bank-es",
@@ -1013,6 +1228,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("caixa-bank-es"),
+    thumbnail: getImagePath("caixa-bank-es", "thumbnail"),
+    detailImage: getImagePath("caixa-bank-es", "detail"),
   },
   {
     id: "abanca-es",
@@ -1022,6 +1239,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("abanca-es"),
+    thumbnail: getImagePath("abanca-es", "thumbnail"),
+    detailImage: getImagePath("abanca-es", "detail"),
   },
   {
     id: "deutsche-bank-es",
@@ -1031,6 +1250,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("deutsche-bank-es"),
+    thumbnail: getImagePath("deutsche-bank-es", "thumbnail"),
+    detailImage: getImagePath("deutsche-bank-es", "detail"),
   },
 
   // Italy Banks
@@ -1042,6 +1263,8 @@ export const allProducts = [
     verificationLevel: "Business" as keyof typeof verificationLevels,
     verificationColor: "bg-purple-500",
     logo: getLogoPath("yap-it"),
+    thumbnail: getImagePath("yap-it", "thumbnail"),
+    detailImage: getImagePath("yap-it", "detail"),
   },
   {
     id: "yuh-it",
@@ -1051,6 +1274,8 @@ export const allProducts = [
     verificationLevel: "Elite" as keyof typeof verificationLevels,
     verificationColor: "bg-amber-500",
     logo: getLogoPath("yuh-it"),
+    thumbnail: getImagePath("yuh-it", "thumbnail"),
+    detailImage: getImagePath("yuh-it", "detail"),
   },
   {
     id: "flowe-it",
@@ -1060,6 +1285,8 @@ export const allProducts = [
     verificationLevel: "Elite" as keyof typeof verificationLevels,
     verificationColor: "bg-amber-500",
     logo: getLogoPath("flowe-it"),
+    thumbnail: getImagePath("flowe-it", "thumbnail"),
+    detailImage: getImagePath("flowe-it", "detail"),
   },
   {
     id: "buddybank-it",
@@ -1069,6 +1296,8 @@ export const allProducts = [
     verificationLevel: "Elite" as keyof typeof verificationLevels,
     verificationColor: "bg-amber-500",
     logo: getLogoPath("buddybank-it"),
+    thumbnail: getImagePath("buddybank-it", "thumbnail"),
+    detailImage: getImagePath("buddybank-it", "detail"),
   },
   {
     id: "hype-it",
@@ -1078,6 +1307,8 @@ export const allProducts = [
     verificationLevel: "Elite" as keyof typeof verificationLevels,
     verificationColor: "bg-amber-500",
     logo: getLogoPath("hype-it"),
+    thumbnail: getImagePath("hype-it", "thumbnail"),
+    detailImage: getImagePath("hype-it", "detail"),
   },
   {
     id: "fineco-it",
@@ -1087,6 +1318,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("fineco-it"),
+    thumbnail: getImagePath("fineco-it", "thumbnail"),
+    detailImage: getImagePath("fineco-it", "detail"),
   },
   {
     id: "bbva-it",
@@ -1096,6 +1329,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("bbva-it"),
+    thumbnail: getImagePath("bbva-it", "thumbnail"),
+    detailImage: getImagePath("bbva-it", "detail"),
   },
   {
     id: "ing-it",
@@ -1105,6 +1340,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("ing-it"),
+    thumbnail: getImagePath("ing-it", "thumbnail"),
+    detailImage: getImagePath("ing-it", "detail"),
   },
   {
     id: "isybank-it",
@@ -1114,6 +1351,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("isybank-it"),
+    thumbnail: getImagePath("isybank-it", "thumbnail"),
+    detailImage: getImagePath("isybank-it", "detail"),
   },
   {
     id: "n26-it",
@@ -1123,6 +1362,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("n26-it"),
+    thumbnail: getImagePath("n26-it", "thumbnail"),
+    detailImage: getImagePath("n26-it", "detail"),
   },
   {
     id: "illimity-it",
@@ -1132,6 +1373,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("illimity-it"),
+    thumbnail: getImagePath("illimity-it", "thumbnail"),
+    detailImage: getImagePath("illimity-it", "detail"),
   },
   {
     id: "poste-it",
@@ -1141,6 +1384,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("poste-it"),
+    thumbnail: getImagePath("poste-it", "thumbnail"),
+    detailImage: getImagePath("poste-it", "detail"),
   },
   {
     id: "bancobpm-it",
@@ -1150,6 +1395,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("bancobpm-it"),
+    thumbnail: getImagePath("bancobpm-it", "thumbnail"),
+    detailImage: getImagePath("bancobpm-it", "detail"),
   },
   {
     id: "findomestic-it",
@@ -1159,6 +1406,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("findomestic-it"),
+    thumbnail: getImagePath("findomestic-it", "thumbnail"),
+    detailImage: getImagePath("findomestic-it", "detail"),
   },
 
   // Germany Banks
@@ -1170,6 +1419,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("tomorrow-de"),
+    thumbnail: getImagePath("tomorrow-de", "thumbnail"),
+    detailImage: getImagePath("tomorrow-de", "detail"),
   },
   {
     id: "deutsche-bank-de",
@@ -1179,6 +1430,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("deutsche-bank-de"),
+    thumbnail: getImagePath("deutsche-bank-de", "thumbnail"),
+    detailImage: getImagePath("deutsche-bank-de", "detail"),
   },
   {
     id: "n26-de",
@@ -1188,6 +1441,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("n26-de"),
+    thumbnail: getImagePath("n26-de", "thumbnail"),
+    detailImage: getImagePath("n26-de", "detail"),
   },
   {
     id: "hvb-de",
@@ -1197,6 +1452,8 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("hvb-de"),
+    thumbnail: getImagePath("hvb-de", "thumbnail"),
+    detailImage: getImagePath("hvb-de", "detail"),
   },
   {
     id: "c24-de",
@@ -1206,14 +1463,12 @@ export const allProducts = [
     verificationLevel: "Platinum" as keyof typeof verificationLevels,
     verificationColor: "bg-red-500",
     logo: getLogoPath("c24-de"),
+    thumbnail: getImagePath("c24-de", "thumbnail"),
+    detailImage: getImagePath("c24-de", "detail"),
   },
-].map((product) => ({
-  ...product,
-  verificationLevel: product.verificationLevel || getVerificationLevel(product.price),
-  verificationColor: product.verificationColor || verificationLevels[getVerificationLevel(product.price)].color,
-}))
+]
 
-export const getSortedProducts = (products: typeof allProducts, sortBy = "price-asc") => {
+export const getSortedProducts = (products: Product[], sortBy = "price-asc") => {
   const sorted = [...products].sort((a, b) => {
     switch (sortBy) {
       case "price-asc":
