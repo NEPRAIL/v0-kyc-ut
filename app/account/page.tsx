@@ -2,26 +2,28 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 import { redirect } from "next/navigation"
-import { requireAuth } from "@/lib/auth-server"
-import { getDb } from "@/lib/db" // your Drizzle factory
-import { users } from "@/lib/db/schema" // adjust import to your schema path
+import { getServerAuth } from "@/lib/auth/middleware"
+import { getDb } from "@/lib/db/index"
+import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 
 export default async function AccountPage() {
-  const r = await requireAuth()
-  if (!r.ok) redirect("/login")
+  const auth = await getServerAuth()
+  if (!auth) {
+    redirect("/login")
+  }
 
   try {
     const db = getDb()
     const row = await db
       .select({ id: users.id, username: users.username, email: users.email })
       .from(users)
-      .where(eq(users.id, r.userId))
+      .where(eq(users.id, auth.user.uid))
       .limit(1)
 
     const me = row[0]
     if (!me) {
-      console.warn("[account] no user row for", r.userId)
+      console.warn("[account] no user row for", auth.user.uid)
       redirect("/login")
     }
 
