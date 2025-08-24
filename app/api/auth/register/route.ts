@@ -1,101 +1,89 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { neon } from "@neondatabase/serverless"
+import bcrypt from "bcryptjs"
+import { randomUUID } from "crypto"
+
+// Ensure Node runtime (avoid edge+bcrypt issues)
+export const runtime = "nodejs"
+// (optional) if this route should never be cached
+export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[v0] Register API called")
-
-    const { neon } = await import("@neondatabase/serverless")
-    const bcrypt = await import("bcryptjs")
-    const { randomUUID } = await import("crypto")
-
-    if (!process.env.DATABASE_URL) {
-      console.error("[v0] DATABASE_URL not found")
-      return NextResponse.json({ error: "Database configuration error" }, { status: 500 })
+    // Parse JSON safely
+    const body = await request.json().catch(() =>
+      null
+    )
+    if (!body) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
     }
 
-    const sql = neon(process.env.DATABASE_URL)
-
-    const body = await request.json()
-    console.log(
-      "[v0] Register request:",
-      JSON.stringify({
-        username: body.username,
-        email: body.email,
-        hasPassword: !!body.password,
-      }),
-    )
-
-    const { username, email, password, name } = body
+    const { username, email, password } = body as {
+      username?: string
+      email?: string
+      password?: string
+    }
 
     if (!username || !email || !password) {
-      return NextResponse.json({ error: "Username, email, and password are required" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Username, email, and password are required" },
+        { status: 400 }
+      )
     }
 
-    if (username.length < 3 || username.length > 31) {
-      return NextResponse.json({ error: "Username must be between 3 and 31 characters" }, { status: 400 })
+    // Guard against missing env at request-time (so we can JSON-respond)
+    const url = process.env.DATABASE_URL
+    if (!url) {
+      return NextResponse.json(
+        { error: "Server misconfigured: DATABASE_URL is not set" },
+        { status: 500 }
+      )
     }
 
-    if (password.length < 6) {
-      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 })
-    }
+    // Create connection inside the handler (not at module top)
+    const sql = neon(url)
 
-    let existingUsers
-    try {
-      existingUsers = await sql`
-        SELECT id FROM users WHERE email = ${email} OR username = ${username}
-        LIMIT 1
-      `
-    } catch (dbError) {
-      console.error("[v0] Database query error:", dbError)
-      return NextResponse.json({ error: "Database connection failed" }, { status: 500 })
-    }
-
+    // Uniqueness check
+    const existingUsers = await sql`
+      SELECT id FROM users 
+      WHERE username = ${username} OR email = ${email}
+      LIMIT 1
+    `
     if (existingUsers.length > 0) {
-      return NextResponse.json({ error: "User with this email or username already exists" }, { status: 409 })
+      return NextResponse.json(
+        { error: "Username or email already exists" },
+        { status: 409 }
+      )
     }
 
-    const saltRounds = 12
-    const passwordHash = await bcrypt.hash(password, saltRounds)
+    const hashedPassword = await bcrypt.hash(password, 12)
     const userId = randomUUID()
 
-    try {
-      await sql`
-        INSERT INTO users (
-          id, username, email, password_hash, 
-          email_verified, two_factor_enabled, failed_login_attempts,
-          created_at, updated_at
-        )
-        VALUES (
-          ${userId}, ${username}, ${email}, ${passwordHash},
-          false, false, 0,
-          NOW(), NOW()
-        )
-      `
-    } catch (insertError) {
-      console.error("[v0] User creation error:", insertError)
-      return NextResponse.json({ error: "Failed to create user account" }, { status: 500 })
-    }
+    const newUsers = await sql`
+      INSERT INTO users (id, username, email, password_hash, created_at, updated_at)
+      VALUES (${userId}, ${username}, ${email}, ${hashedPassword}, NOW(), NOW())
+      RETURNING id, username, email
+    `
+    const newUser = newUsers[0]
 
-    console.log("[v0] User created successfully:", username)
-
-    const response = NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       message: "Account created successfully",
       user: {
-        id: userId,
-        username,
-        email,
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
       },
     })
 
-    response.cookies.set("session", `session-${userId}`, {
+    res.cookies.set("session", `session-${newUser.id}`, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
     })
 
-    return response
+    return res
   } catch (error) {
     console.error("[v0] Register API error:", error)
     return NextResponse.json(
@@ -103,7 +91,7 @@ export async function POST(request: NextRequest) {
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
