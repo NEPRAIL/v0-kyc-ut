@@ -11,7 +11,7 @@ export default async function AccountPage() {
   console.log("[v0] Account page loading")
 
   const auth = await getServerAuth()
-  console.log("[v0] Auth result:", auth ? { userId: auth.user?.uid } : "null")
+  console.log("[v0] Auth result:", auth ? { uid: auth.user?.uid, fullAuth: auth } : "null")
 
   if (!auth) {
     console.log("[v0] No auth, redirecting to login")
