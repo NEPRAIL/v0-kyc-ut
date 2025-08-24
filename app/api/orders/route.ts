@@ -67,20 +67,49 @@ export async function POST(request: NextRequest) {
       })
       .returning()
 
-    try {
-      // Create BTCPay invoice
-      const invoice = await btcpayClient.createInvoice({
-        amountSats: totalPrice,
-        orderId: order.id,
-        description,
-      })
+    if (btcpayClient.isReady()) {
+      try {
+        // Create BTCPay invoice
+        const invoice = await btcpayClient.createInvoice({
+          amountSats: totalPrice,
+          orderId: order.id,
+          description,
+        })
 
-      // Update order with invoice ID
+        // Update order with invoice ID
+        await db
+          .update(orders)
+          .set({
+            btcpayInvoiceId: invoice.id,
+            status: "unpaid",
+          })
+          .where(eq(orders.id, order.id))
+
+        // Reserve stock (reduce available stock)
+        await db
+          .update(listings)
+          .set({
+            stock: listing.stock - qty,
+          })
+          .where(eq(listings.id, listing.id))
+
+        return NextResponse.json({
+          orderId: order.id,
+          invoiceId: invoice.id,
+          checkoutLink: invoice.checkoutLink,
+          amount: totalPrice,
+          description,
+        })
+      } catch (error) {
+        // If BTCPay fails, clean up the order
+        await db.delete(orders).where(eq(orders.id, order.id))
+        throw error
+      }
+    } else {
       await db
         .update(orders)
         .set({
-          btcpayInvoiceId: invoice.id,
-          status: "unpaid",
+          status: "pending_payment",
         })
         .where(eq(orders.id, order.id))
 
@@ -94,15 +123,10 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         orderId: order.id,
-        invoiceId: invoice.id,
-        checkoutLink: invoice.checkoutLink,
         amount: totalPrice,
         description,
+        message: "Order created. Payment processing is currently unavailable.",
       })
-    } catch (error) {
-      // If BTCPay fails, clean up the order
-      await db.delete(orders).where(eq(orders.id, order.id))
-      throw error
     }
   } catch (error) {
     console.error("Create order error:", error)

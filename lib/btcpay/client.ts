@@ -24,23 +24,30 @@ interface WebhookData {
 }
 
 export class BTCPayClient {
-  private baseUrl: string
-  private storeId: string
-  private apiKey: string
-  private webhookSecret: string
+  private baseUrl: string | null
+  private storeId: string | null
+  private apiKey: string | null
+  private webhookSecret: string | null
+  private isConfigured: boolean
 
   constructor() {
-    this.baseUrl = process.env.BTCPAY_SERVER_URL!
-    this.storeId = process.env.BTCPAY_STORE_ID!
-    this.apiKey = process.env.BTCPAY_API_KEY!
-    this.webhookSecret = process.env.BTCPAY_WEBHOOK_SECRET!
+    this.baseUrl = process.env.BTCPAY_SERVER_URL || null
+    this.storeId = process.env.BTCPAY_STORE_ID || null
+    this.apiKey = process.env.BTCPAY_API_KEY || null
+    this.webhookSecret = process.env.BTCPAY_WEBHOOK_SECRET || null
 
-    if (!this.baseUrl || !this.storeId || !this.apiKey || !this.webhookSecret) {
-      throw new Error("BTCPay Server configuration is incomplete")
-    }
+    this.isConfigured = !!(this.baseUrl && this.storeId && this.apiKey && this.webhookSecret)
+  }
+
+  isReady(): boolean {
+    return this.isConfigured
   }
 
   async createInvoice({ amountSats, orderId, description, buyerEmail }: CreateInvoiceParams): Promise<BTCPayInvoice> {
+    if (!this.isConfigured) {
+      throw new Error("BTCPay Server is not configured")
+    }
+
     const amountBTC = (amountSats / 100000000).toFixed(8)
 
     const invoiceData = {
@@ -94,6 +101,10 @@ export class BTCPayClient {
   }
 
   async getInvoice(invoiceId: string) {
+    if (!this.isConfigured) {
+      throw new Error("BTCPay Server is not configured")
+    }
+
     try {
       const response = await fetch(`${this.baseUrl}/api/v1/stores/${this.storeId}/invoices/${invoiceId}`, {
         headers: {
@@ -113,6 +124,11 @@ export class BTCPayClient {
   }
 
   verifyWebhook(headers: Record<string, string>, rawBody: string): WebhookData | null {
+    if (!this.isConfigured || !this.webhookSecret) {
+      console.error("BTCPay webhook verification failed: not configured")
+      return null
+    }
+
     try {
       const signature = headers["btcpay-sig"]
       if (!signature) {

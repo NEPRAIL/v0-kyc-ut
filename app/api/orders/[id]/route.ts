@@ -41,9 +41,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
     }
 
-    // If order has BTCPay invoice, get latest status
     let invoiceData = null
-    if (order.btcpayInvoiceId) {
+    if (order.btcpayInvoiceId && btcpayClient.isReady()) {
       try {
         invoiceData = await btcpayClient.getInvoice(order.btcpayInvoiceId)
       } catch (error) {
