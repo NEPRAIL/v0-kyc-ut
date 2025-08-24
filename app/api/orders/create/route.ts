@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth/middleware"
-import { bitcoinAddressManager } from "@/lib/bitcoin/address-manager"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -15,7 +14,7 @@ interface CartItem {
 export async function POST(request: NextRequest) {
   try {
     const { user } = await requireAuth(request)
-    const { items }: { items: CartItem[] } = await request.json()
+    const { items, customerInfo }: { items: CartItem[]; customerInfo: any } = await request.json()
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
@@ -24,46 +23,41 @@ export async function POST(request: NextRequest) {
     // Calculate total amount
     const totalUSD = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-    // Convert USD to satoshis
-    const totalSatoshis = await bitcoinAddressManager.usdToSatoshis(totalUSD)
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
-    // Create order for each item (KYC accounts are typically individual purchases)
-    const orders = []
+    // Create order record
+    const orderResult = await sql`
+      INSERT INTO orders (
+        user_id, order_number, total_amount, status, customer_name, 
+        customer_email, customer_contact, expires_at, created_at
+      ) VALUES (
+        ${user.id}, ${orderNumber}, ${totalUSD}, 'pending',
+        ${customerInfo?.name || ""}, ${customerInfo?.email || user.email}, 
+        ${customerInfo?.contact || ""}, ${new Date(Date.now() + 24 * 60 * 60 * 1000)}, NOW()
+      )
+      RETURNING *
+    `
 
+    const order = orderResult[0]
+
+    // Create order items
     for (const item of items) {
-      const itemTotalUSD = item.price * item.quantity
-      const itemSatoshis = await bitcoinAddressManager.usdToSatoshis(itemTotalUSD)
-
-      // Create order record
-      const orderResult = await sql`
-        INSERT INTO orders (user_id, product_id, product_name, amount_usd, amount_btc, expires_at)
-        VALUES (${user.id}, ${item.id}, ${item.name}, ${itemTotalUSD}, ${itemSatoshis}, ${new Date(Date.now() + 30 * 60 * 1000)})
-        RETURNING *
-      `
-
-      const order = orderResult[0]
-
-      // Generate Bitcoin address for this order
-      const bitcoinAddress = await bitcoinAddressManager.generateAddressForOrder(order.id, itemSatoshis)
-
-      // Update order with Bitcoin address
       await sql`
-        UPDATE orders 
-        SET bitcoin_address_id = ${bitcoinAddress.id}
-        WHERE id = ${order.id}
+        INSERT INTO order_items (order_id, product_id, product_name, price, quantity)
+        VALUES (${order.id}, ${item.id}, ${item.name}, ${item.price}, ${item.quantity})
       `
-
-      orders.push({
-        ...order,
-        bitcoin_address: bitcoinAddress.address,
-        bitcoin_amount: itemSatoshis,
-      })
     }
 
     return NextResponse.json({
       success: true,
-      orders,
-      message: "Orders created successfully",
+      order: {
+        id: order.id,
+        orderNumber: order.order_number,
+        total: totalUSD,
+        status: "pending",
+        items: items,
+      },
+      message: "Order created successfully. Complete payment via Telegram bot.",
     })
   } catch (error) {
     console.error("Order creation error:", error)
