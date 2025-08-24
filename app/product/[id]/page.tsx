@@ -2,17 +2,25 @@ import ProductClientPage from "./ProductClientPage"
 import { allProducts } from "@/lib/data/products"
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
+}
+
+export async function generateStaticParams() {
+  return allProducts.map((product) => ({
+    id: product.id,
+  }))
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  return <ProductClientPage params={params} />
+  const resolvedParams = await params
+  return <ProductClientPage params={resolvedParams} />
 }
 
 export async function generateMetadata({ params }: ProductPageProps) {
-  const { id } = params.id
+  const resolvedParams = await params
+  const { id } = resolvedParams
   const product = allProducts.find((p) => p.id === id)
 
   if (!product) {
