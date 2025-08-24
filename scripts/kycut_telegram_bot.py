@@ -37,9 +37,9 @@ except ImportError:
 
 # Configuration
 BOT_TOKEN = "8329366425:AAHmg3HBRZ0X09qICDYDrw3FjXIzZaFSAA8"
-WEBSITE_URL = os.getenv("WEBSITE_URL", "https://your-kycut-site.vercel.app")
+WEBSITE_URL = "https://kycut.com"
 WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "kycut_webhook_2024_secure_key_789xyz")
-ADMIN_ID = int(os.getenv("TELEGRAM_ADMIN_ID", "0"))
+ADMIN_ID = int(os.getenv("TELEGRAM_ADMIN_ID", "8321071978"))
 
 # Logging setup
 logging.basicConfig(
@@ -292,6 +292,15 @@ Troubleshooting:
         
         username, password = context.args
         
+        if len(password) < 8:
+            await update.message.reply_text(
+                "❌ **Password Too Short**\n\n"
+                "Password must be at least 8 characters long.\n"
+                "Please try again with a valid password.",
+                parse_mode=ParseMode.MARKDOWN
+            )
+            return
+        
         # Delete the user's message for security
         try:
             await update.message.delete()
@@ -321,7 +330,7 @@ Troubleshooting:
                 chat_id=user_id,
                 text=f"❌ **Login Failed**\n\n"
                      f"Error: {auth_result.get('error', 'Invalid credentials')}\n\n"
-                     f"Please try `/login` again.",
+                     f"Please check your credentials and try `/login` again.",
                 parse_mode=ParseMode.MARKDOWN
             )
     
@@ -558,19 +567,20 @@ Please process this order and contact the customer.
     async def authenticate_user(self, username: str, password: str) -> Dict[str, Any]:
         """Authenticate user with website API"""
         try:
-            url = urljoin(WEBSITE_URL, '/api/auth/simple-login')
+            url = urljoin(WEBSITE_URL, '/api/auth/login')
             
             payload = {
-                'username': username,
+                'emailOrUsername': username,  # Changed from 'username' to 'emailOrUsername'
                 'password': password
             }
             
             headers = {
                 'Content-Type': 'application/json',
-                'X-Webhook-Secret': WEBHOOK_SECRET
+                'X-Webhook-Secret': WEBHOOK_SECRET,
+                'User-Agent': 'KYCut-Bot/1.0'
             }
             
-            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            response = requests.post(url, json=payload, headers=headers, timeout=15)
             
             if response.status_code == 200:
                 data = response.json()
@@ -578,17 +588,27 @@ Please process this order and contact the customer.
                     return {
                         'success': True,
                         'user_data': data.get('user', {}),
-                        'session_token': data.get('session_token')
+                        'session_token': data.get('sessionToken')  # Updated field name
                     }
                 else:
                     return {
                         'success': False,
                         'error': data.get('message', 'Authentication failed')
                     }
+            elif response.status_code == 401:
+                return {
+                    'success': False,
+                    'error': 'Invalid credentials. Please check your username/email and password.'
+                }
+            elif response.status_code == 429:
+                return {
+                    'success': False,
+                    'error': 'Too many login attempts. Please wait a few minutes and try again.'
+                }
             else:
                 return {
                     'success': False,
-                    'error': f"Authentication failed: {response.status_code}"
+                    'error': f"Authentication failed: HTTP {response.status_code}"
                 }
                 
         except requests.RequestException as e:
@@ -602,25 +622,43 @@ Please process this order and contact the customer.
         """Fetch order details from website API"""
         try:
             session_token = user_sessions[user_id].get('session_token')
-            url = urljoin(WEBSITE_URL, f'/api/orders/{order_id}')
+            url = urljoin(WEBSITE_URL, f'/api/orders/user')
             
             headers = {
-                'Authorization': f'Bearer {session_token}',
-                'X-Webhook-Secret': WEBHOOK_SECRET
+                'Cookie': f'session={session_token}',  # Updated to use cookie-based auth
+                'X-Webhook-Secret': WEBHOOK_SECRET,
+                'User-Agent': 'KYCut-Bot/1.0'
             }
             
-            response = requests.get(url, headers=headers, timeout=10)
+            params = {'orderId': order_id}
+            
+            response = requests.get(url, headers=headers, params=params, timeout=15)
             
             if response.status_code == 200:
                 data = response.json()
+                # Find the specific order
+                orders = data.get('orders', [])
+                order = next((o for o in orders if o.get('id') == order_id or o.get('order_number') == order_id), None)
+                
+                if order:
+                    return {
+                        'success': True,
+                        'order': order
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'error': 'Order not found in your account'
+                    }
+            elif response.status_code == 401:
                 return {
-                    'success': True,
-                    'order': data
+                    'success': False,
+                    'error': 'Session expired. Please login again with /login'
                 }
             else:
                 return {
                     'success': False,
-                    'error': f"Order fetch failed: {response.status_code}"
+                    'error': f"Order fetch failed: HTTP {response.status_code}"
                 }
                 
         except requests.RequestException as e:
@@ -638,16 +676,18 @@ Please process this order and contact the customer.
             
             payload = {
                 'status': status,
-                'telegram_user_id': user_id
+                'telegram_user_id': user_id,
+                'updated_via': 'telegram_bot'
             }
             
             headers = {
                 'Content-Type': 'application/json',
-                'Authorization': f'Bearer {session_token}',
-                'X-Webhook-Secret': WEBHOOK_SECRET
+                'Cookie': f'session={session_token}',  # Updated to use cookie-based auth
+                'X-Webhook-Secret': WEBHOOK_SECRET,
+                'User-Agent': 'KYCut-Bot/1.0'
             }
             
-            response = requests.patch(url, json=payload, headers=headers, timeout=10)
+            response = requests.patch(url, json=payload, headers=headers, timeout=15)
             
             if response.status_code == 200:
                 data = response.json()
@@ -655,10 +695,25 @@ Please process this order and contact the customer.
                     'success': True,
                     'order_data': data
                 }
+            elif response.status_code == 401:
+                return {
+                    'success': False,
+                    'error': 'Session expired. Please login again with /login'
+                }
+            elif response.status_code == 403:
+                return {
+                    'success': False,
+                    'error': 'You do not have permission to modify this order'
+                }
+            elif response.status_code == 404:
+                return {
+                    'success': False,
+                    'error': 'Order not found'
+                }
             else:
                 return {
                     'success': False,
-                    'error': f"Status update failed: {response.status_code}"
+                    'error': f"Status update failed: HTTP {response.status_code}"
                 }
                 
         except requests.RequestException as e:
@@ -681,20 +736,20 @@ Please process this order and contact the customer.
 
 def main():
     """Main function"""
-    # Validate configuration
-    if not BOT_TOKEN or BOT_TOKEN == "YOUR_BOT_TOKEN_HERE":
+    if not BOT_TOKEN:
         print("❌ Error: BOT_TOKEN not configured!")
         print("Please set your bot token in the script or environment variable.")
         return
     
-    if not WEBSITE_URL or WEBSITE_URL == "https://your-kycut-site.vercel.app":
+    if not WEBSITE_URL:
         print("❌ Error: WEBSITE_URL not configured!")
         print("Please set WEBSITE_URL environment variable to your deployed site.")
         return
     
-    if not ADMIN_ID:
-        print("⚠️  Warning: TELEGRAM_ADMIN_ID not set!")
-        print("Admin notifications will not work. Get your ID from @userinfobot")
+    print(f"🤖 KYCut Telegram Bot Configuration:")
+    print(f"   Website: {WEBSITE_URL}")
+    print(f"   Admin ID: {ADMIN_ID}")
+    print(f"   Webhook Secret: {'✅ Set' if WEBHOOK_SECRET else '❌ Not Set'}")
     
     # Start bot
     bot = KYCutBot()

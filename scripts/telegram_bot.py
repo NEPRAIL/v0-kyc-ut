@@ -63,13 +63,13 @@ To get started, please login with your KYCut account credentials using `/login`
         
         # Initialize login session
         user_sessions[user_id] = {
-            'state': 'awaiting_email',
+            'state': 'awaiting_email_or_username',
             'authenticated': False,
             'login_attempts': 0
         }
         
         await update.message.reply_text(
-            "🔐 **Login to KYCut**\n\nPlease enter your email address:",
+            "🔐 **Login to KYCut**\n\nPlease enter your email address or username:",
             parse_mode='Markdown'
         )
     
@@ -131,8 +131,8 @@ To get started, please login with your KYCut account credentials using `/login`
         
         user_state = user_sessions[user_id].get('state')
         
-        if user_state == 'awaiting_email':
-            await self.handle_email_input(update, message_text, user_id)
+        if user_state == 'awaiting_email_or_username':
+            await self.handle_email_or_username_input(update, message_text, user_id)
         elif user_state == 'awaiting_password':
             await self.handle_password_input(update, message_text, user_id)
         else:
@@ -140,38 +140,45 @@ To get started, please login with your KYCut account credentials using `/login`
                 "I don't understand. Use `/help` to see available commands."
             )
     
-    async def handle_email_input(self, update: Update, email: str, user_id: int):
-        """Handle email input during login"""
-        if '@' not in email or '.' not in email:
-            await update.message.reply_text("❌ Please enter a valid email address.")
+    async def handle_email_or_username_input(self, update: Update, email_or_username: str, user_id: int):
+        """Handle email or username input during login"""
+        if len(email_or_username.strip()) < 3:
+            await update.message.reply_text("❌ Please enter a valid email address or username.")
             return
         
-        user_sessions[user_id]['email'] = email
+        user_sessions[user_id]['emailOrUsername'] = email_or_username.strip()
         user_sessions[user_id]['state'] = 'awaiting_password'
         
         await update.message.reply_text(
-            f"📧 Email: `{email}`\n\nNow please enter your password:",
+            f"📧 Email/Username: `{email_or_username}`\n\nNow please enter your password (minimum 8 characters):",
             parse_mode='Markdown'
         )
     
     async def handle_password_input(self, update: Update, password: str, user_id: int):
         """Handle password input during login"""
-        # Delete the password message for security
         try:
             await update.message.delete()
         except:
             pass
         
-        email = user_sessions[user_id]['email']
+        if len(password) < 8:
+            await update.message.reply_text(
+                "❌ Password must be at least 8 characters long. Please try again with `/login`"
+            )
+            del user_sessions[user_id]
+            return
+        
+        email_or_username = user_sessions[user_id]['emailOrUsername']
         
         # Authenticate with API
-        auth_result = await self.authenticate_user(email, password)
+        auth_result = await self.authenticate_user(email_or_username, password)
         
         if auth_result['success']:
             user_sessions[user_id].update({
                 'authenticated': True,
                 'state': 'authenticated',
                 'user_data': auth_result['user'],
+                'session_token': auth_result.get('sessionToken'),
                 'login_time': datetime.now()
             })
             
@@ -192,13 +199,13 @@ To get started, please login with your KYCut account credentials using `/login`
                     f"❌ **Login failed:** {auth_result['error']}\n\nPlease try again with `/login`"
                 )
     
-    async def authenticate_user(self, email: str, password: str):
+    async def authenticate_user(self, email_or_username: str, password: str):
         """Authenticate user with the API"""
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     f"{API_BASE_URL}/auth/login",
-                    json={'email': email, 'password': password},
+                    json={'emailOrUsername': email_or_username, 'password': password},
                     headers={'Content-Type': 'application/json'}
                 ) as response:
                     
@@ -206,13 +213,19 @@ To get started, please login with your KYCut account credentials using `/login`
                         data = await response.json()
                         return {
                             'success': True,
-                            'user': data['user']
+                            'user': data['user'],
+                            'sessionToken': data.get('sessionToken')
                         }
                     else:
-                        error_data = await response.json()
+                        try:
+                            error_data = await response.json()
+                            error_message = error_data.get('error', 'Authentication failed')
+                        except:
+                            error_message = f'Authentication failed (Status: {response.status})'
+                        
                         return {
                             'success': False,
-                            'error': error_data.get('error', 'Authentication failed')
+                            'error': error_message
                         }
         except Exception as e:
             logger.error(f"Authentication error: {e}")
@@ -224,11 +237,16 @@ To get started, please login with your KYCut account credentials using `/login`
     async def show_order_details(self, update: Update, order_id: str, user_id: int):
         """Show order details and confirmation options"""
         try:
-            # Fetch order details from API
+            session_token = user_sessions[user_id].get('session_token', '')
+            headers = {
+                'Cookie': f'session={session_token}' if session_token else '',
+                'Content-Type': 'application/json'
+            }
+            
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     f"{API_BASE_URL}/orders/{order_id}",
-                    headers={'Authorization': f'Bearer {user_sessions[user_id].get("token", "")}'}
+                    headers=headers
                 ) as response:
                     
                     if response.status == 404:
@@ -238,16 +256,23 @@ To get started, please login with your KYCut account credentials using `/login`
                         )
                         return
                     
+                    if response.status == 401:
+                        await update.message.reply_text(
+                            "🔒 Session expired. Please login again with `/login`",
+                            parse_mode='Markdown'
+                        )
+                        if user_id in user_sessions:
+                            del user_sessions[user_id]
+                        return
+                    
                     if response.status != 200:
                         await update.message.reply_text("❌ Error fetching order details. Please try again.")
                         return
                     
                     order = await response.json()
             
-            # Format order details
             order_text = self.format_order_details(order)
             
-            # Create confirmation buttons
             keyboard = [
                 [
                     InlineKeyboardButton("✅ Confirm Order", callback_data=f"confirm_{order_id}"),
@@ -318,25 +343,32 @@ Please review your order and confirm if everything is correct.
     async def confirm_order(self, query, order_id: str, user_id: int):
         """Handle order confirmation"""
         try:
-            # Update order status via API
+            session_token = user_sessions[user_id].get('session_token', '')
+            headers = {
+                'Cookie': f'session={session_token}' if session_token else '',
+                'Content-Type': 'application/json'
+            }
+            
             async with aiohttp.ClientSession() as session:
                 async with session.patch(
                     f"{API_BASE_URL}/orders/{order_id}/status",
                     json={'status': 'confirmed'},
-                    headers={'Authorization': f'Bearer {user_sessions[user_id].get("token", "")}'}
+                    headers=headers
                 ) as response:
                     
                     if response.status == 200:
                         order = await response.json()
                         
-                        # Notify admin
                         await self.notify_admin_order_confirmed(order, user_id)
                         
-                        # Update message
                         await query.edit_message_text(
                             f"✅ **Order Confirmed!**\n\nOrder `{order_id}` has been confirmed.\n\nOur admin team has been notified and will contact you shortly for payment processing.\n\nThank you for choosing KYCut!",
                             parse_mode='Markdown'
                         )
+                    elif response.status == 401:
+                        await query.edit_message_text("🔒 Session expired. Please login again with `/login`")
+                        if user_id in user_sessions:
+                            del user_sessions[user_id]
                     else:
                         await query.edit_message_text("❌ Error confirming order. Please try again.")
         
@@ -347,12 +379,17 @@ Please review your order and confirm if everything is correct.
     async def cancel_order(self, query, order_id: str, user_id: int):
         """Handle order cancellation"""
         try:
-            # Update order status via API
+            session_token = user_sessions[user_id].get('session_token', '')
+            headers = {
+                'Cookie': f'session={session_token}' if session_token else '',
+                'Content-Type': 'application/json'
+            }
+            
             async with aiohttp.ClientSession() as session:
                 async with session.patch(
                     f"{API_BASE_URL}/orders/{order_id}/status",
                     json={'status': 'cancelled'},
-                    headers={'Authorization': f'Bearer {user_sessions[user_id].get("token", "")}'}
+                    headers=headers
                 ) as response:
                     
                     if response.status == 200:
@@ -360,6 +397,10 @@ Please review your order and confirm if everything is correct.
                             f"❌ **Order Cancelled**\n\nOrder `{order_id}` has been cancelled.\n\nIf you need assistance, please contact our support team.",
                             parse_mode='Markdown'
                         )
+                    elif response.status == 401:
+                        await query.edit_message_text("🔒 Session expired. Please login again with `/login`")
+                        if user_id in user_sessions:
+                            del user_sessions[user_id]
                     else:
                         await query.edit_message_text("❌ Error cancelling order. Please try again.")
         
@@ -400,8 +441,6 @@ Please review your order and confirm if everything is correct.
 **Contact Details:**
 • Telegram User ID: `{user_id}`
 • Account Email: {user_data.get('email', 'N/A')}
-
-Please process this order and contact the customer for payment.
             """
             
             await self.application.bot.send_message(
@@ -420,7 +459,6 @@ Please process this order and contact the customer for payment.
         await self.application.start()
         await self.application.updater.start_polling()
         
-        # Keep the bot running
         try:
             await asyncio.Event().wait()
         except KeyboardInterrupt:

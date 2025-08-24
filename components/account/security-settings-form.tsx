@@ -9,17 +9,11 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { Lock, Eye, EyeOff, Shield } from "lucide-react"
 
-interface User {
-  id: string
-  email: string
-  username: string
-}
-
 interface SecuritySettingsFormProps {
-  user: User
+  userId: string
 }
 
-export function SecuritySettingsForm({ user }: SecuritySettingsFormProps) {
+export function SecuritySettingsForm({ userId }: SecuritySettingsFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showPasswords, setShowPasswords] = useState({
     current: false,
@@ -36,6 +30,12 @@ export function SecuritySettingsForm({ user }: SecuritySettingsFormProps) {
     e.preventDefault()
     setIsLoading(true)
 
+    if (formData.newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters long")
+      setIsLoading(false)
+      return
+    }
+
     if (formData.newPassword !== formData.confirmPassword) {
       toast.error("New passwords do not match")
       setIsLoading(false)
@@ -43,8 +43,8 @@ export function SecuritySettingsForm({ user }: SecuritySettingsFormProps) {
     }
 
     try {
-      const response = await fetch("/api/auth/change-password", {
-        method: "PUT",
+      const response = await fetch("/api/user/change-password", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -114,7 +114,9 @@ export function SecuritySettingsForm({ user }: SecuritySettingsFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="newPassword">New Password</Label>
+        <Label htmlFor="newPassword">
+          New Password <span className="text-muted-foreground text-sm">(minimum 8 characters)</span>
+        </Label>
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
@@ -124,6 +126,7 @@ export function SecuritySettingsForm({ user }: SecuritySettingsFormProps) {
             onChange={(e) => handleChange("newPassword", e.target.value)}
             placeholder="Enter your new password"
             className="pl-10 pr-10"
+            minLength={8}
             required
           />
           <Button
@@ -140,6 +143,7 @@ export function SecuritySettingsForm({ user }: SecuritySettingsFormProps) {
             )}
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground">Password must be at least 8 characters long</p>
       </div>
 
       <div className="space-y-2">
@@ -153,6 +157,7 @@ export function SecuritySettingsForm({ user }: SecuritySettingsFormProps) {
             onChange={(e) => handleChange("confirmPassword", e.target.value)}
             placeholder="Confirm your new password"
             className="pl-10 pr-10"
+            minLength={8}
             required
           />
           <Button

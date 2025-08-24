@@ -69,6 +69,11 @@ export default function LoginPage() {
           return
         }
 
+        if (formData.password.length < 8) {
+          toast.error("Password must be at least 8 characters long")
+          return
+        }
+
         if (!formData.username.trim()) {
           toast.error("Username is required")
           return
@@ -216,7 +221,7 @@ export default function LoginPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-white font-medium">
-                  Password
+                  Password {!isLogin && <span className="text-slate-400 text-sm">(minimum 8 characters)</span>}
                 </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -228,6 +233,7 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     className="bg-navy-800 border-navy-600 text-white placeholder:text-slate-400 focus:border-blue-500 pl-10 pr-10"
                     required
+                    minLength={8}
                   />
                   <Button
                     type="button"
@@ -243,6 +249,7 @@ export default function LoginPage() {
                     )}
                   </Button>
                 </div>
+                {!isLogin && <p className="text-xs text-slate-400">Password must be at least 8 characters long</p>}
               </div>
 
               {!isLogin && (
@@ -260,6 +267,7 @@ export default function LoginPage() {
                       placeholder="Confirm your password"
                       className="bg-navy-800 border-navy-600 text-white placeholder:text-slate-400 focus:border-blue-500 pl-10"
                       required={!isLogin}
+                      minLength={8}
                     />
                   </div>
                 </div>

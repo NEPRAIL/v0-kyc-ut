@@ -2,35 +2,56 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import { Mail, AtSign } from "lucide-react"
+import { Mail, AtSign, User } from "lucide-react"
 
 interface ProfileSettingsFormProps {
-  user: {
-    id: string
-    email: string
-    username: string
-  }
+  userId: string
 }
 
-export function ProfileSettingsForm({ user }: ProfileSettingsFormProps) {
+export function ProfileSettingsForm({ userId }: ProfileSettingsFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [formData, setFormData] = useState({
-    email: user.email || "",
-    username: user.username || "",
+    email: "",
+    username: "",
+    name: "",
   })
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const response = await fetch("/api/user/profile")
+        if (response.ok) {
+          const profile = await response.json()
+          setFormData({
+            email: profile.email || "",
+            username: profile.username || "",
+            name: profile.name || "",
+          })
+        }
+      } catch (error) {
+        console.error("Failed to load profile:", error)
+        toast.error("Failed to load profile data")
+      } finally {
+        setIsLoadingProfile(false)
+      }
+    }
+
+    loadProfile()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/auth/update-profile", {
-        method: "PUT",
+      const response = await fetch("/api/user/profile", {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
@@ -56,8 +77,27 @@ export function ProfileSettingsForm({ user }: ProfileSettingsFormProps) {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  if (isLoadingProfile) {
+    return <div className="text-center py-4">Loading profile...</div>
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">Display Name</Label>
+        <div className="relative">
+          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            id="name"
+            type="text"
+            value={formData.name}
+            onChange={(e) => handleChange("name", e.target.value)}
+            placeholder="Enter your display name"
+            className="pl-10"
+          />
+        </div>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="username">Username</Label>
         <div className="relative">

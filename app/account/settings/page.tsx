@@ -1,4 +1,4 @@
-import { requireAuth } from "@/lib/auth/middleware"
+import { requireAuth } from "@/lib/auth-server"
 import { AccountHeader } from "@/components/account/account-header"
 import { ProfileSettingsForm } from "@/components/account/profile-settings-form"
 import { SecuritySettingsForm } from "@/components/account/security-settings-form"
@@ -7,7 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
-  const { user } = await requireAuth()
+  const auth = await requireAuth()
+  if (!auth.success) {
+    // This should redirect, but just in case
+    return <div>Authentication required</div>
+  }
 
   return (
     <div className="space-y-6">
@@ -20,7 +24,7 @@ export default async function SettingsPage() {
               <CardTitle>Profile Settings</CardTitle>
             </CardHeader>
             <CardContent>
-              <ProfileSettingsForm user={user} />
+              <ProfileSettingsForm userId={auth.userId} />
             </CardContent>
           </Card>
         </div>
@@ -31,7 +35,7 @@ export default async function SettingsPage() {
               <CardTitle>Security Settings</CardTitle>
             </CardHeader>
             <CardContent>
-              <SecuritySettingsForm user={user} />
+              <SecuritySettingsForm userId={auth.userId} />
             </CardContent>
           </Card>
         </div>
