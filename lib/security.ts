@@ -72,6 +72,38 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash)
 }
 
+export async function verifySession(sessionData: string): Promise<{ uid: string } | null> {
+  try {
+    const sessionSecret = process.env.SESSION_SECRET
+    if (!sessionSecret) {
+      console.error("[v0] Missing SESSION_SECRET environment variable")
+      return null
+    }
+
+    // Parse the session cookie format: session=<base64url_data>
+    const decoded = Buffer.from(sessionData, "base64url").toString()
+    const [data, mac] = decoded.split(".")
+
+    // Verify MAC
+    const expectedMac = crypto.createHmac("sha256", sessionSecret).update(data).digest("hex")
+    if (!crypto.timingSafeEqual(Buffer.from(mac, "hex"), Buffer.from(expectedMac, "hex"))) {
+      return null
+    }
+
+    const payload = JSON.parse(data)
+
+    // Check expiration
+    if (Date.now() > payload.exp) {
+      return null
+    }
+
+    return { uid: payload.uid }
+  } catch (error) {
+    console.error("[v0] Session verification error:", error)
+    return null
+  }
+}
+
 export function hashApiKey(secret: string): string {
   return crypto.createHash("sha256").update(secret).digest("hex")
 }
