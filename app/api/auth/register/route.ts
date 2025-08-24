@@ -1,74 +1,109 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createUser, getUserByEmail, getUserByUsername } from "@/lib/auth/database"
-import { hashPassword, validatePassword, isValidEmail, isValidUsername } from "@/lib/auth/security"
-import { generateSecureTokenServer } from "@/lib/auth/server-crypto"
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, username, password } = await request.json()
+    console.log("[v0] Register API called")
 
-    // Validate input
-    if (!email || !username || !password) {
-      return NextResponse.json({ error: "Email, username, and password are required" }, { status: 400 })
+    const { neon } = await import("@neondatabase/serverless")
+    const bcrypt = await import("bcryptjs")
+    const { randomUUID } = await import("crypto")
+
+    if (!process.env.DATABASE_URL) {
+      console.error("[v0] DATABASE_URL not found")
+      return NextResponse.json({ error: "Database configuration error" }, { status: 500 })
     }
 
-    if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Invalid email format" }, { status: 400 })
+    const sql = neon(process.env.DATABASE_URL)
+
+    const body = await request.json()
+    console.log(
+      "[v0] Register request:",
+      JSON.stringify({
+        username: body.username,
+        email: body.email,
+        hasPassword: !!body.password,
+      }),
+    )
+
+    const { username, email, password, name } = body
+
+    if (!username || !email || !password) {
+      return NextResponse.json({ error: "Username, email, and password are required" }, { status: 400 })
     }
 
-    if (!isValidUsername(username)) {
-      return NextResponse.json(
-        { error: "Username must be 3-30 characters and contain only letters, numbers, and underscores" },
-        { status: 400 },
-      )
+    if (username.length < 3 || username.length > 31) {
+      return NextResponse.json({ error: "Username must be between 3 and 31 characters" }, { status: 400 })
     }
 
-    const passwordValidation = validatePassword(password)
-    if (!passwordValidation.isValid) {
-      return NextResponse.json(
-        { error: "Password validation failed", details: passwordValidation.errors },
-        { status: 400 },
-      )
+    if (password.length < 6) {
+      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 })
     }
 
-    // Check if user already exists
-    const existingUserByEmail = await getUserByEmail(email)
-    if (existingUserByEmail) {
-      return NextResponse.json({ error: "User with this email already exists" }, { status: 409 })
+    let existingUsers
+    try {
+      existingUsers = await sql`
+        SELECT id FROM users WHERE email = ${email} OR username = ${username}
+        LIMIT 1
+      `
+    } catch (dbError) {
+      console.error("[v0] Database query error:", dbError)
+      return NextResponse.json({ error: "Database connection failed" }, { status: 500 })
     }
 
-    const existingUserByUsername = await getUserByUsername(username)
-    if (existingUserByUsername) {
-      return NextResponse.json({ error: "Username is already taken" }, { status: 409 })
+    if (existingUsers.length > 0) {
+      return NextResponse.json({ error: "User with this email or username already exists" }, { status: 409 })
     }
 
-    // Hash password
-    const { hash, salt } = await hashPassword(password)
+    const saltRounds = 12
+    const passwordHash = await bcrypt.hash(password, saltRounds)
+    const userId = randomUUID()
 
-    // Generate email verification token
-    const emailVerificationToken = generateSecureTokenServer()
+    try {
+      await sql`
+        INSERT INTO users (
+          id, username, email, password_hash, 
+          email_verified, two_factor_enabled, failed_login_attempts,
+          created_at, updated_at
+        )
+        VALUES (
+          ${userId}, ${username}, ${email}, ${passwordHash},
+          false, false, 0,
+          NOW(), NOW()
+        )
+      `
+    } catch (insertError) {
+      console.error("[v0] User creation error:", insertError)
+      return NextResponse.json({ error: "Failed to create user account" }, { status: 500 })
+    }
 
-    // Create user
-    const user = await createUser({
-      email,
-      username,
-      password_hash: hash,
-      password_salt: salt,
-      email_verification_token: emailVerificationToken,
+    console.log("[v0] User created successfully:", username)
+
+    const response = NextResponse.json({
+      success: true,
+      message: "Account created successfully",
+      user: {
+        id: userId,
+        username,
+        email,
+      },
     })
 
-    // TODO: Send email verification email
-    console.log(`Email verification token for ${email}: ${emailVerificationToken}`)
+    response.cookies.set("session", `session-${userId}`, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    })
 
+    return response
+  } catch (error) {
+    console.error("[v0] Register API error:", error)
     return NextResponse.json(
       {
-        message: "User registered successfully. Please check your email to verify your account.",
-        userId: user.id,
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 201 },
+      { status: 500 },
     )
-  } catch (error) {
-    console.error("Registration error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

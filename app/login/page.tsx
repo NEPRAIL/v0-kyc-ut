@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, Zap, Shield, Mail, Lock } from "lucide-react"
+import { Eye, EyeOff, Zap, Shield, Mail, Lock, User } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
+    username: "",
     password: "",
     confirmPassword: "",
     name: "",
@@ -31,38 +32,36 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        const response = await fetch("/api/auth/simple-login", {
+        console.log("[v0] Attempting login with:", { username: formData.email })
+
+        const response = await fetch("/api/auth/login", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            username: formData.email,
+            username: formData.email, // Can be email or username
             password: formData.password,
           }),
         })
 
-        const responseClone = response.clone()
-        let data
-        try {
-          data = await response.json()
-        } catch (jsonError) {
-          console.error("Failed to parse JSON response:", jsonError)
-          try {
-            const textResponse = await responseClone.text()
-            console.error("Raw response:", textResponse)
-          } catch (textError) {
-            console.error("Failed to read response as text:", textError)
-          }
-          toast.error("Server error - please try again later")
+        console.log("[v0] Login response status:", response.status)
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error("[v0] Login error:", errorData)
+          toast.error(errorData.error || "Login failed")
           return
         }
 
-        if (response.ok && data.success) {
+        const data = await response.json()
+        console.log("[v0] Login successful:", data)
+
+        if (data.success) {
           toast.success("Login successful!")
           router.push("/account")
         } else {
-          toast.error(data.message || "Login failed")
+          toast.error(data.error || "Login failed")
         }
       } else {
         if (formData.password !== formData.confirmPassword) {
@@ -70,46 +69,50 @@ export default function LoginPage() {
           return
         }
 
-        const response = await fetch("/api/auth/simple-signup", {
+        if (!formData.username.trim()) {
+          toast.error("Username is required")
+          return
+        }
+
+        console.log("[v0] Attempting registration with:", {
+          username: formData.username,
+          email: formData.email,
+        })
+
+        const response = await fetch("/api/auth/register", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            username: formData.email,
+            username: formData.username,
             email: formData.email,
             password: formData.password,
-            name: formData.name,
           }),
         })
 
-        const responseClone = response.clone()
-        let data
-        try {
-          data = await response.json()
-        } catch (jsonError) {
-          console.error("Failed to parse JSON response:", jsonError)
-          try {
-            const textResponse = await responseClone.text()
-            console.error("Raw response:", textResponse)
-          } catch (textError) {
-            console.error("Failed to read response as text:", textError)
-          }
-          toast.error("Server error - please try again later")
+        console.log("[v0] Register response status:", response.status)
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error("[v0] Register error:", errorData)
+          toast.error(errorData.error || "Registration failed")
           return
         }
 
-        if (response.ok && data.success) {
+        const data = await response.json()
+        console.log("[v0] Registration successful:", data)
+
+        if (data.success) {
           toast.success("Account created successfully!")
-          setIsLogin(true)
-          setFormData({ email: formData.email, password: "", confirmPassword: "", name: "" })
+          router.push("/account")
         } else {
-          toast.error(data.message || "Signup failed")
+          toast.error(data.error || "Registration failed")
         }
       }
     } catch (error) {
-      console.error("Auth error:", error)
-      toast.error("Network error. Please try again.")
+      console.error("[v0] Auth error:", error)
+      toast.error("Network error. Please check your connection and try again.")
     } finally {
       setIsLoading(false)
     }
@@ -133,7 +136,9 @@ export default function LoginPage() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-white">{isLogin ? "Welcome Back" : "Create Account"}</h1>
-            <p className="text-slate-300">{isLogin ? "Sign in to your account" : "Join the secure marketplace"}</p>
+            <p className="text-slate-300">
+              {isLogin ? "Sign in with email or username" : "Join the secure marketplace"}
+            </p>
           </div>
         </div>
 
@@ -173,33 +178,36 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-white font-medium">
-                    Full Name
+                  <Label htmlFor="username" className="text-white font-medium">
+                    Username
                   </Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleChange("name", e.target.value)}
-                    placeholder="Enter your full name"
-                    className="bg-navy-800 border-navy-600 text-white placeholder:text-slate-400 focus:border-blue-500"
-                    required={!isLogin}
-                  />
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <Input
+                      id="username"
+                      type="text"
+                      value={formData.username}
+                      onChange={(e) => handleChange("username", e.target.value)}
+                      placeholder="Choose a username"
+                      className="bg-navy-800 border-navy-600 text-white placeholder:text-slate-400 focus:border-blue-500 pl-10"
+                      required={!isLogin}
+                    />
+                  </div>
                 </div>
               )}
 
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-white font-medium">
-                  Email Address
+                  {isLogin ? "Email or Username" : "Email Address"}
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <Input
                     id="email"
-                    type="email"
+                    type={isLogin ? "text" : "email"}
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
-                    placeholder="Enter your email"
+                    placeholder={isLogin ? "Enter email or username" : "Enter your email"}
                     className="bg-navy-800 border-navy-600 text-white placeholder:text-slate-400 focus:border-blue-500 pl-10"
                     required
                   />
