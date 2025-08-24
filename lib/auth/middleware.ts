@@ -1,6 +1,7 @@
 // middleware.ts — SAFE version
 import { NextResponse, type NextRequest } from "next/server"
 import { verifySession } from "../security"
+import { cookies } from "next/headers"
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|map)).*)"],
@@ -29,7 +30,44 @@ export function middleware(_req: NextRequest) {
   return res
 }
 
-export async function requireAuth(request: NextRequest) {
+export async function getServerAuth() {
+  try {
+    const cookieStore = await cookies()
+    const sessionCookie = cookieStore.get("session")?.value
+
+    if (!sessionCookie) {
+      return null
+    }
+
+    const session = await verifySession(sessionCookie)
+    return session ? { user: session } : null
+  } catch (error) {
+    console.error("[v0] Server auth error:", error)
+    return null
+  }
+}
+
+export async function requireAuth() {
+  const auth = await getServerAuth()
+
+  if (!auth) {
+    throw new Error("Authentication required")
+  }
+
+  return auth
+}
+
+export async function requireAdmin() {
+  const auth = await requireAuth()
+
+  if (auth.user.role !== "admin") {
+    throw new Error("Admin access required")
+  }
+
+  return auth
+}
+
+export async function requireAuthAPI(request: NextRequest) {
   try {
     const sessionCookie = request.cookies.get("session")?.value
 
@@ -49,9 +87,9 @@ export async function requireAuth(request: NextRequest) {
   }
 }
 
-export async function requireAdmin(request: NextRequest) {
+export async function requireAdminAPI(request: NextRequest) {
   try {
-    const authResult = await requireAuth(request)
+    const authResult = await requireAuthAPI(request)
 
     if (authResult instanceof NextResponse) {
       return authResult // Return the error response
