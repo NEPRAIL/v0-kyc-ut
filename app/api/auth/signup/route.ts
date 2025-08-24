@@ -1,20 +1,23 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { hash } from "bcryptjs"
-import { db } from "@/lib/db"
+import { getDb } from "@/lib/db"
 import { users } from "@/lib/db/schema"
+import { eq, or } from "drizzle-orm"
 import { lucia } from "@/lib/auth/lucia"
 import { cookies } from "next/headers"
-import { eq } from "drizzle-orm"
 import { randomUUID } from "crypto"
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[v0] Signup attempt started")
-    const { username, password, email, name } = await request.json()
-    console.log("[v0] Received signup data:", { username, email, name, passwordLength: password?.length })
+    console.log("[v0] Signup API called")
+
+    const body = await request.json()
+    console.log("[v0] Request body:", body)
+
+    const { username, password, email, name } = body
 
     if (!username || !password) {
-      console.log("[v0] Missing username or password")
+      console.log("[v0] Missing required fields")
       return NextResponse.json({ error: "Username and password are required" }, { status: 400 })
     }
 
@@ -26,38 +29,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 })
     }
 
-    // Check if username already exists
-    const existingUser = await db.select().from(users).where(eq(users.username, username)).limit(1)
+    console.log("[v0] Getting database connection...")
+    const db = getDb()
+
+    console.log("[v0] Checking for existing user...")
+    const existingUser = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(or(eq(users.username, username), eq(users.email, email || "")))
+      .limit(1)
+
     if (existingUser.length > 0) {
-      return NextResponse.json({ error: "Username already taken" }, { status: 400 })
+      console.log("[v0] User already exists")
+      return NextResponse.json({ error: "Username or email already taken" }, { status: 400 })
     }
 
+    console.log("[v0] Hashing password...")
     const passwordHash = await hash(password, 12)
+    const userId = randomUUID()
 
-    console.log("[v0] Creating user in database")
-    const [user] = await db
-      .insert(users)
-      .values({
-        id: randomUUID(),
-        username,
-        email: email || null,
-        name: name || null,
-        passwordHash,
-        role: "user",
-      })
-      .returning()
+    console.log("[v0] Creating user in database...")
+    await db.insert(users).values({
+      id: userId,
+      username,
+      email: email || null,
+      passwordHash,
+      salt: "bcrypt_salt", // bcrypt handles salt internally
+      emailVerified: false,
+      twoFactorEnabled: false,
+      twoFactorSecret: null,
+      failedLoginAttempts: 0,
+    })
 
-    console.log("[v0] User created successfully:", user.id)
+    console.log("[v0] User created successfully, creating session...")
+    const luciaInstance = lucia()
+    const session = await luciaInstance.createSession(userId, {})
+    const sessionCookie = luciaInstance.createSessionCookie(session.id)
 
-    const session = await lucia.createSession(user.id, {})
-    const sessionCookie = lucia.createSessionCookie(session.id)
-    const cookieStore = await cookies()
+    const cookieStore = cookies()
     cookieStore.set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
 
-    console.log("[v0] Session created and cookie set")
-    return NextResponse.json({ success: true, user: { id: user.id, username: user.username, role: user.role } })
+    console.log("[v0] Signup completed successfully")
+    return NextResponse.json({
+      success: true,
+      user: { id: userId, username, email: email || null },
+    })
   } catch (error) {
     console.error("[v0] Signup error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to create account. Please try again.",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
   }
 }

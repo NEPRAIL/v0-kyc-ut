@@ -1,57 +1,67 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { compare } from "bcryptjs"
-import { db } from "@/lib/db"
+import { getDb } from "@/lib/db"
 import { users } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 import { lucia } from "@/lib/auth/lucia"
 import { cookies } from "next/headers"
-import { eq } from "drizzle-orm"
-import { verifyTOTP } from "@/lib/auth/totp"
+import bcrypt from "bcryptjs"
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, password, totpToken } = await request.json()
+    console.log("[v0] Login API called")
+
+    const requestData = await request.json()
+    console.log("[v0] Request data:", requestData)
+
+    const { username, password } = requestData
 
     if (!username || !password) {
       return NextResponse.json({ error: "Username and password are required" }, { status: 400 })
     }
 
-    const [user] = await db.select().from(users).where(eq(users.username, username)).limit(1)
-    if (!user) {
-      return NextResponse.json({ error: "Invalid username or password" }, { status: 400 })
+    const db = await getDb()
+    const user = await db.select().from(users).where(eq(users.email, username)).limit(1)
+
+    if (user.length === 0) {
+      console.log("[v0] User not found:", username)
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    const validPassword = await compare(password, user.passwordHash)
-    if (!validPassword) {
-      return NextResponse.json({ error: "Invalid username or password" }, { status: 400 })
+    const foundUser = user[0]
+    console.log("[v0] User found:", foundUser.email)
+
+    const isValidPassword = await bcrypt.compare(password, foundUser.passwordHash)
+
+    if (!isValidPassword) {
+      console.log("[v0] Invalid password for user:", username)
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    // Check TOTP if enabled
-    if (user.totpSecret) {
-      if (!totpToken) {
-        return NextResponse.json({ error: "TOTP token required", requiresTotp: true }, { status: 400 })
-      }
-
-      const validTotp = verifyTOTP(user.totpSecret, totpToken)
-      if (!validTotp) {
-        return NextResponse.json({ error: "Invalid TOTP token" }, { status: 400 })
-      }
-    }
-
-    const session = await lucia.createSession(user.id, {})
+    const session = await lucia.createSession(foundUser.id, {})
     const sessionCookie = lucia.createSessionCookie(session.id)
-    cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
+
+    const cookieStore = await cookies()
+    cookieStore.set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
+
+    console.log("[v0] Login successful for user:", username)
 
     return NextResponse.json({
       success: true,
+      message: "Login successful",
       user: {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        hasTotpEnabled: !!user.totpSecret,
+        id: foundUser.id,
+        email: foundUser.email,
+        name: foundUser.name,
       },
     })
   } catch (error) {
-    console.error("Login error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("[v0] Login API error:", error)
+    return NextResponse.json(
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
   }
 }

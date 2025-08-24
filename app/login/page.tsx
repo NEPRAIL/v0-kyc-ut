@@ -10,21 +10,109 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Eye, EyeOff, Zap, Shield, Mail, Lock } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     confirmPassword: "",
     name: "",
   })
+  const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission
-    console.log("Form submitted:", formData)
+    setIsLoading(true)
+
+    try {
+      if (isLogin) {
+        const response = await fetch("/api/auth/simple-login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: formData.email,
+            password: formData.password,
+          }),
+        })
+
+        const responseClone = response.clone()
+        let data
+        try {
+          data = await response.json()
+        } catch (jsonError) {
+          console.error("Failed to parse JSON response:", jsonError)
+          try {
+            const textResponse = await responseClone.text()
+            console.error("Raw response:", textResponse)
+          } catch (textError) {
+            console.error("Failed to read response as text:", textError)
+          }
+          toast.error("Server error - please try again later")
+          return
+        }
+
+        if (response.ok && data.success) {
+          toast.success("Login successful!")
+          router.push("/account")
+        } else {
+          toast.error(data.message || "Login failed")
+        }
+      } else {
+        if (formData.password !== formData.confirmPassword) {
+          toast.error("Passwords do not match")
+          return
+        }
+
+        const response = await fetch("/api/auth/simple-signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: formData.email,
+            email: formData.email,
+            password: formData.password,
+            name: formData.name,
+          }),
+        })
+
+        const responseClone = response.clone()
+        let data
+        try {
+          data = await response.json()
+        } catch (jsonError) {
+          console.error("Failed to parse JSON response:", jsonError)
+          try {
+            const textResponse = await responseClone.text()
+            console.error("Raw response:", textResponse)
+          } catch (textError) {
+            console.error("Failed to read response as text:", textError)
+          }
+          toast.error("Server error - please try again later")
+          return
+        }
+
+        if (response.ok && data.success) {
+          toast.success("Account created successfully!")
+          setIsLogin(true)
+          setFormData({ email: formData.email, password: "", confirmPassword: "", name: "" })
+        } else {
+          toast.error(data.message || "Signup failed")
+        }
+      }
+    } catch (error) {
+      console.error("Auth error:", error)
+      toast.error("Network error. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleChange = (field: string, value: string) => {
@@ -34,7 +122,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-navy-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
-        {/* Header */}
         <div className="text-center space-y-4">
           <Link href="/" className="inline-flex items-center space-x-2">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
@@ -50,7 +137,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Form Card */}
         <Card className="card-professional">
           <CardHeader className="space-y-4">
             <div className="flex items-center justify-center">
@@ -185,9 +271,14 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <Button type="submit" size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-3">
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-3"
+                disabled={isLoading}
+              >
                 <Shield className="w-5 h-5 mr-2" />
-                {isLogin ? "Sign In" : "Create Account"}
+                {isLoading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
               </Button>
             </form>
 
@@ -232,7 +323,6 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
         <div className="text-center text-xs text-slate-400">
           By continuing, you agree to our{" "}
           <Link href="/terms" className="text-blue-400 hover:underline">

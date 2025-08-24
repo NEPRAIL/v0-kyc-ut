@@ -65,6 +65,7 @@ class KYCutBot:
         self.application.add_handler(CommandHandler("logout", self.logout_command))
         self.application.add_handler(CommandHandler("order", self.order_command))
         self.application.add_handler(CommandHandler("auth", self.auth_command))
+        self.application.add_handler(CommandHandler("ping", self.ping_command))
         
         # Message handlers
         self.application.add_handler(MessageHandler(
@@ -87,6 +88,7 @@ I help you manage your KYCut orders securely.
 **Available Commands:**
 • `/login` - Sign in with your website credentials
 • `/order ORDER123` - View and confirm an order
+• `/ping` - Test connection to KYCut website
 • `/logout` - Sign out
 • `/help` - Show this help message
 
@@ -111,6 +113,7 @@ Need help? Use `/help` anytime!
 • `/start` - Welcome message
 • `/login` - Sign in with website credentials
 • `/order ORDER123` - View and confirm an order
+• `/ping` - Test connection to website
 • `/logout` - Sign out
 • `/help` - Show this help
 
@@ -123,6 +126,10 @@ Need help? Use `/help` anytime!
 1. Use `/order YOUR_ORDER_ID` to view order details
 2. Confirm or cancel orders using the buttons
 3. Admin will be notified when you confirm
+
+**Connection Testing:**
+• Use `/ping` to test if the bot can connect to the website
+• Shows server status, response time, and connection details
 
 **Security:**
 • Your credentials are sent securely to the website
@@ -137,6 +144,113 @@ If you need help, contact the KYCut support team.
             help_text,
             parse_mode=ParseMode.MARKDOWN
         )
+    
+    async def ping_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /ping command to test website connection"""
+        user_id = update.effective_user.id
+        username = update.effective_user.username or "User"
+        
+        # Send initial message
+        ping_msg = await update.message.reply_text(
+            "🔄 Testing Connection...\n\nChecking connection to KYCut website..."
+        )
+        
+        try:
+            # Test connection to website
+            start_time = datetime.now()
+            url = urljoin(WEBSITE_URL, '/api/bot/ping')
+            
+            headers = {
+                'Content-Type': 'application/json',
+                'X-Webhook-Secret': WEBHOOK_SECRET,
+                'User-Agent': f'KYCut-Bot/1.0 (Telegram-{user_id})'
+            }
+            
+            payload = {
+                'bot_version': '1.0.0',
+                'telegram_user_id': user_id,
+                'telegram_username': username,
+                'test_timestamp': start_time.isoformat()
+            }
+            
+            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            end_time = datetime.now()
+            response_time = (end_time - start_time).total_seconds() * 1000
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                success_text = f"""✅ Connection Successful!
+
+Server Details:
+• Status: {data.get('status', 'online').upper()}
+• Server: {data.get('server', 'KYCut API')}
+• Version: {data.get('version', '1.0.0')}
+• Response Time: {response_time:.0f}ms
+
+Connection Info:
+• Website URL: {WEBSITE_URL}
+• Webhook Secret: ✅ Valid
+• Timestamp: {data.get('timestamp', 'N/A')}
+
+Bot Status:
+• Bot Token: ✅ Valid
+• Admin ID: {'✅ Set' if ADMIN_ID else '⚠️ Not Set'}
+
+🟢 All systems operational!"""
+                
+                await ping_msg.edit_text(success_text)
+                
+            else:
+                error_text = f"""❌ Connection Failed!
+
+Error Details:
+• Status Code: {response.status_code}
+• Response Time: {response_time:.0f}ms
+• Website URL: {WEBSITE_URL}
+
+Possible Issues:
+• Website may be down or unreachable
+• Webhook secret may be incorrect
+• API endpoint may not exist
+
+Troubleshooting:
+1. Check if the website is accessible in browser
+2. Verify WEBSITE_URL is correct
+3. Ensure webhook secret matches on both sides"""
+                
+                await ping_msg.edit_text(error_text)
+                
+        except requests.exceptions.Timeout:
+            await ping_msg.edit_text(
+                f"⏰ Connection Timeout!\n\n"
+                f"The website {WEBSITE_URL} took too long to respond.\n\n"
+                f"Possible causes:\n"
+                f"• Website is slow or overloaded\n"
+                f"• Network connectivity issues\n"
+                f"• Server is down\n\n"
+                f"Please try again later."
+            )
+            
+        except requests.exceptions.ConnectionError:
+            await ping_msg.edit_text(
+                f"🔌 Connection Error!\n\n"
+                f"Cannot connect to {WEBSITE_URL}\n\n"
+                f"Possible causes:\n"
+                f"• Website is down\n"
+                f"• Incorrect URL\n"
+                f"• Network issues\n"
+                f"• DNS problems\n\n"
+                f"Please check the website URL and try again."
+            )
+            
+        except Exception as e:
+            logger.error(f"Ping command error: {e}")
+            await ping_msg.edit_text(
+                f"❌ Unexpected Error!\n\n"
+                f"Error: {str(e)}\n\n"
+                f"Please try again or contact support."
+            )
     
     async def login_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /login command"""
@@ -329,11 +443,8 @@ If you need help, contact the KYCut support team.
 • Name: {customer.get('name', 'N/A')}
 • Email: {customer.get('email', 'N/A')}
 • Contact: {customer.get('contact', 'N/A')}
+"""
 
-**Actions:**
-Choose an action below to proceed.
-        """
-        
         # Create inline keyboard
         keyboard = [
             [
@@ -447,7 +558,7 @@ Please process this order and contact the customer.
     async def authenticate_user(self, username: str, password: str) -> Dict[str, Any]:
         """Authenticate user with website API"""
         try:
-            url = urljoin(WEBSITE_URL, '/api/auth/login')
+            url = urljoin(WEBSITE_URL, '/api/auth/simple-login')
             
             payload = {
                 'username': username,
@@ -463,11 +574,17 @@ Please process this order and contact the customer.
             
             if response.status_code == 200:
                 data = response.json()
-                return {
-                    'success': True,
-                    'user_data': data.get('user', {}),
-                    'session_token': data.get('session_token')
-                }
+                if data.get('success'):
+                    return {
+                        'success': True,
+                        'user_data': data.get('user', {}),
+                        'session_token': data.get('session_token')
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'error': data.get('message', 'Authentication failed')
+                    }
             else:
                 return {
                     'success': False,
