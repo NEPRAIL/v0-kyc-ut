@@ -1,28 +1,38 @@
-import { redirect } from "next/navigation"
-import { requireAuth } from "@/lib/auth/middleware"
-import { AccountHeader } from "@/components/account/account-header"
-import { ProfileForm } from "@/components/account/profile-form"
-import { OrderHistory } from "@/components/account/order-history"
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-export const dynamic = "force-dynamic"
+import { redirect } from "next/navigation";
+import { requireAuth } from "@/lib/auth-server";
+import { getDb } from "@/lib/db";          // your Drizzle factory
+import { users } from "@/db/schema";       // adjust import to your schema path
+import { eq } from "drizzle-orm";
 
 export default async function AccountPage() {
+  const r = await requireAuth();
+  if (!r.ok) redirect("/login");
+
   try {
-    const { user } = await requireAuth()
+    const db = getDb();
+    const row = await db
+      .select({ id: users.id, username: users.username, email: users.email })
+      .from(users)
+      .where(eq(users.id, r.userId))
+      .limit(1);
+
+    const me = row[0];
+    if (!me) {
+      console.warn("[account] no user row for", r.userId);
+      redirect("/login");
+    }
 
     return (
-      <div className="space-y-6">
-        <AccountHeader title="Account Dashboard" description="Manage your account and view your orders" />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ProfileForm user={user} />
-          <div className="space-y-6">
-            <OrderHistory />
-          </div>
-        </div>
-      </div>
-    )
-  } catch (error) {
-    redirect("/login")
+      <main style={{ padding: 24 }}>
+        <h1>Welcome, {me.username}</h1>
+        <p>{me.email}</p>
+      </main>
+    );
+  } catch (e) {
+    console.error("[account] db error", e);
+    redirect("/login"); // fail soft, avoid server render crash
   }
 }
