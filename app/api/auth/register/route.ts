@@ -1,75 +1,87 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { NextResponse } from "next/server"
+import { z } from "zod"
+import { getDb } from "@/lib/db"
+import { users } from "@/lib/db/schema"
+import { eq, or } from "drizzle-orm"
 import bcrypt from "bcryptjs"
-import { randomUUID } from "crypto"
+import crypto from "crypto"
 
-// Ensure Node runtime (avoid edge+bcrypt issues)
 export const runtime = "nodejs"
-// (optional) if this route should never be cached
 export const dynamic = "force-dynamic"
 
-export async function POST(request: NextRequest) {
-  console.log("[v0] Register API called")
+const schema = z.object({
+  username: z.string().min(1).max(50),
+  email: z.string().email(),
+  password: z.string().min(8).max(128),
+})
+
+function signCookie(uid: string) {
+  const secret = process.env.SESSION_SECRET || ""
+  if (!secret) return null
+  const exp = Math.floor(Date.now() / 1000) + 7 * 24 * 3600
+  const payload = Buffer.from(JSON.stringify({ uid, exp })).toString("base64url")
+  let key: Buffer
   try {
-    // Parse JSON safely
-    const body = await request.json().catch(() => null)
-    console.log("[v0] Request body parsed:", body ? "success" : "failed")
+    const b = Buffer.from(secret, "base64")
+    key = b.length >= 32 ? b : Buffer.from(secret)
+  } catch {
+    key = Buffer.from(secret)
+  }
+  const mac = crypto.createHmac("sha256", key).update(payload).digest("base64url")
+  return `${payload}.${mac}`
+}
 
-    if (!body) {
-      console.log("[v0] Invalid JSON body")
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
+export async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => null)
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid input", code: "VALIDATION_ERROR", issues: parsed.error.issues },
+        { status: 400 },
+      )
     }
 
-    const { username, email, password } = body as {
-      username?: string
-      email?: string
-      password?: string
-    }
-    console.log("[v0] Registration request:", { username, email, password: password ? "***" : undefined })
+    const { username, email, password } = parsed.data
+    const db = getDb()
 
-    if (!username || !email || !password) {
-      console.log("[v0] Missing required fields")
-      return NextResponse.json({ error: "Username, email, and password are required" }, { status: 400 })
-    }
-
-    // Guard against missing env at request-time (so we can JSON-respond)
-    const url = process.env.DATABASE_URL
-    if (!url) {
-      console.log("[v0] DATABASE_URL not set")
-      return NextResponse.json({ error: "Server misconfigured: DATABASE_URL is not set" }, { status: 500 })
-    }
-
-    console.log("[v0] Creating database connection")
-    // Create connection inside the handler (not at module top)
-    const sql = neon(url)
-
-    console.log("[v0] Checking for existing users")
-    // Uniqueness check
-    const existingUsers = await sql`
-      SELECT id FROM users 
-      WHERE username = ${username} OR email = ${email}
-      LIMIT 1
-    `
-    console.log("[v0] Existing users check result:", existingUsers.length)
+    // Check for existing users
+    const existingUsers = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(or(eq(users.username, username), eq(users.email, email)))
+      .limit(1)
 
     if (existingUsers.length > 0) {
-      console.log("[v0] User already exists")
       return NextResponse.json({ error: "Username or email already exists" }, { status: 409 })
     }
 
-    console.log("[v0] Hashing password")
+    // Hash password and create user
     const hashedPassword = await bcrypt.hash(password, 12)
-    const userId = randomUUID()
-    console.log("[v0] Generated user ID:", userId)
+    const userId = crypto.randomUUID()
 
-    console.log("[v0] Inserting new user")
-    const newUsers = await sql`
-      INSERT INTO users (id, username, email, password_hash, created_at, updated_at)
-      VALUES (${userId}, ${username}, ${email}, ${hashedPassword}, NOW(), NOW())
-      RETURNING id, username, email
-    `
+    const newUsers = await db
+      .insert(users)
+      .values({
+        id: userId,
+        username,
+        email,
+        passwordHash: hashedPassword,
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning({ id: users.id, username: users.username, email: users.email })
+
     const newUser = newUsers[0]
-    console.log("[v0] User created successfully:", { id: newUser.id, username: newUser.username, email: newUser.email })
+    if (!newUser) {
+      return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
+    }
+
+    const cookieVal = signCookie(newUser.id)
+    if (!cookieVal) {
+      return NextResponse.json({ error: "Server misconfigured: missing env" }, { status: 500 })
+    }
 
     const res = NextResponse.json({
       success: true,
@@ -81,25 +93,17 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    console.log("[v0] Setting session cookie")
-    res.cookies.set("session", `session-${newUser.id}`, {
+    res.cookies.set("session", cookieVal, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7,
+      path: "/",
     })
 
-    console.log("[v0] Registration completed successfully")
     return res
-  } catch (error) {
-    console.error("[v0] Register API error:", error)
-    console.error("[v0] Error stack:", error instanceof Error ? error.stack : "No stack trace")
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
-    )
+  } catch (e) {
+    console.error("[register] error", e)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

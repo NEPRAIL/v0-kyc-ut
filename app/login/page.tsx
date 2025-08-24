@@ -32,7 +32,7 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        console.log("[v0] Attempting login with:", { username: formData.email })
+        console.log("[v0] Attempting login with:", { emailOrUsername: formData.email })
 
         const response = await fetch("/api/auth/login", {
           method: "POST",
@@ -40,7 +40,7 @@ export default function LoginPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            username: formData.email, // Can be email or username
+            emailOrUsername: formData.email, // Can be email or username
             password: formData.password,
           }),
         })
@@ -105,7 +105,7 @@ export default function LoginPage() {
 
         if (data.success) {
           toast.success("Account created successfully!")
-          router.push("/account")
+          router.push("/welcome")
         } else {
           toast.error(data.error || "Registration failed")
         }
