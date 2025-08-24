@@ -1,4 +1,4 @@
-export const runtime = "nodejs"; // harmless on a static page
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default function Welcome() {
