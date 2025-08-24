@@ -1,54 +1,42 @@
-"use client"
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from "react"
-import { AccountHeader } from "@/components/account/account-header"
-import { ChangePasswordForm } from "@/components/account/change-password-form"
-import { TOTPSetup } from "@/components/account/totp-setup"
+import { redirect } from "next/navigation";
+import { requireAuth } from "@/lib/auth-server";
+import { getDb } from "@/lib/db";
+import { users } from "@/db/schema";        // adjust to your actual path
+import { eq } from "drizzle-orm";
 
-export default function SecurityPage() {
-  const [user, setUser] = useState<{ totpSecret: string | null } | null>(null)
-  const [loading, setLoading] = useState(true)
+export default async function AccountPage() {
+  const r = await requireAuth();
+  if (!r.ok) redirect("/login");
 
-  const fetchUserData = async () => {
-    try {
-      // This would typically come from a user info API endpoint
-      // For now, we'll simulate it
-      setUser({ totpSecret: null }) // This should come from actual user data
-    } catch (error) {
-      console.error("Failed to fetch user data:", error)
-    } finally {
-      setLoading(false)
-    }
+  let me: { id: string; username: string | null; email: string | null } | null = null;
+
+  try {
+    const db = getDb();
+    const rows = await db
+      .select({ id: users.id, username: users.username, email: users.email })
+      .from(users)
+      .where(eq(users.id, r.userId))       // <-- Make sure users.id type matches r.userId
+      .limit(1);
+
+    me = rows[0] ?? null;
+  } catch (e) {
+    console.error("[account] DB error", e);
+    // don't throw inside a Server Component; fail soft:
+    redirect("/login");
   }
 
-  useEffect(() => {
-    fetchUserData()
-  }, [])
-
-  const handleTOTPStatusChange = () => {
-    fetchUserData() // Refresh user data when TOTP status changes
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <AccountHeader title="Security" description="Manage your account security settings" />
-        <div className="animate-pulse space-y-4">
-          <div className="h-64 bg-muted rounded-lg"></div>
-          <div className="h-64 bg-muted rounded-lg"></div>
-        </div>
-      </div>
-    )
+  if (!me) {
+    console.warn("[account] no user row for", r.userId);
+    redirect("/login");
   }
 
   return (
-    <div className="space-y-6">
-      <AccountHeader title="Security" description="Manage your account security settings" />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChangePasswordForm />
-        <TOTPSetup isEnabled={!!user?.totpSecret} onStatusChange={handleTOTPStatusChange} />
-      </div>
-    </div>
-  )
+    <main style={{ padding: 24 }}>
+      <h1>Welcome, {me.username ?? "user"}</h1>
+      <p>{me.email}</p>
+    </main>
+  );
 }
