@@ -1,0 +1,63 @@
+KYCut Telegram Bot - Manual Setup Instructions
+==============================================
+
+PREREQUISITES:
+- Python 3.8 or higher
+- Access to your database
+- Telegram account
+
+STEP 1: Get Your Telegram User ID
+---------------------------------
+1. Open Telegram and message @userinfobot
+2. Copy the "Id" number it gives you (this is your TELEGRAM_ADMIN_ID)
+
+STEP 2: Install Python Dependencies
+-----------------------------------
+Run these commands in your terminal:
+
+pip install python-telegram-bot==20.7
+pip install requests==2.31.0
+pip install python-dotenv==1.0.0
+
+STEP 3: Set Environment Variables
+---------------------------------
+Add these to your project environment variables:
+
+TELEGRAM_BOT_TOKEN=8329366425:AAHmg3HBRZ0X09qICDYDrw3FjXIzZaFSAA8
+TELEGRAM_ADMIN_ID=YOUR_USER_ID_FROM_STEP_1
+WEBSITE_URL=https://your-website-url.com
+TELEGRAM_WEBHOOK_SECRET=your_webhook_secret_here
+
+Or create a .env file in the scripts/ directory with the above variables.
+
+STEP 4: Update Database Connection
+----------------------------------
+Make sure your DATABASE_URL environment variable is set correctly
+so the bot can access your orders and user data.
+
+STEP 5: Run the Bot
+-------------------
+python scripts/telegram_bot.py
+
+STEP 6: Test the Bot
+--------------------
+1. Find your bot on Telegram (search for the bot username)
+2. Send /start to begin
+3. Try logging in with your website credentials
+4. Test order lookup functionality
+
+TROUBLESHOOTING:
+---------------
+- If bot doesn't respond: Check the bot token and that it's running
+- If login fails: Verify DATABASE_URL is correct
+- If orders don't show: Check database connection and table structure
+- If admin notifications don't work: Verify TELEGRAM_ADMIN_ID is correct
+
+SECURITY NOTES:
+--------------
+- Keep your bot token secret
+- Use HTTPS for your website URL
+- Set up proper webhook secrets in production
+- Consider rate limiting for production use
+
+For support, check the bot logs for error messages.

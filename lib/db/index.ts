@@ -8,15 +8,15 @@ let db: any = null
 function createDatabase() {
   try {
     if (!process.env.DATABASE_URL) {
-      console.warn("[v0] DATABASE_URL environment variable is not set")
-      return null
+      console.error("[v0] DATABASE_URL environment variable is not set - database operations will fail")
+      throw new Error("DATABASE_URL is required")
     }
 
     const sql = neon(process.env.DATABASE_URL)
     return drizzle(sql, { schema })
   } catch (error) {
     console.error("[v0] Database connection failed:", error)
-    return null
+    throw error
   }
 }
 

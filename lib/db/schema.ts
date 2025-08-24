@@ -3,10 +3,15 @@ import { pgTable, text, integer, boolean, uuid, timestamp, decimal, jsonb } from
 // The users table already exists in your database, so we reference it
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
-  email: text("email").notNull(),
+  username: text("username").notNull().unique(),
+  email: text("email"),
+  passwordHash: text("password_hash").notNull(),
   name: text("name"),
   role: text("role").default("user"),
   emailVerified: boolean("email_verified").default(false),
+  totpSecret: text("totp_secret"),
+  telegramUserId: text("telegram_user_id"),
+  telegramUsername: text("telegram_username"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 })
@@ -79,6 +84,14 @@ export const events = pgTable("events", {
   kind: text("kind").notNull(),
   data: jsonb("data"),
   createdAt: timestamp("created_at").defaultNow(),
+})
+
+export const sessions = pgTable("sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
 })
 
 // User roles and order status enums

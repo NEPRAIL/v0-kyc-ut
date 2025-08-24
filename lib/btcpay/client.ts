@@ -1,5 +1,3 @@
-import crypto from "crypto"
-
 interface CreateInvoiceParams {
   amountSats: number
   orderId: number
@@ -123,43 +121,10 @@ export class BTCPayClient {
     }
   }
 
-  verifyWebhook(headers: Record<string, string>, rawBody: string): WebhookData | null {
-    if (!this.isConfigured || !this.webhookSecret) {
-      console.error("BTCPay webhook verification failed: not configured")
-      return null
-    }
-
-    try {
-      const signature = headers["btcpay-sig"]
-      if (!signature) {
-        console.error("Missing BTCPay signature header")
-        return null
-      }
-
-      // Verify signature
-      const expectedSignature = crypto.createHmac("sha256", this.webhookSecret).update(rawBody, "utf8").digest("hex")
-
-      const providedSignature = signature.startsWith("sha256=") ? signature.slice(7) : signature
-
-      if (!crypto.timingSafeEqual(Buffer.from(expectedSignature, "hex"), Buffer.from(providedSignature, "hex"))) {
-        console.error("Invalid BTCPay webhook signature")
-        return null
-      }
-
-      // Parse webhook data
-      const webhookData = JSON.parse(rawBody)
-
-      return {
-        invoiceId: webhookData.invoiceId,
-        type: webhookData.type,
-        timestamp: webhookData.timestamp,
-        storeId: webhookData.storeId,
-        deliveryId: webhookData.deliveryId,
-      }
-    } catch (error) {
-      console.error("BTCPay webhook verification error:", error)
-      return null
-    }
+  // This method should only be called from API routes, not client-side
+  async verifyWebhookServerSide(headers: Record<string, string>, rawBody: string): Promise<WebhookData | null> {
+    // This method will be implemented in API routes where Node.js crypto is available
+    throw new Error("Webhook verification must be done server-side. Use /api/webhooks/btcpay endpoint.")
   }
 
   mapWebhookTypeToOrderStatus(webhookType: string): string | null {

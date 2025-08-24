@@ -1,0 +1,16 @@
+# KYCut Telegram Bot - Complete Setup Guide
+
+## Prerequisites
+- Python 3.7 or higher
+- pip (Python package installer)
+- Your KYCut website deployed and accessible
+
+## Step 1: Download Files
+Download these files to a folder on your computer:
+- kycut_telegram_bot.py (main bot script)
+- requirements.txt (dependencies)
+
+## Step 2: Install Dependencies
+Open terminal/command prompt in the bot folder and run:
+```bash
+pip install python-telegram-bot requests python-dotenv

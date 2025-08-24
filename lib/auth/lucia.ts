@@ -1,18 +1,11 @@
 import { Lucia } from "lucia"
-import { DrizzleSQLiteAdapter } from "@lucia-auth/adapter-drizzle"
+import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle"
 import { db } from "../db"
-import { users } from "../db/schema"
+import { users, sessions } from "../db/schema"
 import { cookies } from "next/headers"
 import { cache } from "react"
 
-const adapter = new DrizzleSQLiteAdapter(db, {
-  user: users,
-  session: {
-    id: "id",
-    userId: "user_id",
-    expiresAt: "expires_at",
-  },
-})
+const adapter = new DrizzlePostgreSQLAdapter(db, sessions, users)
 
 export const lucia = new Lucia(adapter, {
   sessionCookie: {
@@ -25,7 +18,8 @@ export const lucia = new Lucia(adapter, {
     return {
       username: attributes.username,
       role: attributes.role,
-      totpSecret: attributes.totpSecret,
+      telegramUserId: attributes.telegramUserId,
+      telegramUsername: attributes.telegramUsername,
     }
   },
 })
@@ -36,13 +30,15 @@ declare module "lucia" {
     DatabaseUserAttributes: {
       username: string
       role: "user" | "admin"
-      totpSecret: string | null
+      telegramUserId: string | null
+      telegramUsername: string | null
     }
   }
 }
 
 export const validateRequest = cache(async (): Promise<{ user: any; session: any } | { user: null; session: null }> => {
-  const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? null
+  const cookieStore = await cookies()
+  const sessionId = cookieStore.get(lucia.sessionCookieName)?.value ?? null
   if (!sessionId) {
     return {
       user: null,
@@ -54,11 +50,11 @@ export const validateRequest = cache(async (): Promise<{ user: any; session: any
   try {
     if (result.session && result.session.fresh) {
       const sessionCookie = lucia.createSessionCookie(result.session.id)
-      cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
+      cookieStore.set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
     }
     if (!result.session) {
       const sessionCookie = lucia.createBlankSessionCookie()
-      cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
+      cookieStore.set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
     }
   } catch {}
   return result

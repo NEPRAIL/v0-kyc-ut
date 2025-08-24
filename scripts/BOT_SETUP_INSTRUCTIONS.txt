@@ -1,0 +1,32 @@
+=== KYCut Telegram Bot Setup Instructions ===
+
+STEP 1: Get Your Telegram User ID
+- Message @userinfobot on Telegram
+- Copy the 'Id' number it gives you (e.g., 123456789)
+
+STEP 2: Set Environment Variables
+Add these to your project environment variables:
+
+TELEGRAM_ADMIN_ID=YOUR_USER_ID_FROM_STEP_1
+TELEGRAM_WEBHOOK_SECRET=any_random_string_like_abc123xyz
+
+The webhook secret can be any random string you create - it's used for security.
+Example: "my_secret_webhook_key_12345" or generate one with: openssl rand -hex 32
+
+STEP 3: Run the Bot
+python scripts/telegram_bot_simple.py
+
+STEP 4: Test the Bot
+- Find your bot on Telegram (search for the bot username)
+- Send /start to begin
+- Use /login to authenticate with your website credentials
+- Use /order ORDER123 to view and confirm orders
+
+STEP 5: How It Works
+1. Customer places order on website → gets order ID
+2. Customer messages bot with /order ORDER_ID
+3. Bot shows order details with confirm/cancel buttons
+4. When confirmed → you get notification with customer details
+5. You contact customer directly for payment processing
+
+The bot authenticates users with the same credentials as your website and sends you detailed notifications when orders are confirmed.
