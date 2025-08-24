@@ -1,26 +1,40 @@
+export const dynamic = "force-dynamic"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { db } from "@/lib/db"
 import { products, seasons, rarities, listings, orders } from "@/lib/db/schema"
 import { sql, eq } from "drizzle-orm"
 
 export default async function AdminDashboard() {
-  // Get overview stats
-  const [productCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(products)
-  const [seasonCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(seasons)
-  const [rarityCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(rarities)
-  const [listingCount] = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(listings)
-    .where(eq(listings.active, true))
-  const [orderCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(orders)
+  let stats
+  try {
+    // Get overview stats
+    const [productCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(products)
+    const [seasonCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(seasons)
+    const [rarityCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(rarities)
+    const [listingCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(listings)
+      .where(eq(listings.active, true))
+    const [orderCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(orders)
 
-  const stats = [
-    { title: "Products", value: productCount.count, description: "Total products in catalog" },
-    { title: "Active Listings", value: listingCount.count, description: "Items available for purchase" },
-    { title: "Seasons", value: seasonCount.count, description: "Product seasons" },
-    { title: "Rarities", value: rarityCount.count, description: "Rarity categories" },
-    { title: "Orders", value: orderCount.count, description: "Total orders placed" },
-  ]
+    stats = [
+      { title: "Products", value: productCount.count, description: "Total products in catalog" },
+      { title: "Active Listings", value: listingCount.count, description: "Items available for purchase" },
+      { title: "Seasons", value: seasonCount.count, description: "Product seasons" },
+      { title: "Rarities", value: rarityCount.count, description: "Rarity categories" },
+      { title: "Orders", value: orderCount.count, description: "Total orders placed" },
+    ]
+  } catch (error) {
+    console.error("[v0] Admin dashboard database error:", error)
+    stats = [
+      { title: "Products", value: 0, description: "Database unavailable" },
+      { title: "Active Listings", value: 0, description: "Database unavailable" },
+      { title: "Seasons", value: 0, description: "Database unavailable" },
+      { title: "Rarities", value: 0, description: "Database unavailable" },
+      { title: "Orders", value: 0, description: "Database unavailable" },
+    ]
+  }
 
   return (
     <div className="space-y-6">
