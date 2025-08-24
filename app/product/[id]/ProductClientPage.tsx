@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Breadcrumb } from "@/components/navigation/breadcrumb"
+import { AddToCartButton } from "@/components/cart/add-to-cart-button"
+import { ScrollToTop } from "@/components/ui/scroll-to-top"
 import { Star, ArrowLeft, Shield, Zap, CheckCircle, Clock, CreditCard } from "lucide-react"
 import { notFound } from "next/navigation"
-import { allProducts, verificationLevels } from "@/lib/data/products"
+import { allProducts } from "@/lib/data/products"
 import { ProductImage } from "@/components/product-image"
 
-function ScrollToTop() {
+function ScrollToTopOnMount() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }, [])
@@ -159,57 +162,47 @@ export default function ProductClientPage({ params }: ProductPageProps) {
   const product = generateProductDetails(baseProduct)
 
   return (
-    <div className="min-h-screen bg-navy-900">
-      <ScrollToTop />
+    <div className="min-h-screen bg-background text-foreground">
+      <ScrollToTopOnMount />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center gap-2 text-sm text-slate-300 mb-8">
-          <Link href="/" className="hover:text-white transition-colors">
-            Home
-          </Link>
-          <span>/</span>
-          <Link href="/shop" className="hover:text-white transition-colors">
-            Shop
-          </Link>
-          <span>/</span>
-          <span className="text-white">{product.name}</span>
-        </div>
+        <Breadcrumb />
 
-        <Button asChild variant="ghost" className="mb-8 text-white hover:bg-white/10">
+        <Button
+          asChild
+          variant="ghost"
+          className="mb-8 text-white hover:bg-white/10 animate-in fade-in-0 slide-in-from-left-4 duration-300"
+        >
           <Link href="/shop">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Shop
           </Link>
         </Button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 animate-in fade-in-0 slide-in-from-bottom-6 duration-700">
           {/* Product Image */}
           <div className="space-y-6">
-            <Card className="overflow-hidden card-professional">
-              <CardContent className="p-0">
-                <div
-                  className={`aspect-square bg-gradient-to-br ${verificationLevels[product.verificationLevel].gradient} flex items-center justify-center relative overflow-hidden`}
-                >
-                  <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
-                  <div className="w-48 h-48 relative z-10">
-                    <ProductImage
-                      src={product.detailImage}
-                      alt={product.name}
-                      type="detail"
-                      className="object-contain filter drop-shadow-2xl bg-white/90 rounded-2xl p-4"
-                    />
-                  </div>
-                </div>
+            <Card className="overflow-hidden card-professional animate-in fade-in-0 slide-in-from-left-6 duration-500">
+              <CardContent className="p-8 flex items-center justify-center">
+                <ProductImage
+                  productName={product.name}
+                  type="detail"
+                  className="transform hover:scale-105 transition-transform duration-300"
+                />
               </CardContent>
             </Card>
 
-            <Card className="card-professional">
+            <Card className="card-professional animate-in fade-in-0 slide-in-from-left-6 duration-500 delay-200">
               <CardContent className="p-6">
                 <h3 className="text-xl font-bold text-white mb-4">Key Features</h3>
                 <div className="space-y-3">
                   {product.features.map((feature: string, index: number) => (
-                    <div key={index} className="flex items-start gap-3">
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-left-2 duration-300"
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
                       <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-slate-300">{feature}</span>
+                      <span className="text-muted-foreground">{feature}</span>
                     </div>
                   ))}
                 </div>
@@ -218,76 +211,92 @@ export default function ProductClientPage({ params }: ProductPageProps) {
           </div>
 
           {/* Product Details */}
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in-0 slide-in-from-right-6 duration-500">
             <div>
               <div className="flex items-center gap-4 mb-4">
-                <Badge className={`${product.verificationColor} text-white font-semibold shadow-md px-4 py-2 text-sm`}>
+                <Badge
+                  className={`${product.verificationColor} text-white font-semibold shadow-md px-4 py-2 text-sm animate-in fade-in-0 scale-in-95 duration-300`}
+                >
                   {product.verificationLevel}
                 </Badge>
-                <span className="text-slate-300 font-medium bg-slate-800/80 backdrop-blur-sm px-4 py-2 rounded-full text-sm border border-slate-700">
+                <span className="text-muted-foreground font-medium bg-card/80 backdrop-blur-sm px-4 py-2 rounded-full text-sm border border-border animate-in fade-in-0 scale-in-95 duration-300 delay-100">
                   {product.category.replace("-", " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}
                 </span>
               </div>
 
-              <h1 className="text-4xl font-bold text-white mb-4">{product.name}</h1>
+              <h1 className="text-4xl font-bold text-white mb-4 animate-in fade-in-0 slide-in-from-right-4 duration-500">
+                {product.name}
+              </h1>
 
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-4 mb-6 animate-in fade-in-0 slide-in-from-right-4 duration-500 delay-100">
                 <div className="flex items-center text-yellow-400">
                   <Star className="w-5 h-5 fill-current" />
                   <span className="ml-2 font-semibold">{product.rating}</span>
                 </div>
-                <span className="text-slate-300">({product.reviews} reviews)</span>
-                <div className="text-3xl font-bold text-blue-400">${product.price}</div>
+                <span className="text-muted-foreground">({product.reviews} reviews)</span>
+                <div className="text-3xl font-bold text-primary">${product.price}</div>
               </div>
 
-              <p className="text-lg text-slate-300 leading-relaxed mb-8">{product.fullDescription}</p>
+              <p className="text-lg text-muted-foreground leading-relaxed mb-8 animate-in fade-in-0 slide-in-from-right-4 duration-500 delay-200">
+                {product.fullDescription}
+              </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Button size="lg" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-lg py-6">
+              <div className="flex flex-col sm:flex-row gap-4 mb-8 animate-in fade-in-0 slide-in-from-right-4 duration-500 delay-300">
+                <Button
+                  size="lg"
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
+                >
                   <Zap className="w-5 h-5 mr-2" />
                   Purchase Now
                 </Button>
-                <Button
+                <AddToCartButton
+                  product={{
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    verificationLevel: product.verificationLevel,
+                    category: product.category,
+                  }}
                   variant="outline"
                   size="lg"
-                  className="flex-1 text-lg py-6 text-white border-slate-600 hover:bg-white/10 bg-transparent"
-                >
-                  Add to Cart
-                </Button>
+                  className="flex-1 text-lg py-6 text-white border-border hover:bg-white/10 bg-transparent"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                <div className="text-center p-4 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-700">
-                  <Shield className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                  <div className="font-semibold text-sm text-white">No Ban Risk</div>
-                  <div className="text-xs text-slate-400">Guaranteed safe</div>
-                </div>
-                <div className="text-center p-4 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-700">
-                  <Clock className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                  <div className="font-semibold text-sm text-white">Fast Delivery</div>
-                  <div className="text-xs text-slate-400">1-24 hours</div>
-                </div>
-                <div className="text-center p-4 bg-slate-800/80 backdrop-blur-sm rounded-lg border border-slate-700">
-                  <CreditCard className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                  <div className="font-semibold text-sm text-white">Best Pricing</div>
-                  <div className="text-xs text-slate-400">Market leading</div>
-                </div>
+                {[
+                  { icon: Shield, title: "No Ban Risk", subtitle: "Guaranteed safe", color: "text-blue-400" },
+                  { icon: Clock, title: "Fast Delivery", subtitle: "1-24 hours", color: "text-blue-400" },
+                  { icon: CreditCard, title: "Best Pricing", subtitle: "Market leading", color: "text-green-400" },
+                ].map((item, index) => (
+                  <div
+                    key={index}
+                    className="text-center p-4 bg-card/80 backdrop-blur-sm rounded-lg border border-border animate-in fade-in-0 scale-in-95 duration-300"
+                    style={{ animationDelay: `${400 + index * 100}ms` }}
+                  >
+                    <item.icon className={`w-8 h-8 ${item.color} mx-auto mb-2`} />
+                    <div className="font-semibold text-sm text-white">{item.title}</div>
+                    <div className="text-xs text-muted-foreground">{item.subtitle}</div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <Card className="card-professional">
+            <Card className="card-professional animate-in fade-in-0 slide-in-from-right-6 duration-500 delay-500">
               <CardContent className="p-6">
                 <h3 className="text-xl font-bold text-white mb-4">Account Details</h3>
                 <div className="space-y-4">
                   {Object.entries(product.specifications).map(([key, value], index) => (
-                    <div key={index}>
+                    <div
+                      key={index}
+                      className="animate-in fade-in-0 slide-in-from-right-2 duration-300"
+                      style={{ animationDelay: `${600 + index * 50}ms` }}
+                    >
                       <div className="flex justify-between items-center py-2">
                         <span className="font-medium text-white">{key}</span>
-                        <span className="text-slate-300">{value}</span>
+                        <span className="text-muted-foreground">{value}</span>
                       </div>
-                      {index < Object.entries(product.specifications).length - 1 && (
-                        <Separator className="bg-slate-700" />
-                      )}
+                      {index < Object.entries(product.specifications).length - 1 && <Separator className="bg-border" />}
                     </div>
                   ))}
                 </div>
@@ -295,6 +304,8 @@ export default function ProductClientPage({ params }: ProductPageProps) {
             </Card>
           </div>
         </div>
+
+        <ScrollToTop />
       </div>
     </div>
   )

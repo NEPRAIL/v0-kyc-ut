@@ -9,7 +9,7 @@ export function generateTOTPSecret(): string {
 
 export function generateTOTPUri(secret: string, username: string): string {
   const totp = new TOTP(decodeBase32IgnoreCase(secret))
-  return totp.createURI("KYCut Shop", username)
+  return totp.createURI("KYCut", username)
 }
 
 export function verifyTOTP(secret: string, token: string): boolean {

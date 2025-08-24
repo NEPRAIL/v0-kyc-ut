@@ -38,7 +38,7 @@ export default function NotFound() {
 
         <div className="flex items-center justify-center gap-2 text-muted-foreground">
           <Zap className="w-4 h-4" />
-          <span className="text-sm">Powered by KYCut Shop</span>
+          <span className="text-sm">Powered by KYCut</span>
         </div>
       </div>
     </div>

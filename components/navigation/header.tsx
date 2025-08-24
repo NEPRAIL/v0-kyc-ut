@@ -2,17 +2,17 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   NavigationMenu,
-  NavigationMenuContent,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, ShoppingCart, User, Search, Zap } from "lucide-react"
+import { CartSidebar } from "@/components/cart/cart-sidebar"
+import { GlobalSearch } from "@/components/search/global-search"
+import { ThemeToggle } from "@/components/theme/theme-toggle"
+import { Menu, User } from "lucide-react"
 import { useState } from "react"
 
 export function Header() {
@@ -23,10 +23,90 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 sm:h-16 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary rounded-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/25">
-              <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 relative transition-all duration-300 group-hover:scale-110">
+              <svg viewBox="0 0 32 32" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Top-left portion of ID card */}
+                <path
+                  d="M4 8 C4 6.895 4.895 6 6 6 L16 6 L6 26 C4.895 26 4 25.105 4 24 Z"
+                  fill="url(#gradient1)"
+                  className="drop-shadow-sm"
+                />
+
+                {/* Bottom-right portion of ID card */}
+                <path
+                  d="M26 6 C27.105 6 28 6.895 28 8 L28 24 C28 25.105 27.105 26 26 26 L16 26 L26 6 Z"
+                  fill="url(#gradient2)"
+                  className="drop-shadow-sm"
+                />
+
+                {/* Diagonal cut line */}
+                <path
+                  d="M16 6 L16 26"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeDasharray="3,2"
+                  className="text-primary opacity-70"
+                />
+
+                {/* Person icon on top-left portion */}
+                <circle cx="8" cy="12" r="2.5" fill="currentColor" className="text-background opacity-90" />
+                <path
+                  d="M5 20 C5 17.5 6.5 16 8 16 C9.5 16 11 17.5 11 20"
+                  fill="currentColor"
+                  className="text-background opacity-90"
+                />
+
+                {/* Text lines on bottom-right portion */}
+                <rect
+                  x="18"
+                  y="10"
+                  width="8"
+                  height="1.5"
+                  rx="0.75"
+                  fill="currentColor"
+                  className="text-background opacity-80"
+                />
+                <rect
+                  x="18"
+                  y="13"
+                  width="6"
+                  height="1"
+                  rx="0.5"
+                  fill="currentColor"
+                  className="text-background opacity-70"
+                />
+                <rect
+                  x="18"
+                  y="15.5"
+                  width="7"
+                  height="1"
+                  rx="0.5"
+                  fill="currentColor"
+                  className="text-background opacity-70"
+                />
+                <rect
+                  x="18"
+                  y="18"
+                  width="5"
+                  height="1"
+                  rx="0.5"
+                  fill="currentColor"
+                  className="text-background opacity-60"
+                />
+
+                <defs>
+                  <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="var(--primary)" />
+                    <stop offset="100%" stopColor="var(--accent)" />
+                  </linearGradient>
+                  <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="var(--accent)" />
+                    <stop offset="100%" stopColor="var(--primary)" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
-            <span className="text-lg sm:text-2xl font-bold text-white transition-all duration-300 group-hover:scale-105">
+            <span className="text-lg sm:text-2xl font-bold text-foreground transition-all duration-300 group-hover:scale-105">
               KYCut
             </span>
           </Link>
@@ -36,88 +116,15 @@ export function Header() {
             <NavigationMenuList>
               <NavigationMenuItem>
                 <Link href="/shop" legacyBehavior passHref>
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white transition-all duration-300 hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-foreground transition-all duration-300 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
                     Marketplace
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="transition-all duration-300 hover:scale-105 text-white hover:bg-white/10 data-[state=open]:bg-white/10">
-                  Categories
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="grid gap-3 p-6 w-[400px] animate-in fade-in-0 zoom-in-95 card-professional">
-                    <Link
-                      href="/shop?category=neo-banks"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-primary/20 hover:text-white focus:bg-primary/20 focus:text-white"
-                    >
-                      <div className="text-sm font-medium leading-none text-white">Neo-Banks 🏪</div>
-                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Modern digital banking solutions with KYC completed
-                      </p>
-                    </Link>
-                    <Link
-                      href="/shop?category=business-banks"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-primary/20 hover:text-white focus:bg-primary/20 focus:text-white"
-                    >
-                      <div className="text-sm font-medium leading-none text-white">Business Banks 👤</div>
-                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Professional business banking accounts ready to use
-                      </p>
-                    </Link>
-                    <Link
-                      href="/shop?category=crypto-exchanges"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-primary/20 hover:text-white focus:bg-primary/20 focus:text-white"
-                    >
-                      <div className="text-sm font-medium leading-none text-white">Crypto Exchanges 🪙</div>
-                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Pre-verified cryptocurrency trading accounts
-                      </p>
-                    </Link>
-                    <Link
-                      href="/shop?category=custom-name-banks"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-primary/20 hover:text-white focus:bg-primary/20 focus:text-white"
-                    >
-                      <div className="text-sm font-medium leading-none text-white">Custom Name Banks 📊</div>
-                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Personalized banking solutions with custom naming
-                      </p>
-                    </Link>
-                    <Link
-                      href="/shop?category=spain-banks"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-primary/20 hover:text-white focus:bg-primary/20 focus:text-white"
-                    >
-                      <div className="text-sm font-medium leading-none text-white">Spain Banks 🇪🇸</div>
-                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Spanish banking institutions with full verification
-                      </p>
-                    </Link>
-                    <Link
-                      href="/shop?category=italy-banks"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-primary/20 hover:text-white focus:bg-primary/20 focus:text-white"
-                    >
-                      <div className="text-sm font-medium leading-none text-white">Italy Banks 🇮🇹</div>
-                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        Italian banking solutions with completed KYC
-                      </p>
-                    </Link>
-                    <Link
-                      href="/shop?category=germany-banks"
-                      className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-300 hover:bg-primary/20 hover:text-white focus:bg-primary/20 focus:text-white"
-                    >
-                      <div className="text-sm font-medium leading-none text-white">Germany Banks 🇩🇪</div>
-                      <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                        German banking accounts with premium verification
-                      </p>
-                    </Link>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
                 <Link href="/about" legacyBehavior passHref>
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white transition-all duration-300 hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-foreground transition-all duration-300 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
                     About
                   </NavigationMenuLink>
                 </Link>
@@ -125,7 +132,7 @@ export function Header() {
 
               <NavigationMenuItem>
                 <Link href="/contact" legacyBehavior passHref>
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-white transition-all duration-300 hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none disabled:pointer-events-none disabled:opacity-50">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-foreground transition-all duration-300 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50">
                     Contact
                   </NavigationMenuLink>
                 </Link>
@@ -135,30 +142,17 @@ export function Header() {
 
           {/* Right side actions */}
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden sm:flex p-2 text-white transition-all duration-300 hover:scale-110 hover:bg-white/10"
-            >
-              <Search className="w-4 h-4" />
-            </Button>
+            <GlobalSearch />
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="relative p-2 text-white transition-all duration-300 hover:scale-110 hover:bg-white/10"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <Badge className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-xs bg-primary text-white animate-pulse">
-                0
-              </Badge>
-            </Button>
+            <ThemeToggle />
+
+            <CartSidebar />
 
             <Button
               asChild
               variant="outline"
               size="sm"
-              className="hidden md:flex bg-transparent text-white text-sm px-3 py-2 transition-all duration-300 hover:scale-105 hover:shadow-md hover:bg-white/10 border-white/20 hover:border-white/40"
+              className="hidden md:flex text-sm px-3 py-2 transition-all duration-300 hover:scale-105 hover:shadow-md bg-transparent"
             >
               <Link href="/login">
                 <User className="w-4 h-4 mr-2" />
@@ -169,44 +163,37 @@ export function Header() {
             {/* Mobile menu */}
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="lg:hidden p-2 text-white transition-all duration-300 hover:scale-110 hover:bg-white/10"
-                >
+                <Button variant="ghost" size="sm" className="lg:hidden p-2 transition-all duration-300 hover:scale-110">
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent
-                side="right"
-                className="w-[280px] sm:w-[350px] animate-in slide-in-from-right duration-300 card-professional border-l border-white/10"
-              >
+              <SheetContent side="right" className="w-[280px] sm:w-[350px] animate-in slide-in-from-right duration-300">
                 <nav className="flex flex-col space-y-6 mt-8">
                   <Link
                     href="/shop"
-                    className="text-lg font-medium text-white hover:text-primary transition-all duration-300 py-2 hover:translate-x-2"
+                    className="text-lg font-medium text-foreground hover:text-primary transition-all duration-300 py-2 hover:translate-x-2"
                     onClick={() => setIsOpen(false)}
                   >
                     Marketplace
                   </Link>
                   <Link
                     href="/about"
-                    className="text-lg font-medium text-white hover:text-primary transition-all duration-300 py-2 hover:translate-x-2"
+                    className="text-lg font-medium text-foreground hover:text-primary transition-all duration-300 py-2 hover:translate-x-2"
                     onClick={() => setIsOpen(false)}
                   >
                     About
                   </Link>
                   <Link
                     href="/contact"
-                    className="text-lg font-medium text-white hover:text-primary transition-all duration-300 py-2 hover:translate-x-2"
+                    className="text-lg font-medium text-foreground hover:text-primary transition-all duration-300 py-2 hover:translate-x-2"
                     onClick={() => setIsOpen(false)}
                   >
                     Contact
                   </Link>
-                  <div className="pt-4 border-t border-white/20">
+                  <div className="pt-4 border-t border-border">
                     <Link
                       href="/login"
-                      className="text-lg font-medium text-white hover:text-primary transition-all duration-300 py-2 flex items-center hover:translate-x-2"
+                      className="text-lg font-medium text-foreground hover:text-primary transition-all duration-300 py-2 flex items-center hover:translate-x-2"
                       onClick={() => setIsOpen(false)}
                     >
                       <User className="w-5 h-5 mr-3" />

@@ -55,7 +55,7 @@ export function SignupForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle>Create Account</CardTitle>
-        <CardDescription>Join KYCut Shop to start trading</CardDescription>
+        <CardDescription>Join KYCut to start trading</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">

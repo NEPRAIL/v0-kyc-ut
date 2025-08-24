@@ -41,7 +41,7 @@ export default function LoginPage() {
               <Zap className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-black bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-              KYCut Shop
+              KYCut
             </span>
           </Link>
           <div>

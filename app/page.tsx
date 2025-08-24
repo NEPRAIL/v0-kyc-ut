@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FadeIn } from "@/components/ui/fade-in"
+import { ScrollToTop } from "@/components/ui/scroll-to-top"
+import { ProductImage } from "@/components/product-image"
 import { Star, Shield, Zap, TrendingUp, ArrowRight, Sparkles, CheckCircle, Clock, Award } from "lucide-react"
-import Image from "next/image"
 import { getFeaturedProducts, verificationLevels } from "@/lib/data/products"
 import { ScrollGradient } from "@/components/scroll-gradient"
 
@@ -131,28 +132,12 @@ export default function HomePage() {
                 <Link href={`/product/${brand.id}`} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
                   <Card className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 card-professional overflow-hidden cursor-pointer">
                     <CardContent className="p-6 sm:p-8">
-                      <div
-                        className={`aspect-square bg-gradient-to-br ${verificationInfo.gradient} rounded-2xl sm:rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-inner relative overflow-hidden transition-all duration-300 group-hover:shadow-2xl`}
-                      >
-                        <div className="absolute inset-0 bg-white/10 backdrop-blur-sm transition-all duration-300 group-hover:bg-white/20" />
-                        <div className="absolute top-3 right-3 z-20">
-                          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg" />
-                        </div>
-                        {brand.logo ? (
-                          <div className="relative z-10 w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 group-hover:scale-110 transition-transform duration-300">
-                            <Image
-                              src={brand.logo || "/placeholder.svg"}
-                              alt={`${brand.name} logo`}
-                              fill
-                              className="object-contain filter brightness-0 invert drop-shadow-lg"
-                              sizes="(max-width: 768px) 64px, (max-width: 1024px) 80px, 96px"
-                            />
-                          </div>
-                        ) : (
-                          <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white relative z-10 group-hover:scale-110 transition-transform duration-300">
-                            {brand.name.charAt(0)}
-                          </div>
-                        )}
+                      <div className="mb-6 sm:mb-8 flex items-center justify-center">
+                        <ProductImage
+                          productName={brand.name}
+                          type="thumbnail"
+                          className="transition-all duration-300 group-hover:scale-110"
+                        />
                       </div>
 
                       <div className="space-y-4 sm:space-y-6">
@@ -302,6 +287,8 @@ export default function HomePage() {
           </FadeIn>
         </div>
       </div>
+
+      <ScrollToTop />
     </div>
   )
 }

@@ -20,7 +20,7 @@ export function AdminHeader() {
   return (
     <header className="border-b border-border bg-card">
       <div className="flex items-center justify-between px-6 py-4">
-        <h1 className="text-xl font-semibold">KYCut Shop Admin</h1>
+        <h1 className="text-xl font-semibold">KYCut Admin</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" asChild>
             <a href="/shop" target="_blank" rel="noopener noreferrer">

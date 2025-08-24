@@ -34,24 +34,21 @@ const stats = [
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-navy-900">
-      <div className="relative overflow-hidden bg-navy-900">
-        <div className="absolute inset-0 bg-gradient-to-br from-navy-800/50 to-navy-900/50" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_70%)]" />
+    <div className="min-h-screen">
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-background/50 to-background/50" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--primary),0.1),transparent_70%)]" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center space-y-8">
-            <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 px-4 py-2 text-sm font-semibold">
-              About KYCut Shop
+            <Badge className="bg-primary/10 text-primary border-primary/20 px-4 py-2 text-sm font-semibold">
+              About KYCut
             </Badge>
-            <h1 className="text-5xl sm:text-6xl font-bold text-white">
+            <h1 className="text-5xl sm:text-6xl font-bold text-foreground">
               Revolutionizing Digital
-              <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                {" "}
-                Commerce
-              </span>
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> Commerce</span>
             </h1>
-            <p className="text-xl text-slate-300 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
               We're building the future of secure, crypto-only marketplaces where privacy meets premium access. Our
               platform connects users with exclusive digital privileges from the world's leading platforms.
             </p>
@@ -64,32 +61,32 @@ export default function AboutPage() {
           {stats.map((stat, index) => (
             <Card key={index} className="text-center card-professional">
               <CardContent className="p-8">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <stat.icon className="w-8 h-8 text-white" />
                 </div>
-                <div className="text-3xl font-bold text-white mb-2">{stat.value}</div>
-                <div className="text-slate-300 font-medium">{stat.label}</div>
+                <div className="text-3xl font-bold text-foreground mb-2">{stat.value}</div>
+                <div className="text-muted-foreground font-medium">{stat.label}</div>
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
 
-      <div className="bg-navy-800/50 backdrop-blur-sm border-y border-navy-700">
+      <div className="bg-card/50 backdrop-blur-sm border-y border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
-              <h2 className="text-4xl font-bold text-white">Our Mission</h2>
-              <p className="text-lg text-slate-300 leading-relaxed">
-                At KYCut Shop, we believe in a world where digital commerce is truly private, secure, and accessible to
+              <h2 className="text-4xl font-bold text-foreground">Our Mission</h2>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                At KYCut, we believe in a world where digital commerce is truly private, secure, and accessible to
                 everyone. We're eliminating the barriers between users and premium digital services by creating a
                 crypto-only marketplace that prioritizes anonymity and security.
               </p>
-              <p className="text-lg text-slate-300 leading-relaxed">
+              <p className="text-lg text-muted-foreground leading-relaxed">
                 Our platform enables users to access exclusive privileges from leading platforms without compromising
                 their privacy or dealing with traditional payment systems that track and store personal information.
               </p>
-              <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 <Link href="/shop">
                   Explore Marketplace
                   <ArrowRight className="w-5 h-5 ml-2" />
@@ -99,53 +96,22 @@ export default function AboutPage() {
             <div className="grid grid-cols-1 gap-6">
               <Card className="card-professional">
                 <CardContent className="p-8">
-                  <Shield className="w-12 h-12 text-blue-400 mb-4" />
-                  <h3 className="text-xl font-bold text-white mb-3">Privacy First</h3>
-                  <p className="text-slate-300">
+                  <Shield className="w-12 h-12 text-primary mb-4" />
+                  <h3 className="text-xl font-bold text-foreground mb-3">Privacy First</h3>
+                  <p className="text-muted-foreground">
                     Complete anonymity with crypto-only payments. No personal data collection or tracking.
                   </p>
                 </CardContent>
               </Card>
               <Card className="card-professional">
                 <CardContent className="p-8">
-                  <Zap className="w-12 h-12 text-blue-400 mb-4" />
-                  <h3 className="text-xl font-bold text-white mb-3">Instant Access</h3>
-                  <p className="text-slate-300">
+                  <Zap className="w-12 h-12 text-primary mb-4" />
+                  <h3 className="text-xl font-bold text-foreground mb-3">Instant Access</h3>
+                  <p className="text-muted-foreground">
                     Immediate delivery of digital access tokens upon payment confirmation.
                   </p>
                 </CardContent>
               </Card>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      
-
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center text-white space-y-8">
-            <h2 className="text-4xl font-bold">Ready to Get Started?</h2>
-            <p className="text-xl opacity-90 max-w-2xl mx-auto">
-              Join thousands of users who trust KYCut Shop for secure, private access to premium digital services.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button
-                asChild
-                size="lg"
-                variant="secondary"
-                className="text-lg px-8 py-3 bg-white text-blue-600 hover:bg-slate-100"
-              >
-                <Link href="/shop">Browse Marketplace</Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="text-lg px-8 py-3 bg-transparent border-white text-white hover:bg-white hover:text-blue-600"
-              >
-                <Link href="/contact">Contact Us</Link>
-              </Button>
             </div>
           </div>
         </div>

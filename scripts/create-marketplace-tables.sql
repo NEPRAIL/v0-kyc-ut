@@ -1,4 +1,4 @@
--- Create marketplace tables for KYCut Shop
+-- Create marketplace tables for KYCut
 -- Note: users table already exists in the database
 
 -- Seasons table

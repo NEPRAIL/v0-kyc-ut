@@ -2,6 +2,9 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Header } from "@/components/navigation/header"
+import { CartProvider } from "@/contexts/cart-context"
+import { ThemeProvider } from "@/contexts/theme-context"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 const inter = Inter({
@@ -11,7 +14,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "KYCut Shop - Crypto-only Marketplace",
+  title: "KYCut - Crypto-only Marketplace",
   description: "Secure crypto-only marketplace for digital collectibles",
   generator: "v0.app",
 }
@@ -32,8 +35,13 @@ html {
         `}</style>
       </head>
       <body>
-        <Header />
-        {children}
+        <ThemeProvider>
+          <CartProvider>
+            <Header />
+            {children}
+            <Toaster />
+          </CartProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

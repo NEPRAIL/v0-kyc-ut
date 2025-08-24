@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: ProductPageProps) {
   }
 
   return {
-    title: `${product?.name} - KYCut Shop`,
+    title: `${product?.name} - KYCut`,
     description: `Pre-verified ${product?.name} account with complete KYC verification. ${product?.category} account available for immediate delivery.`,
   }
 }
