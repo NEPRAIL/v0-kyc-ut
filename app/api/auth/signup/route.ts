@@ -5,13 +5,13 @@ import { users } from "@/lib/db/schema"
 import { lucia } from "@/lib/auth/lucia"
 import { cookies } from "next/headers"
 import { eq } from "drizzle-orm"
-import { crypto } from "crypto"
+import { randomUUID } from "crypto"
 
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] Signup attempt started")
-    const { username, password } = await request.json()
-    console.log("[v0] Received signup data:", { username, passwordLength: password?.length })
+    const { username, password, email, name } = await request.json()
+    console.log("[v0] Received signup data:", { username, email, name, passwordLength: password?.length })
 
     if (!username || !password) {
       console.log("[v0] Missing username or password")
@@ -38,8 +38,10 @@ export async function POST(request: NextRequest) {
     const [user] = await db
       .insert(users)
       .values({
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         username,
+        email: email || null,
+        name: name || null,
         passwordHash,
         role: "user",
       })
