@@ -4,14 +4,9 @@ import { pgTable, text, integer, boolean, uuid, timestamp, decimal, jsonb } from
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   username: text("username").notNull().unique(),
-  email: text("email"),
+  email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  name: text("name"),
-  role: text("role").default("user"),
   emailVerified: boolean("email_verified").default(false),
-  totpSecret: text("totp_secret"),
-  telegramUserId: text("telegram_user_id"),
-  telegramUsername: text("telegram_username"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 })
@@ -103,3 +98,56 @@ export type OrderStatus = (typeof orderStatuses)[number]
 
 export const rarityTypes = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"] as const
 export type RarityType = (typeof rarityTypes)[number]
+
+export const apiKeys = pgTable("api_keys", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  keyHash: text("key_hash").notNull(),
+  scopes: text("scopes").array().notNull().default(["read:orders"]),
+  name: text("name"),
+  lastFour: text("last_four"),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastUsedAt: timestamp("last_used_at"),
+})
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+})
+
+export const securityEvents = pgTable("security_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => users.id),
+  eventType: text("event_type").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+})
+
+export const rateLimits = pgTable("rate_limits", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  count: integer("count").default(0),
+  resetTime: timestamp("reset_time").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+})
+
+export const securityEventTypes = [
+  "login_success",
+  "login_failed",
+  "signup",
+  "password_reset_requested",
+  "password_reset_completed",
+  "api_key_created",
+  "api_key_revoked",
+  "suspicious_activity",
+] as const
+export type SecurityEventType = (typeof securityEventTypes)[number]

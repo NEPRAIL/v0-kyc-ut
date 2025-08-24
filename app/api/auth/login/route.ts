@@ -1,78 +1,128 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
-import bcrypt from "bcryptjs"
+import { getDb } from "@/lib/db"
+import { users, sessions, securityEvents } from "@/lib/db/schema"
+import { loginSchema } from "@/lib/validation"
+import { verifyPassword, randomId, signSession } from "@/lib/security"
+import { checkRateLimit } from "@/lib/rate-limit"
+import { eq, or } from "drizzle-orm"
 
-const sql = neon(process.env.DATABASE_URL!)
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[v0] Login API called")
+    // Rate limiting
+    const clientIP = request.ip || request.headers.get("x-forwarded-for") || "unknown"
+    const rateLimitResult = await checkRateLimit(`login:${clientIP}`, { requests: 5, window: 300 })
 
-    const body = await request.json()
-    console.log("[v0] Request body:", JSON.stringify({ username: body.username, hasPassword: !!body.password }))
-
-    const { username, password } = body
-
-    if (!username || !password) {
-      return NextResponse.json({ error: "Username and password are required" }, { status: 400 })
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: "Too many requests", code: "RATE_LIMITED" }, { status: 429 })
     }
 
-    const users = await sql`
-      SELECT id, username, email, password_hash, failed_login_attempts, locked_until
-      FROM users 
-      WHERE username = ${username} OR email = ${username}
-      LIMIT 1
-    `
-
-    if (users.length === 0) {
-      console.log("[v0] User not found:", username)
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    // Parse and validate JSON
+    const body = await request.json().catch(() => null)
+    if (!body) {
+      return NextResponse.json({ error: "Invalid JSON body", code: "INVALID_JSON" }, { status: 400 })
     }
 
-    const user = users[0]
-    console.log("[v0] Found user:", user.username, "with email:", user.email)
-
-    if (user.locked_until && new Date(user.locked_until) > new Date()) {
-      const remainingMinutes = Math.ceil((new Date(user.locked_until).getTime() - Date.now()) / (1000 * 60))
+    const validation = loginSchema.safeParse(body)
+    if (!validation.success) {
       return NextResponse.json(
-        { error: `Account is locked. Try again in ${remainingMinutes} minutes.` },
-        { status: 423 },
+        {
+          error: "Invalid input",
+          code: "VALIDATION_ERROR",
+          issues: validation.error.issues,
+        },
+        { status: 400 },
       )
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password_hash)
+    const { emailOrUsername, password } = validation.data
 
-    if (!isValidPassword) {
-      console.log("[v0] Invalid password for user:", username)
-
-      const newAttempts = (user.failed_login_attempts || 0) + 1
-      const lockUntil = newAttempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null
-
-      await sql`
-        UPDATE users 
-        SET failed_login_attempts = ${newAttempts}, 
-            locked_until = ${lockUntil},
-            updated_at = NOW()
-        WHERE id = ${user.id}
-      `
-
-      if (lockUntil) {
-        return NextResponse.json({ error: "Too many failed attempts. Account locked for 15 minutes." }, { status: 423 })
-      }
-
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    // Check environment
+    const sessionSecret = process.env.SESSION_SECRET
+    if (!sessionSecret) {
+      return NextResponse.json(
+        { error: "Server misconfigured: missing SESSION_SECRET", code: "SERVER_ERROR" },
+        { status: 500 },
+      )
     }
 
-    await sql`
-      UPDATE users 
-      SET failed_login_attempts = 0, 
-          locked_until = NULL,
-          last_login = NOW(),
-          updated_at = NOW()
-      WHERE id = ${user.id}
-    `
+    // Database operations
+    const db = getDb()
 
-    console.log("[v0] Login successful for user:", username)
+    // Find user by email or username
+    const userResults = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        passwordHash: users.passwordHash,
+      })
+      .from(users)
+      .where(or(eq(users.email, emailOrUsername), eq(users.username, emailOrUsername)))
+      .limit(1)
+
+    if (userResults.length === 0) {
+      // Log failed login attempt
+      await db
+        .insert(securityEvents)
+        .values({
+          eventType: "login_failed",
+          ipAddress: clientIP,
+          userAgent: request.headers.get("user-agent") || "",
+          metadata: { reason: "user_not_found", identifier: emailOrUsername },
+        })
+        .catch(() => {}) // Don't fail login on logging error
+
+      return NextResponse.json({ error: "Invalid credentials", code: "INVALID_CREDENTIALS" }, { status: 401 })
+    }
+
+    const user = userResults[0]
+
+    // Verify password
+    const isValidPassword = await verifyPassword(password, user.passwordHash)
+
+    if (!isValidPassword) {
+      // Log failed login attempt
+      await db
+        .insert(securityEvents)
+        .values({
+          userId: user.id,
+          eventType: "login_failed",
+          ipAddress: clientIP,
+          userAgent: request.headers.get("user-agent") || "",
+          metadata: { reason: "invalid_password" },
+        })
+        .catch(() => {})
+
+      return NextResponse.json({ error: "Invalid credentials", code: "INVALID_CREDENTIALS" }, { status: 401 })
+    }
+
+    // Create session
+    const sessionId = randomId("sess_")
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+
+    await db.insert(sessions).values({
+      id: sessionId,
+      userId: user.id,
+      expiresAt,
+    })
+
+    // Log successful login
+    await db
+      .insert(securityEvents)
+      .values({
+        userId: user.id,
+        eventType: "login_success",
+        ipAddress: clientIP,
+        userAgent: request.headers.get("user-agent") || "",
+        metadata: { sessionId },
+      })
+      .catch(() => {})
+
+    // Sign session cookie
+    const sessionCookie = signSession({ uid: user.id, exp: expiresAt.getTime() }, sessionSecret)
 
     const response = NextResponse.json({
       success: true,
@@ -84,12 +134,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    response.cookies.set("session", `session-${user.id}`, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    })
+    response.headers.set("Set-Cookie", sessionCookie)
 
     return response
   } catch (error) {
@@ -97,6 +142,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Internal server error",
+        code: "SERVER_ERROR",
         details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
