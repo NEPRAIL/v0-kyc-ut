@@ -2,6 +2,8 @@ import type React from "react"
 import { requireAuth } from "@/lib/auth/middleware"
 import { AccountSidebar } from "@/components/account/account-sidebar"
 
+export const dynamic = "force-dynamic"
+
 export default async function AccountLayout({
   children,
 }: {

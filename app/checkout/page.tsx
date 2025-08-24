@@ -1,8 +1,15 @@
-import { requireAuth } from "@/lib/auth/middleware"
+import { redirect } from "next/navigation"
+import { getServerAuth } from "@/lib/auth/middleware"
 import { CheckoutForm } from "@/components/checkout/checkout-form"
 
+export const dynamic = "force-dynamic"
+
 export default async function CheckoutPage() {
-  await requireAuth()
+  const auth = await getServerAuth()
+
+  if (!auth) {
+    redirect("/login")
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

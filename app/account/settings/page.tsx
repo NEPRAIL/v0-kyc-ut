@@ -4,6 +4,8 @@ import { ProfileSettingsForm } from "@/components/account/profile-settings-form"
 import { SecuritySettingsForm } from "@/components/account/security-settings-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
+export const dynamic = "force-dynamic"
+
 export default async function SettingsPage() {
   const { user } = await requireAuth()
 
