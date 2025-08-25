@@ -1,5 +1,3 @@
-"use client"
-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
@@ -8,15 +6,23 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { CartSidebar } from "@/components/cart/cart-sidebar"
 import { GlobalSearch } from "@/components/search/global-search"
 import { ThemeToggle } from "@/components/theme/theme-toggle"
-import { Menu, User } from "lucide-react"
-import { useState } from "react"
+import { User } from "lucide-react"
+import { cookies } from "next/headers"
+import { unstable_noStore as noStore } from "next/cache"
+import { verifySession } from "@/lib/security"
+import { MobileMenu } from "./mobile-menu"
+import { UserMenu } from "./user-menu"
 
-export function Header() {
-  const [isOpen, setIsOpen] = useState(false)
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
+export async function Header() {
+  noStore() // force fresh read per request
+  const raw = cookies().get("session")?.value
+  const session = raw ? await verifySession(raw) : null
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-nav transition-all duration-300">
@@ -148,61 +154,24 @@ export function Header() {
 
             <CartSidebar />
 
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="hidden md:flex text-sm px-3 py-2 transition-all duration-300 hover:scale-105 hover:shadow-md bg-transparent"
-            >
-              <Link href="/login">
-                <User className="w-4 h-4 mr-2" />
-                Sign In
-              </Link>
-            </Button>
+            {session?.uid ? (
+              <UserMenu userId={session.uid} />
+            ) : (
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="hidden md:flex text-sm px-3 py-2 transition-all duration-300 hover:scale-105 hover:shadow-md bg-transparent"
+              >
+                <Link href="/login">
+                  <User className="w-4 h-4 mr-2" />
+                  Sign In
+                </Link>
+              </Button>
+            )}
 
             {/* Mobile menu */}
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="lg:hidden p-2 transition-all duration-300 hover:scale-110">
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[280px] sm:w-[350px] animate-in slide-in-from-right duration-300">
-                <nav className="flex flex-col space-y-6 mt-8">
-                  <Link
-                    href="/shop"
-                    className="text-lg font-medium text-foreground hover:text-primary transition-all duration-300 py-2 hover:translate-x-2"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Marketplace
-                  </Link>
-                  <Link
-                    href="/about"
-                    className="text-lg font-medium text-foreground hover:text-primary transition-all duration-300 py-2 hover:translate-x-2"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    About
-                  </Link>
-                  <Link
-                    href="/contact"
-                    className="text-lg font-medium text-foreground hover:text-primary transition-all duration-300 py-2 hover:translate-x-2"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Contact
-                  </Link>
-                  <div className="pt-4 border-t border-border">
-                    <Link
-                      href="/login"
-                      className="text-lg font-medium text-foreground hover:text-primary transition-all duration-300 py-2 flex items-center hover:translate-x-2"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <User className="w-5 h-5 mr-3" />
-                      Sign In
-                    </Link>
-                  </div>
-                </nav>
-              </SheetContent>
-            </Sheet>
+            <MobileMenu isAuthenticated={!!session?.uid} />
           </div>
         </div>
       </div>

@@ -8,11 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
 import { ProductImage } from "@/components/product-image"
+import { ExternalLink } from "lucide-react"
 
 export function CheckoutForm() {
   const { state, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [orderResult, setOrderResult] = useState<{
+    orderId: string
+    tgDeepLink: string | null
+    totalCents: number
+    currency: string
+  } | null>(null)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -26,23 +33,29 @@ export function CheckoutForm() {
     setError("")
 
     try {
-      const response = await fetch("/api/orders/create", {
+      const items = state.items.map((item) => ({
+        productId: item.id,
+        qty: item.quantity,
+        price_cents: Math.round(item.price * 100),
+        name: item.name,
+      }))
+
+      const response = await fetch("/api/checkout/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ items: state.items }),
+        body: JSON.stringify({ items, currency: "USD" }),
       })
 
       const data = await response.json()
 
       if (response.ok) {
         clearCart()
+        setOrderResult(data)
         toast({
           title: "Order created successfully!",
-          description: "Your order has been created. You can view it in your account page.",
+          description: "Your order has been created. Complete payment via Telegram.",
         })
-
-        router.push("/account")
       } else {
         setError(data.error || "Failed to create order")
       }
@@ -52,6 +65,40 @@ export function CheckoutForm() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (orderResult) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-green-600">Order Created Successfully!</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <p className="font-medium">Order ID: {orderResult.orderId}</p>
+            <p className="text-sm text-muted-foreground">
+              Total: {(orderResult.totalCents / 100).toFixed(2)} {orderResult.currency}
+            </p>
+          </div>
+
+          {orderResult.tgDeepLink && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">Complete your payment securely via our Telegram bot:</p>
+              <Button onClick={() => window.open(orderResult.tgDeepLink!, "_blank")} className="w-full" size="lg">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open in Telegram
+              </Button>
+            </div>
+          )}
+
+          <div className="pt-4 border-t">
+            <Button variant="outline" onClick={() => router.push("/account")} className="w-full">
+              View Order in Account
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   if (state.items.length === 0) {

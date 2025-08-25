@@ -69,6 +69,7 @@ export default function LoginPage() {
 
         if (data.success) {
           toast.success("Login successful!")
+          router.refresh()
           window.location.href = "/account"
         } else {
           toast.error(data.error || "Login failed")
@@ -121,6 +122,7 @@ export default function LoginPage() {
 
         if (data.success) {
           toast.success("Account created successfully!")
+          router.refresh()
           window.location.href = "/welcome"
         } else {
           toast.error(data.error || "Registration failed")

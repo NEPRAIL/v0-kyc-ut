@@ -1,7 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
-import { orders, orderItems } from "@/lib/db/schema"
-import { getServerAuth } from "@/lib/auth/middleware"
+import { orders } from "@/lib/db/schema"
+import { requireAuth } from "@/lib/auth-server"
+import crypto from "crypto"
+
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 interface CartItem {
   id: string
@@ -16,11 +20,9 @@ export async function POST(request: NextRequest) {
   try {
     console.log("[v0] Order creation started")
 
-    const auth = await getServerAuth()
-    console.log("[v0] Auth result:", auth ? { hasUser: !!auth.user, uid: auth.user?.uid } : "No auth")
-
-    if (!auth) {
-      console.log("[v0] Authentication failed - no auth object")
+    const auth = await requireAuth()
+    if (!auth.ok) {
+      console.log("[v0] Authentication failed")
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
@@ -34,58 +36,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
     }
 
-    // Calculate total amount
-    const totalUSD = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-    console.log("[v0] Total amount calculated:", totalUSD)
+    const totalCents = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100)
+    console.log("[v0] Total amount calculated:", totalCents, "cents")
 
-    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
-    console.log("[v0] Generated order number:", orderNumber)
+    const id = "ord_" + crypto.randomBytes(12).toString("hex")
+    const botUser = process.env.TELEGRAM_BOT_USERNAME || ""
+    const deepLink = botUser ? `https://t.me/${botUser}?start=order_${id}` : null
 
     const db = getDb()
     console.log("[v0] Database connection obtained")
 
-    const userId = auth.user.uid
-    console.log("[v0] User ID from auth:", userId, "Type:", typeof userId)
-
-    if (!userId) {
-      console.log("[v0] User ID is missing from auth")
-      return NextResponse.json({ error: "User ID missing from session" }, { status: 401 })
-    }
-
-    // Create order record
     const orderData = {
-      userId: userId,
-      orderNumber,
-      totalAmount: totalUSD,
+      id,
+      userId: auth.userId,
+      items: items.map((item) => ({
+        productId: item.id,
+        name: item.name,
+        price_cents: Math.round(item.price * 100),
+        qty: item.quantity,
+      })) as any,
+      totalCents,
+      currency: "USD",
       status: "pending",
-      customerName: "",
-      customerEmail: "",
-      customerContact: "",
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      createdAt: new Date(),
+      tgDeeplink: deepLink,
     }
 
     console.log("[v0] Order data to insert:", JSON.stringify(orderData, null, 2))
 
     const [order] = await db.insert(orders).values(orderData).returning()
-
     console.log("[v0] Order created successfully:", order.id)
-
-    // Create order items
-    const orderItemsData = items.map((item) => ({
-      orderId: order.id,
-      productId: item.id,
-      productName: item.name,
-      price: item.price,
-      quantity: item.quantity,
-    }))
-
-    console.log("[v0] Order items data:", JSON.stringify(orderItemsData, null, 2))
-
-    await db.insert(orderItems).values(orderItemsData)
-    console.log("[v0] Order items created successfully")
-
-    console.log("[v0] Order created:", order.id, "for user:", auth.user.uid)
 
     // Send Telegram notification to admin
     await sendTelegramNotification(order, items)
@@ -94,11 +73,11 @@ export async function POST(request: NextRequest) {
       success: true,
       order: {
         id: order.id,
-        orderNumber: order.orderNumber,
-        total: totalUSD,
+        total: totalCents / 100,
         status: "pending",
         items: items,
       },
+      tgDeepLink: deepLink,
       message: "Order created successfully. Complete payment via Telegram bot.",
     })
   } catch (error) {
@@ -111,7 +90,7 @@ export async function POST(request: NextRequest) {
 async function sendTelegramNotification(order: any, items: CartItem[]) {
   try {
     const botToken = process.env.TELEGRAM_BOT_TOKEN
-    const adminId = process.env.TELEGRAM_ADMIN_ID
+    const adminId = process.env.TELEGRAM_ADMIN_CHAT_ID
 
     if (!botToken || !adminId) {
       console.log("[v0] Telegram notification skipped - missing bot token or admin ID")
@@ -124,18 +103,15 @@ async function sendTelegramNotification(order: any, items: CartItem[]) {
 
     const message = `🔔 **NEW ORDER CREATED**
 
-**Order ID:** \`${order.orderNumber}\`
-**Total:** $${Number(order.totalAmount).toFixed(2)}
+**Order ID:** \`${order.id}\`
+**Total:** $${(order.totalCents / 100).toFixed(2)}
 **Status:** ${order.status.toUpperCase()}
 **Created:** ${new Date().toLocaleString()}
 
 **Items:**
 ${itemsText}
 
-**Customer:**
-• Email: ${order.customerEmail}
-
-Use /order ${order.orderNumber} in the bot to manage this order.`
+Use /order ${order.id} in the bot to manage this order.`
 
     const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`
 

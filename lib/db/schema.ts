@@ -59,6 +59,24 @@ export const variants = pgTable("variants", {
   createdAt: timestamp("created_at").defaultNow(),
 })
 
+export const orders = pgTable("orders", {
+  id: text("id").primaryKey(), // e.g. ord_<hex>
+  userId: text("user_id").notNull(), // fk to users.id (text)
+  items: jsonb("items").notNull(), // [{productId, qty, price_cents}]
+  totalCents: integer("total_cents").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  status: text("status").notNull().default("pending"), // pending|sent|paid|failed|cancelled
+  tgDeeplink: text("tg_deeplink"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+})
+
+export const telegramLinks = pgTable("telegram_links", {
+  userId: text("user_id").primaryKey(),
+  telegramUserId: text("telegram_user_id").notNull(),
+  telegramUsername: text("telegram_username"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+})
+
 export const listings = pgTable("listings", {
   id: uuid("id").primaryKey().defaultRandom(),
   productId: uuid("product_id").references(() => products.id),
@@ -70,39 +88,6 @@ export const listings = pgTable("listings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 })
 
-export const orderItems = pgTable("order_items", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }),
-  productId: text("product_id").notNull(),
-  productName: text("product_name").notNull(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  quantity: integer("quantity").default(1),
-  createdAt: timestamp("created_at").defaultNow(),
-})
-
-export const orders = pgTable("orders", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id),
-  orderNumber: text("order_number").notNull().unique(),
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  status: text("status").default("pending"),
-  customerName: text("customer_name").default(""),
-  customerEmail: text("customer_email").default(""),
-  customerContact: text("customer_contact").default(""),
-  btcpayInvoiceId: text("btcpay_invoice_id"),
-  expiresAt: timestamp("expires_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-})
-
-export const events = pgTable("events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  orderId: uuid("order_id").references(() => orders.id),
-  kind: text("kind").notNull(),
-  data: jsonb("data"),
-  createdAt: timestamp("created_at").defaultNow(),
-})
-
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(),
   userId: uuid("user_id")
@@ -111,15 +96,23 @@ export const sessions = pgTable("sessions", {
   expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
 })
 
-// User roles and order status enums
-export const userRoles = ["user", "admin"] as const
-export type UserRole = (typeof userRoles)[number]
+export const orderItems = pgTable("order_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: text("order_id").references(() => orders.id, { onDelete: "cascade" }),
+  productId: text("product_id").notNull(),
+  productName: text("product_name").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  quantity: integer("quantity").default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+})
 
-export const orderStatuses = ["pending", "paid", "confirmed", "cancelled"] as const
-export type OrderStatus = (typeof orderStatuses)[number]
-
-export const rarityTypes = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"] as const
-export type RarityType = (typeof rarityTypes)[number]
+export const events = pgTable("events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: text("order_id").references(() => orders.id),
+  kind: text("kind").notNull(),
+  data: jsonb("data"),
+  createdAt: timestamp("created_at").defaultNow(),
+})
 
 export const apiKeys = pgTable("api_keys", {
   id: text("id").primaryKey(),
@@ -161,6 +154,15 @@ export const rateLimits = pgTable("rate_limits", {
   resetTime: timestamp("reset_time").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 })
+
+export const orderStatuses = ["pending", "sent", "paid", "failed", "cancelled"] as const
+export type OrderStatus = (typeof orderStatuses)[number]
+
+export const userRoles = ["user", "admin"] as const
+export type UserRole = (typeof userRoles)[number]
+
+export const rarityTypes = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"] as const
+export type RarityType = (typeof rarityTypes)[number]
 
 export const securityEventTypes = [
   "login_success",

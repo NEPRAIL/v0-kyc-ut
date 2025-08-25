@@ -1,24 +1,23 @@
 import { NextResponse } from "next/server"
-import { validateRequest } from "@/lib/auth/lucia"
+import { verifySession } from "@/lib/security"
 
-export async function GET() {
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
+export async function GET(req: Request) {
   try {
-    const { user } = await validateRequest()
+    const cookie = (req.headers.get("cookie") || "")
+      .split(";")
+      .map((x) => x.trim())
+      .find((x) => x.startsWith("session="))
+      ?.split("=")[1]
 
-    if (!user) {
-      return NextResponse.json({ user: null })
-    }
+    const session = cookie ? await verifySession(cookie) : null
 
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        totpSecret: user.totpSecret,
-      },
-    })
-  } catch (error) {
-    console.error("Get user error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    const res = NextResponse.json({ authenticated: !!session, uid: session?.uid ?? null })
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")
+    return res
+  } catch (e) {
+    return NextResponse.json({ authenticated: false }, { status: 200 })
   }
 }
