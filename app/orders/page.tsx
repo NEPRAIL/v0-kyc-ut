@@ -56,10 +56,19 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch("/api/orders/user")
+      console.log("[v0] Fetching orders from /api/orders/user")
+      const response = await fetch("/api/orders/user", {
+        credentials: "include",
+      })
+      console.log("[v0] Orders API response status:", response.status)
+
       if (response.ok) {
         const data = await response.json()
+        console.log("[v0] Orders API response data:", data)
         setOrders(data.orders || [])
+      } else {
+        const errorText = await response.text()
+        console.error("[v0] Orders API error:", response.status, errorText)
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error)

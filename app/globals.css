@@ -4,41 +4,41 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Default dark-navy theme */
-  --background: #0a0b1e;
+  /* Professional E-commerce Dashboard Theme */
+  --background: #1a1a1a;
   --foreground: #ffffff;
-  --card: #1a1b2e;
+  --card: #2c2c2c;
   --card-foreground: #ffffff;
-  --popover: #1a1b2e;
+  --popover: #374151;
   --popover-foreground: #ffffff;
-  --primary: #3b82f6;
+  --primary: #059669;
   --primary-foreground: #ffffff;
-  --secondary: #374151;
+  --secondary: #10b981;
   --secondary-foreground: #ffffff;
-  --muted: #374151;
-  --muted-foreground: #9ca3af;
-  --accent: #3b82f6;
+  --muted: #4b5563;
+  --muted-foreground: #ffffff;
+  --accent: #10b981;
   --accent-foreground: #ffffff;
-  --destructive: #ef4444;
+  --destructive: #e53e3e;
   --destructive-foreground: #ffffff;
   --border: #374151;
-  --input: #1a1b2e;
-  --ring: rgba(59, 130, 246, 0.5);
-  --chart-1: #3b82f6;
-  --chart-2: #10b981;
-  --chart-3: #f59e0b;
-  --chart-4: #ef4444;
-  --chart-5: #8b5cf6;
+  --input: #2c2c2c;
+  --ring: #10b981;
+  --chart-1: #059669;
+  --chart-2: #d97706;
+  --chart-3: #a16207;
+  --chart-4: #4b5563;
+  --chart-5: #10b981;
   --radius: 0.5rem;
-  --sidebar: #0a0b1e;
+  --sidebar: #2c2c2c;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #3b82f6;
+  --sidebar-primary: #059669;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #374151;
+  --sidebar-accent: #10b981;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #374151;
-  --sidebar-ring: rgba(59, 130, 246, 0.5);
-  --font-inter: "Inter", sans-serif;
+  --sidebar-ring: #10b981;
+  --font-inter: "DM Sans", "Inter", sans-serif;
 }
 
 [data-theme="dark-navy"] {

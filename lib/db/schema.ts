@@ -77,6 +77,14 @@ export const telegramLinks = pgTable("telegram_links", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 })
 
+export const telegramLinkingCodes = pgTable("telegram_linking_codes", {
+  code: text("code").primaryKey(), // 8-character alphanumeric code
+  userId: text("user_id").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+})
+
 export const listings = pgTable("listings", {
   id: uuid("id").primaryKey().defaultRandom(),
   productId: uuid("product_id").references(() => products.id),
