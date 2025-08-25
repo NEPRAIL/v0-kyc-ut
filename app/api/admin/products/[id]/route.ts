@@ -8,9 +8,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   try {
     await requireAdmin()
 
-    const productId = Number.parseInt(params.id)
+    const productId = params.id
     const data = await request.json()
-    const { name, slug, description, imageUrl, seasonId, rarityId, redeemable, series } = data
+    const { name, slug, description, imageUrl, seasonId, rarityId } = data
 
     if (!name || !slug) {
       return NextResponse.json({ error: "Name and slug are required" }, { status: 400 })
@@ -25,8 +25,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         imageUrl: imageUrl || null,
         seasonId: seasonId || null,
         rarityId: rarityId || null,
-        redeemable: redeemable || false,
-        series: series || null,
       })
       .where(eq(products.id, productId))
       .returning()
@@ -42,7 +40,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   try {
     await requireAdmin()
 
-    const productId = Number.parseInt(params.id)
+    const productId = params.id
 
     await db.delete(products).where(eq(products.id, productId))
 
