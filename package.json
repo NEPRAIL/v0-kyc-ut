@@ -74,6 +74,7 @@
     "expo-sqlite": "latest",
     "geist": "latest",
     "gel": "latest",
+    "https": "latest",
     "input-otp": "1.4.1",
     "knex": "latest",
     "kysely": "latest",

@@ -32,7 +32,11 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        console.log("[v0] Attempting login with:", { emailOrUsername: formData.email })
+        console.log("[v0] Attempting login with:", {
+          emailOrUsername: formData.email,
+          password: formData.password ? "***PROVIDED***" : "***MISSING***",
+          passwordLength: formData.password.length,
+        })
 
         const response = await fetch("/api/auth/login", {
           method: "POST",
