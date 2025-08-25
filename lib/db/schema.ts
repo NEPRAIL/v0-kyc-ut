@@ -49,6 +49,8 @@ export const products = pgTable("products", {
   imageUrl: text("image_url"),
   seasonId: uuid("season_id").references(() => seasons.id),
   rarityId: uuid("rarity_id").references(() => rarities.id),
+  redeemable: boolean("redeemable").default(false), // Added missing redeemable and series columns
+  series: text("series"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
