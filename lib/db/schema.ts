@@ -72,7 +72,7 @@ export const listings = pgTable("listings", {
 
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: text("user_id").references(() => users.id),
+  userId: uuid("user_id").references(() => users.id),
   listingId: uuid("listing_id").references(() => listings.id),
   quantity: integer("quantity").default(1),
   totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
@@ -92,7 +92,7 @@ export const events = pgTable("events", {
 
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(),
-  userId: text("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id),
   expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
@@ -110,7 +110,7 @@ export type RarityType = (typeof rarityTypes)[number]
 
 export const apiKeys = pgTable("api_keys", {
   id: text("id").primaryKey(),
-  userId: text("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id),
   keyHash: text("key_hash").notNull(),
@@ -123,7 +123,7 @@ export const apiKeys = pgTable("api_keys", {
 
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: text("id").primaryKey(),
-  userId: text("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id),
   token: text("token").notNull().unique(),
@@ -133,7 +133,7 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
 
 export const securityEvents = pgTable("security_events", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: text("user_id").references(() => users.id),
+  userId: uuid("user_id").references(() => users.id),
   eventType: text("event_type").notNull(),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),

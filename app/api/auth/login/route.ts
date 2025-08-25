@@ -71,15 +71,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    console.log(
-      "[v0] User found - id:",
-      (user as any).id,
-      "username:",
-      (user as any).username,
-      "email:",
-      (user as any).email,
-    )
-    const hash: unknown = (user as any).password_hash
+    console.log("[v0] User found - id:", user.id, "username:", user.username, "email:", user.email)
+    const hash = user.passwordHash
     console.log(
       "[v0] Password hash exists:",
       !!hash,
@@ -111,13 +104,13 @@ export async function POST(req: Request) {
     }
 
     console.log("[v0] Password verified successfully, creating session...")
-    const cookieVal = signCookie((user as any).id)
+    const cookieVal = signCookie(user.id)
     if (!cookieVal) {
       console.log("[v0] Failed to sign cookie - SESSION_SECRET issue")
       return NextResponse.json({ error: "Server misconfigured: SESSION_SECRET missing/short" }, { status: 500 })
     }
 
-    console.log("[v0] Login successful for user:", (user as any).id)
+    console.log("[v0] Login successful for user:", user.id)
     const res = NextResponse.json({ success: true })
     res.cookies.set("session", cookieVal, {
       httpOnly: true,
