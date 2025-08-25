@@ -29,6 +29,7 @@ export function CheckoutForm() {
       const response = await fetch("/api/orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ items: state.items }),
       })
 
@@ -37,18 +38,16 @@ export function CheckoutForm() {
       if (response.ok) {
         clearCart()
         toast({
-          title: "Orders created",
-          description: "Your orders have been created. Redirecting to payment...",
+          title: "Order created successfully!",
+          description: "Your order has been created. You can view it in your account page.",
         })
 
-        // Redirect to first order's payment page
-        if (data.orders && data.orders.length > 0) {
-          router.push(`/orders/${data.orders[0].id}`)
-        }
+        router.push("/account")
       } else {
-        setError(data.error || "Failed to create orders")
+        setError(data.error || "Failed to create order")
       }
     } catch (error) {
+      console.error("[v0] Checkout error:", error)
       setError("Network error. Please try again.")
     } finally {
       setLoading(false)
@@ -109,7 +108,7 @@ export function CheckoutForm() {
             </div>
             <div>
               <p className="font-medium">Bitcoin (BTC)</p>
-              <p className="text-sm text-muted-foreground">Secure cryptocurrency payment</p>
+              <p className="text-sm text-muted-foreground">Secure cryptocurrency payment via Telegram bot</p>
             </div>
           </div>
         </CardContent>
@@ -122,7 +121,7 @@ export function CheckoutForm() {
       )}
 
       <Button onClick={handleCheckout} disabled={loading} className="w-full" size="lg">
-        {loading ? "Creating Orders..." : `Pay ${state.total.toFixed(2)} USD with Bitcoin`}
+        {loading ? "Creating Order..." : `Create Order - ${state.total.toFixed(2)} USD`}
       </Button>
     </div>
   )

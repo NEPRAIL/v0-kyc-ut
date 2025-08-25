@@ -570,7 +570,7 @@ Please process this order and contact the customer.
             url = urljoin(WEBSITE_URL, '/api/auth/login')
             
             payload = {
-                'emailOrUsername': username,  # Changed from 'username' to 'emailOrUsername'
+                'emailOrUsername': username,
                 'password': password
             }
             
@@ -584,21 +584,21 @@ Please process this order and contact the customer.
             
             if response.status_code == 200:
                 data = response.json()
-                if data.get('success'):
-                    return {
-                        'success': True,
-                        'user_data': data.get('user', {}),
-                        'session_token': data.get('sessionToken')  # Updated field name
-                    }
-                else:
-                    return {
-                        'success': False,
-                        'error': data.get('message', 'Authentication failed')
-                    }
+                return {
+                    'success': True,
+                    'user_data': data.get('user', {}),
+                    'session_token': response.cookies.get('session')  # Get session from cookies
+                }
             elif response.status_code == 401:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('error', 'Invalid credentials')
+                except:
+                    error_msg = 'Invalid credentials. Please check your username/email and password.'
+                
                 return {
                     'success': False,
-                    'error': 'Invalid credentials. Please check your username/email and password.'
+                    'error': error_msg
                 }
             elif response.status_code == 429:
                 return {
@@ -625,7 +625,7 @@ Please process this order and contact the customer.
             url = urljoin(WEBSITE_URL, f'/api/orders/user')
             
             headers = {
-                'Cookie': f'session={session_token}',  # Updated to use cookie-based auth
+                'Cookie': f'session={session_token}',
                 'X-Webhook-Secret': WEBHOOK_SECRET,
                 'User-Agent': 'KYCut-Bot/1.0'
             }
@@ -682,7 +682,7 @@ Please process this order and contact the customer.
             
             headers = {
                 'Content-Type': 'application/json',
-                'Cookie': f'session={session_token}',  # Updated to use cookie-based auth
+                'Cookie': f'session={session_token}',
                 'X-Webhook-Secret': WEBHOOK_SECRET,
                 'User-Agent': 'KYCut-Bot/1.0'
             }

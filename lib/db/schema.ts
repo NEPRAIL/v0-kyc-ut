@@ -70,14 +70,27 @@ export const listings = pgTable("listings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 })
 
+export const orderItems = pgTable("order_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }),
+  productId: text("product_id").notNull(),
+  productName: text("product_name").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  quantity: integer("quantity").default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+})
+
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").references(() => users.id),
-  listingId: uuid("listing_id").references(() => listings.id),
-  quantity: integer("quantity").default(1),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
+  orderNumber: text("order_number").notNull().unique(),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   status: text("status").default("pending"),
-  metadata: jsonb("metadata"),
+  customerName: text("customer_name").default(""),
+  customerEmail: text("customer_email").default(""),
+  customerContact: text("customer_contact").default(""),
+  btcpayInvoiceId: text("btcpay_invoice_id"),
+  expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 })

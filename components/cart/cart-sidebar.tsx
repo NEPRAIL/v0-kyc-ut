@@ -6,16 +6,16 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { ShoppingCart, Plus, Minus, Trash2, CreditCard } from "lucide-react"
 import { ProductImage } from "@/components/product-image"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 export function CartSidebar() {
   const { state, removeItem, updateQuantity, clearCart } = useCart()
   const [isOpen, setIsOpen] = useState(false)
+  const router = useRouter()
 
   const handleCheckout = () => {
-    // Basic checkout simulation
-    alert(`Checkout initiated for ${state.itemCount} items totaling $${state.total.toFixed(2)}`)
-    clearCart()
     setIsOpen(false)
+    router.push("/checkout")
   }
 
   return (

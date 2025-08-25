@@ -6,21 +6,22 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
+interface OrderItem {
+  id: string
+  product_name: string
+  product_id: string
+  quantity: number
+  product_price: number
+}
+
 interface Order {
   id: string
   order_number: string
-  customer_name: string
-  customer_email: string
-  customer_telegram?: string
   total_amount: number
   status: string
+  payment_status?: string
   created_at: string
-  items: Array<{
-    id: string
-    name: string
-    price: number
-    quantity: number
-  }>
+  items: OrderItem[]
 }
 
 export function OrderHistory() {
@@ -33,7 +34,9 @@ export function OrderHistory() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch("/api/orders")
+      const response = await fetch("/api/orders/user", {
+        credentials: "include",
+      })
       if (response.ok) {
         const data = await response.json()
         setOrders(data.orders || [])
@@ -47,12 +50,11 @@ export function OrderHistory() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed":
-        return "default"
       case "confirmed":
-        return "secondary"
+      case "delivered":
+        return "default"
       case "pending":
-        return "outline"
+        return "secondary"
       case "cancelled":
         return "destructive"
       default:
@@ -89,8 +91,11 @@ export function OrderHistory() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Order History</CardTitle>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/orders">View All</Link>
+        </Button>
       </CardHeader>
       <CardContent>
         {orders.length === 0 ? (
@@ -102,7 +107,7 @@ export function OrderHistory() {
           </div>
         ) : (
           <div className="space-y-4">
-            {orders.map((order) => (
+            {orders.slice(0, 5).map((order) => (
               <div key={order.id} className="flex items-center gap-4 p-4 border rounded-lg">
                 <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
                   <span className="text-xs font-medium">
@@ -112,7 +117,9 @@ export function OrderHistory() {
 
                 <div className="flex-1">
                   <h3 className="font-medium">Order #{order.order_number}</h3>
-                  <p className="text-sm text-muted-foreground">{order.items.map((item) => item.name).join(", ")}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {order.items.map((item) => item.product_name).join(", ")}
+                  </p>
                   <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
                 </div>
 
@@ -123,7 +130,7 @@ export function OrderHistory() {
                 <Badge variant={getStatusColor(order.status)}>{order.status}</Badge>
 
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/orders/${order.order_number}/telegram`}>View</Link>
+                  <Link href={`/orders/${order.order_number}`}>View</Link>
                 </Button>
               </div>
             ))}

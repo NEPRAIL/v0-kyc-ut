@@ -1,46 +1,51 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { requireAuth } from "@/lib/auth/middleware"
-import { neon } from "@neondatabase/serverless"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { getDb } from "@/lib/db"
+import { orders, orderItems } from "@/lib/db/schema"
+import { eq, and } from "drizzle-orm"
+import { getServerAuth } from "@/lib/auth/middleware"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { user } = await requireAuth(request)
+    const auth = await getServerAuth()
+    if (!auth) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
+
     const orderId = params.id
+    const db = getDb()
 
-    const result = await sql`
-      SELECT o.*, oi.product_name, oi.price, oi.quantity
-      FROM orders o
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      WHERE o.id = ${orderId} AND o.user_id = ${user.id}
-    `
+    // Get order details
+    const [order] = await db
+      .select()
+      .from(orders)
+      .where(and(eq(orders.id, orderId), eq(orders.userId, auth.user.uid)))
+      .limit(1)
 
-    if (result.length === 0) {
+    if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
     }
 
-    const order = result[0]
-    const items = result.map((row) => ({
-      product_name: row.product_name,
-      price: row.price,
-      quantity: row.quantity,
-    }))
+    // Get order items
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id))
 
     return NextResponse.json({
       id: order.id,
-      order_number: order.order_number,
+      order_number: order.orderNumber,
       status: order.status,
-      total_amount: order.total_amount,
-      customer_name: order.customer_name,
-      customer_email: order.customer_email,
-      customer_contact: order.customer_contact,
-      items: items,
-      created_at: order.created_at,
-      expires_at: order.expires_at,
+      total_amount: Number(order.totalAmount),
+      customer_name: order.customerName,
+      customer_email: order.customerEmail,
+      customer_contact: order.customerContact,
+      items: items.map((item) => ({
+        product_name: item.productName,
+        price: Number(item.price),
+        quantity: item.quantity,
+      })),
+      created_at: order.createdAt,
+      expires_at: order.expiresAt,
     })
   } catch (error) {
-    console.error("Order status check error:", error)
+    console.error("[v0] Order status check error:", error)
     return NextResponse.json({ error: "Failed to check order status" }, { status: 500 })
   }
 }
@@ -50,24 +55,36 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const orderId = params.id
     const { status } = await request.json()
 
-    // Update order status
-    const result = await sql`
-      UPDATE orders 
-      SET status = ${status}, updated_at = NOW()
-      WHERE id = ${orderId}
-      RETURNING *
-    `
+    const db = getDb()
 
-    if (result.length === 0) {
+    // Update order status
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId))
+      .returning()
+
+    if (!updatedOrder) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
     }
 
+    console.log("[v0] Order status updated:", orderId, "->", status)
+
     return NextResponse.json({
       success: true,
-      order: result[0],
+      order: {
+        id: updatedOrder.id,
+        order_number: updatedOrder.orderNumber,
+        status: updatedOrder.status,
+        total_amount: Number(updatedOrder.totalAmount),
+        updated_at: updatedOrder.updatedAt,
+      },
     })
   } catch (error) {
-    console.error("Order status update error:", error)
+    console.error("[v0] Order status update error:", error)
     return NextResponse.json({ error: "Failed to update order status" }, { status: 500 })
   }
 }

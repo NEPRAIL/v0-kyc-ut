@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    const passwordValid = await bcrypt.compare(password, user.password_hash)
+    const passwordValid = await bcrypt.compare(password, user.passwordHash)
     if (!passwordValid) {
       console.log("[v0] Telegram auth failed - invalid password")
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
         id: user.id,
         username: user.username,
         email: user.email,
-        name: user.name || user.username,
+        name: user.username,
       },
     })
   } catch (error) {

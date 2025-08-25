@@ -1,45 +1,66 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
-import { requireAuth } from "@/lib/auth/middleware"
+import { getDb } from "@/lib/db"
+import { orders, orderItems } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
+import { getServerAuth } from "@/lib/auth/middleware"
 
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await requireAuth()
+    const auth = await getServerAuth()
+    if (!auth) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
 
-    const sql = neon(process.env.DATABASE_URL!)
+    const db = getDb()
 
-    const orders = await sql`
-      SELECT 
-        o.id,
-        o.order_number,
-        o.total_amount,
-        o.status,
-        o.payment_status,
-        o.created_at,
-        o.updated_at,
-        o.notes,
-        json_agg(
-          json_build_object(
-            'id', oi.id,
-            'product_name', oi.product_name,
-            'product_id', oi.product_id,
-            'quantity', oi.quantity,
-            'product_price', oi.product_price
-          )
-        ) as items
-      FROM orders o
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      WHERE o.user_id = ${user.id}
-      GROUP BY o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.created_at, o.updated_at, o.notes
-      ORDER BY o.created_at DESC
-    `
+    // Get user orders with items
+    const userOrders = await db
+      .select({
+        id: orders.id,
+        order_number: orders.orderNumber,
+        total_amount: orders.totalAmount,
+        status: orders.status,
+        customer_name: orders.customerName,
+        customer_email: orders.customerEmail,
+        created_at: orders.createdAt,
+        updated_at: orders.updatedAt,
+      })
+      .from(orders)
+      .where(eq(orders.userId, auth.user.uid))
+      .orderBy(orders.createdAt)
+
+    // Get items for each order
+    const ordersWithItems = await Promise.all(
+      userOrders.map(async (order) => {
+        const items = await db
+          .select({
+            id: orderItems.id,
+            product_name: orderItems.productName,
+            product_id: orderItems.productId,
+            quantity: orderItems.quantity,
+            product_price: orderItems.price,
+          })
+          .from(orderItems)
+          .where(eq(orderItems.orderId, order.id))
+
+        return {
+          ...order,
+          total_amount: Number(order.total_amount),
+          payment_status: "pending", // Default for compatibility
+          notes: "", // Default for compatibility
+          items,
+        }
+      }),
+    )
+
+    console.log("[v0] Fetched", ordersWithItems.length, "orders for user:", auth.user.uid)
 
     return NextResponse.json({
       success: true,
-      orders: orders || [],
+      orders: ordersWithItems,
     })
   } catch (error) {
-    console.error("Failed to fetch user orders:", error)
+    console.error("[v0] Failed to fetch user orders:", error)
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
   }
 }

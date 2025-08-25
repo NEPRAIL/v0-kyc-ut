@@ -43,6 +43,7 @@ export default function LoginPage() {
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({
             emailOrUsername: formData.email, // Can be email or username
             password: formData.password,
@@ -68,7 +69,7 @@ export default function LoginPage() {
 
         if (data.success) {
           toast.success("Login successful!")
-          router.push("/account")
+          window.location.href = "/account"
         } else {
           toast.error(data.error || "Login failed")
         }
@@ -98,6 +99,7 @@ export default function LoginPage() {
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({
             username: formData.username,
             email: formData.email,
@@ -119,7 +121,7 @@ export default function LoginPage() {
 
         if (data.success) {
           toast.success("Account created successfully!")
-          router.push("/welcome")
+          window.location.href = "/welcome"
         } else {
           toast.error(data.error || "Registration failed")
         }
