@@ -14,39 +14,62 @@ interface CartItem {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[v0] Order creation started")
+
     const auth = await getServerAuth()
+    console.log("[v0] Auth result:", auth ? { hasUser: !!auth.user, uid: auth.user?.uid } : "No auth")
+
     if (!auth) {
+      console.log("[v0] Authentication failed - no auth object")
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
-    const { items }: { items: CartItem[] } = await request.json()
+    const body = await request.json()
+    console.log("[v0] Request body:", JSON.stringify(body, null, 2))
+
+    const { items }: { items: CartItem[] } = body
 
     if (!items || items.length === 0) {
+      console.log("[v0] Cart is empty")
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
     }
 
     // Calculate total amount
     const totalUSD = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    console.log("[v0] Total amount calculated:", totalUSD)
 
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+    console.log("[v0] Generated order number:", orderNumber)
 
     const db = getDb()
+    console.log("[v0] Database connection obtained")
+
+    const userId = auth.user.uid
+    console.log("[v0] User ID from auth:", userId, "Type:", typeof userId)
+
+    if (!userId) {
+      console.log("[v0] User ID is missing from auth")
+      return NextResponse.json({ error: "User ID missing from session" }, { status: 401 })
+    }
 
     // Create order record
-    const [order] = await db
-      .insert(orders)
-      .values({
-        userId: auth.user.uid,
-        orderNumber,
-        totalAmount: totalUSD,
-        status: "pending",
-        customerName: "",
-        customerEmail: "", // Removed auth.user.email since session only contains uid
-        customerContact: "",
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        createdAt: new Date(),
-      })
-      .returning()
+    const orderData = {
+      userId: userId,
+      orderNumber,
+      totalAmount: totalUSD,
+      status: "pending",
+      customerName: "",
+      customerEmail: "",
+      customerContact: "",
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      createdAt: new Date(),
+    }
+
+    console.log("[v0] Order data to insert:", JSON.stringify(orderData, null, 2))
+
+    const [order] = await db.insert(orders).values(orderData).returning()
+
+    console.log("[v0] Order created successfully:", order.id)
 
     // Create order items
     const orderItemsData = items.map((item) => ({
@@ -57,7 +80,10 @@ export async function POST(request: NextRequest) {
       quantity: item.quantity,
     }))
 
+    console.log("[v0] Order items data:", JSON.stringify(orderItemsData, null, 2))
+
     await db.insert(orderItems).values(orderItemsData)
+    console.log("[v0] Order items created successfully")
 
     console.log("[v0] Order created:", order.id, "for user:", auth.user.uid)
 
@@ -77,6 +103,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] Order creation error:", error)
+    console.error("[v0] Error stack:", error instanceof Error ? error.stack : "No stack trace")
     return NextResponse.json({ error: "Failed to create order" }, { status: 500 })
   }
 }
