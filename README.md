@@ -28,3 +28,15 @@ Continue building your app on:
 2. Deploy your chats from the v0 interface
 3. Changes are automatically pushed to this repository
 4. Vercel deploys the latest version from this repository
+
+### Update a user password (CLI)
+
+\`\`\`bash
+# username
+DATABASE_URL=... npm run pw:update:username --silent
+# email
+DATABASE_URL=... npm run pw:update:email --silent
+
+# Or manual:
+node scripts/update-password.js --username=TEST --password=StrongPass123
+node scripts/update-password.js --email=usr@mail.com --hash=$2b$12$...

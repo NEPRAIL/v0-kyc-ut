@@ -28,7 +28,7 @@ importers:
         version: 0.15.12
       '@lucia-auth/adapter-drizzle':
         specifier: latest
-        version: 1.1.0(drizzle-orm@0.44.4(1374991bd24dc5098335ed3fcab31c20))(lucia@3.2.2)
+        version: 1.1.0(drizzle-orm@0.44.4(8803ea22db5f9806860daed7b82a1a4a))(lucia@3.2.2)
       '@neondatabase/serverless':
         specifier: latest
         version: 1.0.1
@@ -184,7 +184,7 @@ importers:
         version: 4.1.0
       drizzle-orm:
         specifier: latest
-        version: 0.44.4(1374991bd24dc5098335ed3fcab31c20)
+        version: 0.44.4(8803ea22db5f9806860daed7b82a1a4a)
       embla-carousel-react:
         specifier: 8.5.1
         version: 8.5.1(react@19.0.0)
@@ -205,7 +205,7 @@ importers:
         version: 1.4.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       knex:
         specifier: latest
-        version: 3.1.0(better-sqlite3@12.2.0)(mysql2@3.14.3)(pg@8.16.3)(sqlite3@5.1.7)
+        version: 3.1.0(better-sqlite3@12.2.0)(mysql2@3.14.3)(pg-native@3.5.2)(pg@8.16.3(pg-native@3.5.2))(sqlite3@5.1.7)
       kysely:
         specifier: latest
         version: 0.28.5
@@ -229,7 +229,10 @@ importers:
         version: 1.2.1
       pg:
         specifier: latest
-        version: 8.16.3
+        version: 8.16.3(pg-native@3.5.2)
+      pg-native:
+        specifier: latest
+        version: 3.5.2
       postgres:
         specifier: latest
         version: 3.4.7
@@ -4415,6 +4418,9 @@ packages:
     resolution: {integrity: sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A==}
     engines: {node: '>=6'}
 
+  libpq@1.8.15:
+    resolution: {integrity: sha512-4lSWmly2Nsj3LaTxxtFmJWuP3Kx+0hYHEd+aNrcXEWT0nKWaPd9/QZPiMkkC680zeALFGHQdQWjBvnilL+vgWA==}
+
   libsql@0.5.17:
     resolution: {integrity: sha512-RRlj5XQI9+Wq+/5UY8EnugSWfRmHEw4hn3DKlPrkUgZONsge1PwTtHcpStP6MSNi8ohcbsRgEHJaymA33a8cBw==}
     cpu: [x64, arm64, wasm32, arm]
@@ -4805,6 +4811,9 @@ packages:
     resolution: {integrity: sha512-eLoBxg6wE/rZkJPhU/xRX1WTpkFEwDJEN96oxFrTsqBdbT5ec295Q+CoHrL9IT0DipqKhmGcaZmwOt8OON5x1w==}
     engines: {node: '>=12.0.0'}
 
+  nan@2.22.2:
+    resolution: {integrity: sha512-DANghxFkS1plDdRsX0X9pm0Z6SJNN6gBdtXfanwoZ8hooC5gosGFSBGRYHUVPz1asKA/kMRqDRdHrluZ61SpBQ==}
+
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
@@ -5027,6 +5036,9 @@ packages:
   pg-int8@1.0.1:
     resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
     engines: {node: '>=4.0.0'}
+
+  pg-native@3.5.2:
+    resolution: {integrity: sha512-3oi+KVil86Vngo4H0IlhBaYSJWdcu8t2f1Y4TkQoQi5oZ9bNeYECGqW3oSGx69mjSZYHoC3h+3jYtqzRgndn5A==}
 
   pg-numeric@1.0.2:
     resolution: {integrity: sha512-BM/Thnrw5jm2kKLE5uJkXqqExRUY/toLHda65XgFTBTFYZyopbKjBe29Ii3RbkvlsMoFwD+tHeGaCjjv0gHlyw==}
@@ -7566,9 +7578,9 @@ snapshots:
   '@libsql/win32-x64-msvc@0.5.17':
     optional: true
 
-  '@lucia-auth/adapter-drizzle@1.1.0(drizzle-orm@0.44.4(1374991bd24dc5098335ed3fcab31c20))(lucia@3.2.2)':
+  '@lucia-auth/adapter-drizzle@1.1.0(drizzle-orm@0.44.4(8803ea22db5f9806860daed7b82a1a4a))(lucia@3.2.2)':
     dependencies:
-      drizzle-orm: 0.44.4(1374991bd24dc5098335ed3fcab31c20)
+      drizzle-orm: 0.44.4(8803ea22db5f9806860daed7b82a1a4a)
       lucia: 3.2.2
 
   '@neon-rs/load@0.0.4': {}
@@ -10079,7 +10091,7 @@ snapshots:
 
   dotenv@16.4.7: {}
 
-  drizzle-orm@0.44.4(1374991bd24dc5098335ed3fcab31c20):
+  drizzle-orm@0.44.4(8803ea22db5f9806860daed7b82a1a4a):
     optionalDependencies:
       '@aws-sdk/client-rds-data': 3.873.0
       '@cloudflare/workers-types': 4.20250823.0
@@ -10102,10 +10114,10 @@ snapshots:
       bun-types: 1.2.20(@types/react@19.0.0)
       expo-sqlite: 15.2.14(expo@53.0.20(@babel/core@7.28.3)(bufferutil@4.0.9)(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0))(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
       gel: 2.1.1
-      knex: 3.1.0(better-sqlite3@12.2.0)(mysql2@3.14.3)(pg@8.16.3)(sqlite3@5.1.7)
+      knex: 3.1.0(better-sqlite3@12.2.0)(mysql2@3.14.3)(pg-native@3.5.2)(pg@8.16.3(pg-native@3.5.2))(sqlite3@5.1.7)
       kysely: 0.28.5
       mysql2: 3.14.3
-      pg: 8.16.3
+      pg: 8.16.3(pg-native@3.5.2)
       postgres: 3.4.7
       sql.js: 1.13.0
       sqlite3: 5.1.7
@@ -10723,7 +10735,7 @@ snapshots:
 
   kleur@3.0.3: {}
 
-  knex@3.1.0(better-sqlite3@12.2.0)(mysql2@3.14.3)(pg@8.16.3)(sqlite3@5.1.7):
+  knex@3.1.0(better-sqlite3@12.2.0)(mysql2@3.14.3)(pg-native@3.5.2)(pg@8.16.3(pg-native@3.5.2))(sqlite3@5.1.7):
     dependencies:
       colorette: 2.0.19
       commander: 10.0.1
@@ -10742,7 +10754,8 @@ snapshots:
     optionalDependencies:
       better-sqlite3: 12.2.0
       mysql2: 3.14.3
-      pg: 8.16.3
+      pg: 8.16.3(pg-native@3.5.2)
+      pg-native: 3.5.2
       sqlite3: 5.1.7
     transitivePeerDependencies:
       - supports-color
@@ -10752,6 +10765,11 @@ snapshots:
   lan-network@0.1.7: {}
 
   leven@3.1.0: {}
+
+  libpq@1.8.15:
+    dependencies:
+      bindings: 1.5.0
+      nan: 2.22.2
 
   libsql@0.5.17:
     dependencies:
@@ -11246,6 +11264,8 @@ snapshots:
     dependencies:
       lru-cache: 7.18.3
 
+  nan@2.22.2: {}
+
   nanoid@3.3.11: {}
 
   napi-build-utils@2.0.0: {}
@@ -11461,11 +11481,16 @@ snapshots:
 
   pg-int8@1.0.1: {}
 
+  pg-native@3.5.2:
+    dependencies:
+      libpq: 1.8.15
+      pg-types: 2.2.0
+
   pg-numeric@1.0.2: {}
 
-  pg-pool@3.10.1(pg@8.16.3):
+  pg-pool@3.10.1(pg@8.16.3(pg-native@3.5.2)):
     dependencies:
-      pg: 8.16.3
+      pg: 8.16.3(pg-native@3.5.2)
 
   pg-protocol@1.10.3: {}
 
@@ -11487,15 +11512,16 @@ snapshots:
       postgres-interval: 3.0.0
       postgres-range: 1.1.4
 
-  pg@8.16.3:
+  pg@8.16.3(pg-native@3.5.2):
     dependencies:
       pg-connection-string: 2.9.1
-      pg-pool: 3.10.1(pg@8.16.3)
+      pg-pool: 3.10.1(pg@8.16.3(pg-native@3.5.2))
       pg-protocol: 1.10.3
       pg-types: 2.2.0
       pgpass: 1.0.5
     optionalDependencies:
       pg-cloudflare: 1.2.7
+      pg-native: 3.5.2
 
   pgpass@1.0.5:
     dependencies:

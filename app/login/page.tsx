@@ -34,7 +34,7 @@ export default function LoginPage() {
       if (isLogin) {
         console.log("[v0] Attempting login with:", {
           emailOrUsername: formData.email,
-          password: formData.password ? "***PROVIDED***" : "***MISSING***",
+          password: "***PROVIDED***",
           passwordLength: formData.password.length,
         })
 
@@ -52,7 +52,12 @@ export default function LoginPage() {
         console.log("[v0] Login response status:", response.status)
 
         if (!response.ok) {
-          const errorData = await response.json()
+          let errorData
+          try {
+            errorData = await response.json()
+          } catch {
+            errorData = { error: `Server error (${response.status})` }
+          }
           console.error("[v0] Login error:", errorData)
           toast.error(errorData.error || "Login failed")
           return

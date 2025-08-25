@@ -8,6 +8,8 @@
     "fix:params": "tsx scripts/fix-next-async-params.ts",
     "lint": "next lint",
     "logos": "tsx scripts/fetch-logos.ts",
+    "pw:update:email": "node scripts/update-password.js --email=usr@mail.com --password=StrongPass123",
+    "pw:update:username": "node scripts/update-password.js --username=TEST --password=StrongPass123",
     "start": "next start"
   },
   "dependencies": {
@@ -85,6 +87,7 @@
     "next-themes": "latest",
     "oslo": "latest",
     "pg": "latest",
+    "pg-native": "latest",
     "postgres": "latest",
     "react": "^19",
     "react-day-picker": "9.8.0",

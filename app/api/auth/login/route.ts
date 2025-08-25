@@ -16,30 +16,28 @@ const schema = z.object({
 
 function signCookie(uid: string) {
   const secret = process.env.SESSION_SECRET || ""
-  if (!secret) return null
+  if (!secret || secret.length < 32) return null
+
   const exp = Math.floor(Date.now() / 1000) + 7 * 24 * 3600
   const payload = Buffer.from(JSON.stringify({ uid, exp })).toString("base64url")
-  const key = (() => {
-    try {
-      const b = Buffer.from(secret, "base64")
-      return b.length >= 32 ? b : Buffer.from(secret, "utf8")
-    } catch {
-      return Buffer.from(secret, "utf8")
-    }
-  })()
+
+  // accept base64 or utf8 secret
+  let key: Buffer
+  try {
+    const b = Buffer.from(secret, "base64")
+    key = b.length >= 32 ? b : Buffer.from(secret, "utf8")
+  } catch {
+    key = Buffer.from(secret, "utf8")
+  }
   const mac = crypto.createHmac("sha256", key).update(payload).digest("base64url")
   return `${payload}.${mac}`
 }
 
 export async function POST(req: Request) {
   try {
-    console.log("[v0] Login API called")
     const body = await req.json().catch(() => null)
-    console.log("[v0] Login request body:", body)
-
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
-      console.log("[v0] Login validation failed:", parsed.error.issues)
       return NextResponse.json(
         { error: "Invalid input", code: "VALIDATION_ERROR", issues: parsed.error.issues },
         { status: 400 },
@@ -47,52 +45,47 @@ export async function POST(req: Request) {
     }
 
     const { emailOrUsername, password } = parsed.data
-    console.log("[v0] Login attempt for:", emailOrUsername)
-
     const db = getDb()
 
-    // Normalize email lookups (case-insensitive)
+    // normalize email lookups if emails are stored lowercased
     const byEmail = emailOrUsername.includes("@")
     const lookupVal = byEmail ? emailOrUsername.toLowerCase() : emailOrUsername
-    console.log("[v0] Looking up by:", byEmail ? "email" : "username", "value:", lookupVal)
 
-    // If your emails are stored lowercased at signup:
     const rows = await db
       .select()
       .from(users)
       .where(byEmail ? eq(users.email, lookupVal) : eq(users.username, lookupVal))
       .limit(1)
 
-    console.log("[v0] Database query returned:", rows.length, "rows")
     const user = rows[0]
     if (!user) {
-      console.log("[v0] User not found for:", lookupVal)
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    console.log("[v0] User found:", {
-      id: (user as any).id,
-      email: (user as any).email,
-      username: (user as any).username,
-    })
-    console.log("[v0] Comparing password with hash")
+    const hash: unknown = (user as any).password_hash
 
-    const ok = await bcrypt.compare(password, (user as any).password_hash)
-    console.log("[v0] Password comparison result:", ok)
+    if (typeof hash !== "string" || !hash || !hash.startsWith("$2")) {
+      // not a bcrypt hash → treat as invalid credentials (never 500)
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    }
+
+    let ok = false
+    try {
+      ok = await bcrypt.compare(password, hash)
+    } catch (err) {
+      console.error("[login] bcrypt.compare failed", err)
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
+    }
 
     if (!ok) {
-      console.log("[v0] Password mismatch for user:", (user as any).email)
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    console.log("[v0] Authentication successful, creating session")
     const cookieVal = signCookie((user as any).id)
     if (!cookieVal) {
-      console.log("[v0] Failed to sign cookie - missing SESSION_SECRET")
-      return NextResponse.json({ error: "Server misconfigured: missing SESSION_SECRET" }, { status: 500 })
+      return NextResponse.json({ error: "Server misconfigured: SESSION_SECRET missing/short" }, { status: 500 })
     }
 
-    console.log("[v0] Login successful for user:", (user as any).email)
     const res = NextResponse.json({ success: true })
     res.cookies.set("session", cookieVal, {
       httpOnly: true,
@@ -103,7 +96,7 @@ export async function POST(req: Request) {
     })
     return res
   } catch (e) {
-    console.error("[v0] Login error:", e)
+    console.error("[login] unhandled error", e)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
