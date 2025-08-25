@@ -243,7 +243,9 @@ export default function OrdersPage() {
                               <span className="text-muted-foreground">
                                 {item.quantity}x {item.product_name}
                               </span>
-                              <span className="font-medium">${(item.product_price * item.quantity).toFixed(2)}</span>
+                              <span className="font-medium">
+                                ${((Number(item.product_price) || 0) * item.quantity).toFixed(2)}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -260,7 +262,7 @@ export default function OrdersPage() {
                       <div className="flex flex-col items-end gap-3">
                         <div className="text-right">
                           <p className="text-sm text-muted-foreground">Total</p>
-                          <p className="text-2xl font-bold">${order.total_amount.toFixed(2)}</p>
+                          <p className="text-2xl font-bold">${(Number(order.total_amount) || 0).toFixed(2)}</p>
                         </div>
                         <div className="flex gap-2">
                           <Button asChild variant="outline" size="sm">
