@@ -1,19 +1,19 @@
 import { pgTable, text, varchar, timestamp, boolean, numeric, jsonb, bigint, uuid } from "drizzle-orm/pg-core"
 
 export const users = pgTable("users", {
-  id: text("id").primaryKey(), // existing text id
+  id: uuid("id").primaryKey().defaultRandom(),
   username: varchar("username", { length: 64 }).notNull().unique(),
   email: varchar("email", { length: 256 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   role: varchar("role", { length: 16 }).default("user").notNull(),
-  telegramUserId: bigint("telegram_user_id", { mode: "number" }).nullable(), // Telegram numeric id
+  telegramUserId: bigint("telegram_user_id", { mode: "number" }).nullable(),
   telegramUsername: varchar("telegram_username", { length: 64 }).nullable(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
 export const linkingCodes = pgTable("linking_codes", {
   code: varchar("code", { length: 8 }).primaryKey(),
-  userId: text("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -23,7 +23,7 @@ export const linkingCodes = pgTable("linking_codes", {
 
 export const orders = pgTable("orders", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: text("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id),
   orderNumber: varchar("order_number", { length: 32 }).notNull().unique(),

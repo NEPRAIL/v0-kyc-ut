@@ -3,6 +3,18 @@ import { requireAdmin } from "@/lib/auth/middleware"
 import { db } from "@/lib/db"
 import { products, seasons, rarities } from "@/lib/db/schema"
 import { eq, like, sql } from "drizzle-orm"
+import { z } from "zod"
+
+const createProductSchema = z.object({
+  name: z.string().min(1),
+  slug: z.string().min(1),
+  description: z.union([z.string(), z.null()]).optional(),
+  imageUrl: z.union([z.string().url(), z.null()]).optional(),
+  seasonId: z.union([z.string().uuid(), z.null()]).optional(),
+  rarityId: z.union([z.string().uuid(), z.null()]).optional(),
+  redeemable: z.boolean().optional(),
+  series: z.union([z.string(), z.null()]).optional(),
+})
 
 export async function GET(request: NextRequest) {
   try {
@@ -70,11 +82,8 @@ export async function POST(request: NextRequest) {
     await requireAdmin()
 
     const data = await request.json()
-    const { name, slug, description, imageUrl, seasonId, rarityId, redeemable, series } = data
-
-    if (!name || !slug) {
-      return NextResponse.json({ error: "Name and slug are required" }, { status: 400 })
-    }
+    const validatedData = createProductSchema.parse(data)
+    const { name, slug, description, imageUrl, seasonId, rarityId, redeemable, series } = validatedData
 
     const [product] = await db
       .insert(products)
@@ -93,6 +102,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ product })
   } catch (error) {
     console.error("Create product error:", error)
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid request data", details: error.errors }, { status: 400 })
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
