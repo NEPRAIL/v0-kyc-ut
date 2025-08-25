@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Copy, RefreshCw, MessageCircle, ExternalLink, Clock } from "lucide-react"
+import { Copy, RefreshCw, MessageCircle, ExternalLink, Clock, Unlink } from "lucide-react"
 
 export function LogoutButton() {
   const router = useRouter()
@@ -177,5 +177,68 @@ export function GenerateLinkingCodeButton() {
         <p>• Code expires in 10 minutes for security</p>
       </div>
     </div>
+  )
+}
+
+export function UnlinkTelegramButton() {
+  const [loading, setLoading] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const router = useRouter()
+
+  const handleUnlink = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch("/api/telegram/unlink", {
+        method: "POST",
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        router.refresh()
+      } else {
+        console.error("Failed to unlink Telegram account")
+      }
+    } catch (error) {
+      console.error("Error unlinking Telegram:", error)
+    } finally {
+      setLoading(false)
+      setShowConfirm(false)
+    }
+  }
+
+  if (showConfirm) {
+    return (
+      <Card className="bg-destructive/10 border-destructive/20">
+        <CardContent className="p-4 space-y-4">
+          <div className="text-center">
+            <h3 className="font-semibold text-destructive mb-2">Confirm Unlink</h3>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to unlink your Telegram account? You'll stop receiving order notifications and won't
+              be able to use bot commands.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => setShowConfirm(false)} variant="outline" size="sm" className="flex-1 bg-transparent">
+              Cancel
+            </Button>
+            <Button onClick={handleUnlink} variant="destructive" size="sm" className="flex-1" disabled={loading}>
+              {loading ? "Unlinking..." : "Unlink"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Button
+      onClick={() => setShowConfirm(true)}
+      variant="outline"
+      size="sm"
+      className="w-full bg-transparent text-destructive border-destructive/20 hover:bg-destructive/10"
+    >
+      <Unlink className="h-4 w-4 mr-2" />
+      Unlink Account
+    </Button>
   )
 }

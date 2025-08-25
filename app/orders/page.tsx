@@ -294,7 +294,7 @@ export default function OrdersPage() {
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold">
-                    ${orders.reduce((sum, order) => sum + order.total_amount, 0).toFixed(2)}
+                    ${orders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0).toFixed(2)}
                   </p>
                   <p className="text-sm text-muted-foreground">Total Spent</p>
                 </div>

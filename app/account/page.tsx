@@ -4,7 +4,13 @@ export const dynamic = "force-dynamic"
 import { unstable_noStore as noStore } from "next/cache"
 import { requireAuth } from "@/lib/auth-server"
 import { loadUserSafe, loadTelegramLinkSafe, loadRecentOrdersSafe } from "@/lib/user"
-import { LogoutButton, CopyButton, OpenTelegramButton, GenerateLinkingCodeButton } from "./ClientActions"
+import {
+  LogoutButton,
+  CopyButton,
+  OpenTelegramButton,
+  GenerateLinkingCodeButton,
+  UnlinkTelegramButton,
+} from "./ClientActions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -170,7 +176,9 @@ export default async function AccountPage() {
 
                   {tgDeepLink && <OpenTelegramButton deepLink={tgDeepLink} />}
 
-                  <p className="text-xs text-muted-foreground">Contact support to unlink your account.</p>
+                  <UnlinkTelegramButton />
+
+                  <p className="text-xs text-muted-foreground">Contact support for further assistance.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
