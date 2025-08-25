@@ -110,9 +110,9 @@ async function testFlow() {
     const registerResponse = await makeRequest(`${WEBSITE_URL}/api/auth/register`, {
       method: "POST",
       body: {
+        username: `testuser_${Date.now()}`, // Generate unique username
         email: TEST_EMAIL,
         password: TEST_PASSWORD,
-        name: "Test User",
       },
     })
 
@@ -136,7 +136,7 @@ async function testFlow() {
     const loginResponse = await makeRequest(`${WEBSITE_URL}/api/auth/login`, {
       method: "POST",
       body: {
-        email: TEST_EMAIL,
+        emailOrUsername: TEST_EMAIL,
         password: TEST_PASSWORD,
       },
     })

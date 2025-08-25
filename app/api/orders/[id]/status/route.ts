@@ -50,10 +50,16 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+  return PUT(request, { params })
+}
+
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const orderId = params.id
     const { status } = await request.json()
+
+    console.log("[v0] Order status update request:", { orderId, status })
 
     const db = getDb()
 
@@ -68,10 +74,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       .returning()
 
     if (!updatedOrder) {
+      console.log("[v0] Order not found for update:", orderId)
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
     }
 
-    console.log("[v0] Order status updated:", orderId, "->", status)
+    console.log("[v0] Order status updated successfully:", orderId, "->", status)
 
     return NextResponse.json({
       success: true,
