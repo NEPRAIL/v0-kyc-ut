@@ -14,22 +14,15 @@ import {
 
 // The users table already exists in your database, so we reference it
 export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
+  id: text("id").primaryKey(), // Changed from uuid to text to match spec
+  username: text("username").notNull().unique(), // Removed varchar length constraint
+  email: text("email").notNull().unique(), // Removed varchar length constraint
   passwordHash: text("password_hash").notNull(),
-  emailVerified: boolean("email_verified").default(false),
-  emailVerificationToken: text("email_verification_token"),
-  emailVerificationExpires: timestamp("email_verification_expires"),
-  passwordResetToken: text("password_reset_token"),
-  passwordResetExpires: timestamp("password_reset_expires"),
-  twoFactorEnabled: boolean("two_factor_enabled").default(false),
-  twoFactorSecret: text("two_factor_secret"),
-  failedLoginAttempts: integer("failed_login_attempts").default(0),
-  lockedUntil: timestamp("locked_until"),
-  lastLogin: timestamp("last_login"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  role: text("role").default("user").notNull(), // Removed varchar length constraint
+  telegramUserId: bigint("telegram_user_id", { mode: "number" }).nullable(), // Added Telegram integration
+  telegramUsername: text("telegram_username").nullable(), // Added Telegram username
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Remove other fields not needed for this implementation
 })
 
 export const seasons = pgTable("seasons", {
@@ -72,14 +65,18 @@ export const variants = pgTable("variants", {
 })
 
 export const orders = pgTable("orders", {
-  id: text("id").primaryKey(), // e.g. ord_<hex>
-  userId: text("user_id").notNull(), // fk to users.id (text)
-  items: jsonb("items").notNull(), // [{productId, qty, price_cents}]
-  totalCents: integer("total_cents").notNull(),
-  currency: text("currency").notNull().default("USD"),
-  status: text("status").notNull().default("pending"), // pending|sent|paid|failed|cancelled
-  tgDeeplink: text("tg_deeplink"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  orderNumber: text("order_number", { length: 32 }).notNull().unique(),
+  totalAmount: decimal("total_amount").default("0").notNull(),
+  status: text("status", { length: 24 }).default("pending").notNull(),
+  items: jsonb("items")
+    .$type<Array<{ product_name: string; quantity: number; product_price: number }>>()
+    .default([])
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
 export const telegramLinks = pgTable(
@@ -213,3 +210,13 @@ export const securityEventTypes = [
   "suspicious_activity",
 ] as const
 export type SecurityEventType = (typeof securityEventTypes)[number]
+
+export const linkingCodes = pgTable("linking_codes", {
+  code: text("code", { length: 8 }).primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false).notNull(),
+})

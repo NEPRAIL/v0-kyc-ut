@@ -10,8 +10,10 @@ import logging
 import asyncio
 import hashlib
 import hmac
+import sqlite3
+import threading
 from datetime import datetime
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any, List, Union
 from urllib.parse import urljoin
 
 # Third-party imports
@@ -48,12 +50,93 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# User session storage (in production, use Redis or database)
 user_sessions: Dict[int, Dict[str, Any]] = {}
+
+class SessionStore:
+    """Local persistence: prefers SQLite, falls back to JSON."""
+    def __init__(self, sqlite_path: str = "bot_store.db", json_path: str = "bot_sessions.json"):
+        self.sqlite_path = sqlite_path
+        self.json_path = json_path
+        self.lock = threading.Lock()
+        self.use_sqlite = False
+        try:
+            self.conn = sqlite3.connect(self.sqlite_path, check_same_thread=False)
+            with self.conn:
+                self.conn.execute("""
+                    CREATE TABLE IF NOT EXISTS sessions (
+                        telegram_user_id INTEGER PRIMARY KEY,
+                        data TEXT NOT NULL
+                    )
+                """)
+            self.use_sqlite = True
+        except Exception:
+            self.conn = None
+            self.use_sqlite = False
+            # Ensure JSON file exists
+            if not os.path.exists(self.json_path):
+                with open(self.json_path, "w", encoding="utf-8") as f:
+                    json.dump({}, f)
+
+    def load_all(self) -> Dict[int, Dict[str, Any]]:
+        if self.use_sqlite:
+            with self.lock, self.conn:
+                rows = self.conn.execute("SELECT telegram_user_id, data FROM sessions").fetchall()
+            out: Dict[int, Dict[str, Any]] = {}
+            for uid, data in rows:
+                try:
+                    out[int(uid)] = json.loads(data)
+                except Exception:
+                    pass
+            return out
+        else:
+            try:
+                with open(self.json_path, "r", encoding="utf-8") as f:
+                    raw = json.load(f)
+                return {int(k): v for k, v in raw.items()}
+            except Exception:
+                return {}
+
+    def set(self, telegram_user_id: int, data: Dict[str, Any]) -> None:
+        if self.use_sqlite:
+            with self.lock, self.conn:
+                self.conn.execute(
+                    "INSERT INTO sessions (telegram_user_id, data) VALUES (?, ?) "
+                    "ON CONFLICT(telegram_user_id) DO UPDATE SET data=excluded.data",
+                    (telegram_user_id, json.dumps(data)),
+                )
+        else:
+            with self.lock:
+                store = self.load_all()
+                store[telegram_user_id] = data
+                with open(self.json_path, "w", encoding="utf-8") as f:
+                    json.dump(store, f)
+
+    def get(self, telegram_user_id: int) -> Optional[Dict[str, Any]]:
+        all_data = self.load_all()
+        return all_data.get(int(telegram_user_id))
+
+    def delete(self, telegram_user_id: int) -> None:
+        if self.use_sqlite:
+            with self.lock, self.conn:
+                self.conn.execute("DELETE FROM sessions WHERE telegram_user_id=?", (telegram_user_id,))
+        else:
+            with self.lock:
+                store = self.load_all()
+                store.pop(int(telegram_user_id), None)
+                with open(self.json_path, "w", encoding="utf-8") as f:
+                    json.dump(store, f)
 
 class KYCutBot:
     def __init__(self):
         self.application = Application.builder().token(BOT_TOKEN).build()
+        self.store = SessionStore()
+        # Load persisted sessions into in-memory cache for backward compat
+        try:
+            persisted = self.store.load_all()
+            user_sessions.clear()
+            user_sessions.update(persisted)
+        except Exception:
+            pass
         self.setup_handlers()
     
     def setup_handlers(self):
@@ -77,7 +160,59 @@ class KYCutBot:
         
         # Callback query handler for inline buttons
         self.application.add_handler(CallbackQueryHandler(self.handle_callback))
-    
+        
+        self.application.add_error_handler(self.on_error)
+
+    def _get_user_id(self, obj: Union[Update, Any]) -> Optional[int]:
+        """Works for Update (message) and CallbackQuery"""
+        try:
+            if hasattr(obj, "effective_user") and obj.effective_user:
+                return obj.effective_user.id
+            if hasattr(obj, "from_user") and obj.from_user:
+                return obj.from_user.id
+            if hasattr(obj, "callback_query") and obj.callback_query and obj.callback_query.from_user:
+                return obj.callback_query.from_user.id
+        except Exception:
+            pass
+        return None
+
+    async def _reply(self, carrier: Union[Update, Any], text: str, **kwargs):
+        """
+        Unified reply:
+        - If called from a callback, edit that message.
+        - If from a command/message, reply normally.
+        """
+        try:
+            if hasattr(carrier, "callback_query") and carrier.callback_query:
+                # Edit the existing message
+                return await carrier.callback_query.edit_message_text(text, **kwargs)
+            # Fallback to message reply
+            if hasattr(carrier, "message") and carrier.message:
+                return await carrier.message.reply_text(text, **kwargs)
+            # Sometimes we get a CallbackQuery directly
+            if hasattr(carrier, "edit_message_text"):
+                return await carrier.edit_message_text(text, **kwargs)
+        except Exception:
+            # Last resort: try replying via application bot using chat id
+            try:
+                chat_id = None
+                if hasattr(carrier, "effective_chat") and carrier.effective_chat:
+                    chat_id = carrier.effective_chat.id
+                elif hasattr(carrier, "message") and carrier.message and carrier.message.chat:
+                    chat_id = carrier.message.chat.id
+                if chat_id:
+                    return await self.application.bot.send_message(chat_id=chat_id, text=text, **kwargs)
+            except Exception:
+                pass
+
+    async def on_error(self, update: object, context: ContextTypes.DEFAULT_TYPE):
+        """Don't crash on unexpected exceptions"""
+        try:
+            if update:
+                await self._reply(update, "⚠️ An unexpected error occurred. Please try again.")
+        except Exception:
+            pass
+
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command with deep link support"""
         user_id = update.effective_user.id
@@ -174,14 +309,13 @@ Ready to link? Use the buttons below!
         )
     
     async def menu_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Show main navigation menu"""
-        user_id = update.effective_user.id
+        """Show main navigation menu (works from /menu or inline button)."""
+        user_id = self._get_user_id(update) or 0
         is_linked = self.is_authenticated(user_id)
-        
+
         if is_linked:
-            user_data = user_sessions[user_id].get('user_data', {})
+            user_data = user_sessions.get(user_id, {}).get('user_data', {})
             username = user_data.get('name', 'User')
-            
             menu_text = f"""
 🏠 **Main Menu - {username}**
 
@@ -202,6 +336,13 @@ Welcome to your KYCut dashboard! Choose an option below:
 • Contact support
 • Bot information
             """
+            keyboard = [
+                [InlineKeyboardButton("📋 My Orders", callback_data="menu_orders")],
+                [InlineKeyboardButton("📊 Order Stats", callback_data="menu_stats"),
+                 InlineKeyboardButton("⚙️ Account", callback_data="menu_account")],
+                [InlineKeyboardButton("ℹ️ Help", callback_data="menu_help"),
+                 InlineKeyboardButton("🔧 Settings", callback_data="menu_settings")]
+            ]
         else:
             menu_text = """
 🏠 **Main Menu**
@@ -217,31 +358,14 @@ Welcome to KYCut Bot! To get started, you need to link your account.
 • Bot features
 • Support
             """
-        
-        keyboard = []
-        
-        if is_linked:
-            keyboard.extend([
-                [InlineKeyboardButton("📋 My Orders", callback_data="menu_orders")],
-                [InlineKeyboardButton("📊 Order Stats", callback_data="menu_stats"),
-                 InlineKeyboardButton("⚙️ Account", callback_data="menu_account")],
-                [InlineKeyboardButton("ℹ️ Help", callback_data="menu_help"),
-                 InlineKeyboardButton("🔧 Settings", callback_data="menu_settings")]
-            ])
-        else:
-            keyboard.extend([
+            keyboard = [
                 [InlineKeyboardButton("🔗 Link Account", callback_data="menu_link")],
                 [InlineKeyboardButton("🔐 Login", callback_data="menu_login")],
                 [InlineKeyboardButton("ℹ️ Help", callback_data="menu_help")]
-            ])
-        
+            ]
+
         reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await update.message.reply_text(
-            menu_text,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=reply_markup
-        )
+        await self._reply(update, menu_text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
     
     async def link_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /link command with linking code"""
@@ -288,6 +412,9 @@ Welcome to KYCut Bot! To get started, you need to link your account.
                 }
             }
             
+            # Persist session
+            self.store.set(user_id, user_sessions[user_id])
+            
             await update.message.reply_text(
                 f"✅ **Account Linked Successfully!**\n\n"
                 f"Your Telegram account is now connected to KYCut.\n\n"
@@ -316,51 +443,44 @@ Welcome to KYCut Bot! To get started, you need to link your account.
             )
     
     async def orders_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /orders command - show all orders with pagination"""
-        user_id = update.effective_user.id
-        
+        """Show all orders with pagination (works from message or callback)."""
+        user_id = self._get_user_id(update) or 0
+
         if not self.is_authenticated(user_id):
-            await update.message.reply_text(
+            await self._reply(
+                update,
                 "❌ **Authentication Required**\n\n"
                 "Please link your account first:\n"
                 "• Use `/link CODE` with your 8-digit code\n"
                 "• Or use `/login` with your credentials\n\n"
                 "Get your linking code from the website account page.",
-                parse_mode=ParseMode.MARKDOWN
+                parse_mode=ParseMode.MARKDOWN,
             )
             return
-        
-        # Fetch all orders
+
         orders_result = await self.fetch_all_orders(user_id)
-        
-        if not orders_result['success']:
-            await update.message.reply_text(
-                f"❌ **Failed to Load Orders**\n\n"
-                f"Error: {orders_result.get('error', 'Unknown error')}\n\n"
-                f"Please try again or contact support.",
-                parse_mode=ParseMode.MARKDOWN
+        if not orders_result.get('success'):
+            await self._reply(
+                update,
+                f"❌ **Failed to Load Orders**\n\nError: {orders_result.get('error','Unknown error')}",
+                parse_mode=ParseMode.MARKDOWN,
             )
             return
-        
-        orders = orders_result['orders']
-        
+
+        orders = orders_result.get('orders', [])
         if not orders:
             keyboard = [
                 [InlineKeyboardButton("🛒 Start Shopping", url=WEBSITE_URL)],
-                [InlineKeyboardButton("🏠 Main Menu", callback_data="menu_main")]
+                [InlineKeyboardButton("🏠 Main Menu", callback_data="menu_main")],
             ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await update.message.reply_text(
-                "📋 **No Orders Found**\n\n"
-                "You don't have any orders yet.\n\n"
-                "Ready to start shopping? Visit the website to browse our products!",
+            await self._reply(
+                update,
+                "📋 **No Orders Found**\n\nYou don't have any orders yet.",
                 parse_mode=ParseMode.MARKDOWN,
-                reply_markup=reply_markup
+                reply_markup=InlineKeyboardMarkup(keyboard),
             )
             return
-        
-        # Show orders with pagination
+
         await self.show_orders_list(update, orders, page=0)
     
     async def show_orders_list(self, update: Update, orders: List[Dict], page: int = 0):
@@ -368,18 +488,17 @@ Welcome to KYCut Bot! To get started, you need to link your account.
         orders_per_page = 5
         total_orders = len(orders)
         total_pages = (total_orders + orders_per_page - 1) // orders_per_page
-        
+
         start_idx = page * orders_per_page
         end_idx = min(start_idx + orders_per_page, total_orders)
         page_orders = orders[start_idx:end_idx]
-        
-        # Calculate stats
-        total_spent = sum(float(order.get('total_amount', 0)) for order in orders)
-        pending_count = len([o for o in orders if o.get('status') == 'pending'])
-        completed_count = len([o for o in orders if o.get('status') in ['delivered', 'completed']])
-        
+
+        total_spent = sum(float(o.get('total_amount', 0) or 0) for o in orders)
+        pending_count = len([o for o in orders if (o.get('status') or '').lower() == 'pending'])
+        completed_count = len([o for o in orders if (o.get('status') or '').lower() in ['delivered','completed']])
+
         orders_text = f"""
-📋 **Your Orders** (Page {page + 1}/{total_pages})
+📋 **Your Orders** (Page {page + 1}/{max(total_pages,1)})
 
 **📊 Quick Stats:**
 • Total Orders: {total_orders}
@@ -389,82 +508,54 @@ Welcome to KYCut Bot! To get started, you need to link your account.
 **📦 Recent Orders:**
 """
         
-        # Add order items
         for i, order in enumerate(page_orders, start_idx + 1):
             order_id = order.get('order_number', order.get('id', 'Unknown'))
-            status = order.get('status', 'pending').upper()
-            total = float(order.get('total_amount', 0))
+            status = (order.get('status') or 'pending').upper()
+            total = float(order.get('total_amount', 0) or 0)
             date = order.get('created_at', '')
             
-            # Format date
+            date_str = 'Unknown'
             if date:
                 try:
-                    date_obj = datetime.fromisoformat(date.replace('Z', '+00:00'))
+                    date_obj = datetime.fromisoformat(str(date).replace('Z', '+00:00'))
                     date_str = date_obj.strftime('%m/%d/%Y')
-                except:
-                    date_str = 'Unknown'
-            else:
-                date_str = 'Unknown'
+                except Exception:
+                    pass
             
             status_emoji = {
-                'PENDING': '⏳',
-                'CONFIRMED': '✅',
-                'PROCESSING': '🔄',
-                'SHIPPED': '🚚',
-                'DELIVERED': '📦',
-                'CANCELLED': '❌'
+                'PENDING':'⏳','CONFIRMED':'✅','PROCESSING':'🔄','SHIPPED':'🚚','DELIVERED':'📦','CANCELLED':'❌'
             }.get(status, '❓')
             
-            orders_text += f"\n{i}. **{order_id}** {status_emoji}\n"
-            orders_text += f"   ${total:.2f} • {date_str} • {status}\n"
-        
-        # Create navigation keyboard
+            orders_text += f"\n{i}. **{order_id}** {status_emoji}\n   ${total:.2f} • {date_str} • {status}\n"
+
         keyboard = []
         
-        # Order action buttons
+        # Quick view buttons
         if page_orders:
-            order_buttons = []
-            for order in page_orders[:3]:  # Show max 3 order buttons
-                order_id = order.get('order_number', order.get('id', 'Unknown'))
-                order_buttons.append(
-                    InlineKeyboardButton(f"📋 {order_id[:8]}", callback_data=f"order_view_{order_id}")
-                )
-            
-            # Split into rows of 2
-            for i in range(0, len(order_buttons), 2):
-                keyboard.append(order_buttons[i:i+2])
-        
-        # Pagination buttons
-        nav_buttons = []
+            row = []
+            for order in page_orders[:3]:
+                oid = order.get('order_number') or order.get('id', 'Unknown')
+                row.append(InlineKeyboardButton(f"📋 {oid[:8]}", callback_data=f"order_view_{oid}"))
+                if len(row) == 2:
+                    keyboard.append(row); row = []
+            if row: keyboard.append(row)
+
+        # Pagination
+        nav = []
         if page > 0:
-            nav_buttons.append(InlineKeyboardButton("⬅️ Previous", callback_data=f"orders_page_{page-1}"))
+            nav.append(InlineKeyboardButton("⬅️ Previous", callback_data=f"orders_page_{page-1}"))
         if page < total_pages - 1:
-            nav_buttons.append(InlineKeyboardButton("Next ➡️", callback_data=f"orders_page_{page+1}"))
-        
-        if nav_buttons:
-            keyboard.append(nav_buttons)
-        
-        # Filter and menu buttons
+            nav.append(InlineKeyboardButton("Next ➡️", callback_data=f"orders_page_{page+1}"))
+        if nav: keyboard.append(nav)
+
         keyboard.extend([
             [InlineKeyboardButton("🔍 Filter Orders", callback_data="orders_filter"),
              InlineKeyboardButton("📊 Statistics", callback_data="menu_stats")],
-            [InlineKeyboardButton("🏠 Main Menu", callback_data="menu_main")]
+            [InlineKeyboardButton("🏠 Main Menu", callback_data="menu_main")],
         ])
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        if hasattr(update, 'callback_query') and update.callback_query:
-            await update.callback_query.edit_message_text(
-                orders_text,
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=reply_markup
-            )
-        else:
-            await update.message.reply_text(
-                orders_text,
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=reply_markup
-            )
+
+        await self._reply(update, orders_text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup(keyboard))
+
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = (
             "🤖 *KYCut Bot Help*\n\n"
@@ -514,12 +605,17 @@ Welcome to KYCut Bot! To get started, you need to link your account.
             "token_expires": result.get("expires_at"),
             "user_data": result.get("user_data", {"name": username}),
         }
+        
+        # Persist session
+        self.store.set(uid, user_sessions[uid])
+        
         await update.message.reply_text("✅ Logged in! Use /orders to view your orders or /menu.")
         await self.menu_command(update, context)
 
     async def logout_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         uid = update.effective_user.id
         user_sessions.pop(uid, None)
+        self.store.delete(uid)
         await update.message.reply_text("🚪 Logged out. Use /login or /link to connect again.")
 
     async def order_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -911,27 +1007,47 @@ Please process this order and contact the customer.
             logger.error(f"Failed to send admin notification: {e}")
     
     def is_authenticated(self, user_id: int) -> bool:
-        """Check if user is authenticated and token is valid"""
-        if user_id not in user_sessions:
-            return False
-        
-        session = user_sessions[user_id]
-        if not session.get('authenticated', False):
-            return False
-        
-        token_expires = session.get('token_expires')
-        if token_expires:
-            try:
-                from datetime import datetime
-                expires_dt = datetime.fromisoformat(token_expires.replace('Z', '+00:00'))
-                if datetime.now(expires_dt.tzinfo) > expires_dt:
-                    # Token expired, remove session
-                    user_sessions.pop(user_id, None)
-                    return False
-            except:
-                pass
-        
-        return True
+        """Check if user is authenticated (in-memory or persisted)."""
+        if user_id in user_sessions and user_sessions[user_id].get('authenticated'):
+            return True
+        persisted = self.store.get(user_id)
+        if persisted and persisted.get('authenticated'):
+            user_sessions[user_id] = persisted  # hydrate cache
+            return True
+        return False
+    
+    async def fetch_all_orders(self, user_id: int) -> Dict[str, Any]:
+        """Fetch all orders either using session cookie (login) or telegram link."""
+        try:
+            sess = user_sessions.get(user_id) or self.store.get(user_id) or {}
+            session_token = sess.get('session_token')
+
+            if session_token:
+                url = urljoin(WEBSITE_URL, '/api/orders/user')
+                headers = {
+                    'Cookie': f'session={session_token}',
+                    'X-Webhook-Secret': WEBHOOK_SECRET,
+                    'User-Agent': 'KYCut-Bot/2.0'
+                }
+            else:
+                url = urljoin(WEBSITE_URL, '/api/orders/telegram')
+                headers = {
+                    'Content-Type': 'application/json',
+                    'X-Webhook-Secret': WEBHOOK_SECRET,
+                    'User-Agent': 'KYCut-Bot/2.0'
+                }
+                url += f'?telegram_user_id={user_id}'
+
+            response = requests.get(url, headers=headers, timeout=15)
+            if response.status_code == 200:
+                data = response.json()
+                return {'success': True, 'orders': data.get('orders', [])}
+            if response.status_code == 401:
+                return {'success': False, 'error': 'Session expired. Please /login again.'}
+            return {'success': False, 'error': f'HTTP {response.status_code}'}
+        except requests.RequestException as e:
+            logger.error(f"Fetch orders failed: {e}")
+            return {'success': False, 'error': f'Connection error: {str(e)}'}
     
     async def ensure_bot_session(self, user_id: int) -> bool:
         """Ensure user has a valid bot token, refresh if needed"""
@@ -1049,71 +1165,6 @@ Please process this order and contact the customer.
                 'error': 'Authentication failed. Please try again.'
             }
     
-    async def fetch_all_orders(self, user_id: int) -> Dict[str, Any]:
-        """Fetch all orders for authenticated user using bot token"""
-        try:
-            if not await self.ensure_bot_session(user_id):
-                return {
-                    'success': False,
-                    'error': 'Authentication required. Please use /link CODE to connect your account.'
-                }
-            
-            session = user_sessions[user_id]
-            bot_token = session.get('bot_token')
-            
-            # Use bot token authentication
-            url = urljoin(WEBSITE_URL, '/api/orders/user')
-            headers = {
-                'Authorization': f'Bearer {bot_token}',  # Use bot token in Authorization header
-                'Content-Type': 'application/json',
-                'User-Agent': 'KYCut-Bot/2.0'
-            }
-            
-            response = requests.get(url, headers=headers, timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('success'):
-                    return {
-                        'success': True,
-                        'orders': data.get('orders', [])
-                    }
-                else:
-                    return {
-                        'success': False,
-                        'error': data.get('error', 'Failed to fetch orders')
-                    }
-            elif response.status_code == 401:
-                # Token expired or invalid, remove session
-                user_sessions.pop(user_id, None)
-                return {
-                    'success': False,
-                    'error': 'Session expired. Please use /link CODE to reconnect your account.'
-                }
-            else:
-                return {
-                    'success': False,
-                    'error': f'Failed to fetch orders: HTTP {response.status_code}'
-                }
-                
-        except requests.exceptions.Timeout:
-            return {
-                'success': False,
-                'error': 'Request timed out. Please try again.'
-            }
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Orders fetch request failed: {e}")
-            return {
-                'success': False,
-                'error': 'Network error. Please try again later.'
-            }
-        except Exception as e:
-            logger.error(f"Orders fetch error: {e}")
-            return {
-                'success': False,
-                'error': 'Failed to fetch orders. Please try again.'
-            }
-
     async def verify_linking_code(self, code: str, telegram_user_id: int, telegram_username: str = None) -> Dict[str, Any]:
         """Verify linking code with website API and get bot token"""
         try:
