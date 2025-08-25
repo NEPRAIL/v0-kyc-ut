@@ -1,4 +1,16 @@
-import { pgTable, text, integer, boolean, uuid, timestamp, decimal, jsonb } from "drizzle-orm/pg-core"
+import {
+  pgTable,
+  text,
+  integer,
+  boolean,
+  uuid,
+  timestamp,
+  decimal,
+  jsonb,
+  bigint,
+  index,
+  uniqueIndex,
+} from "drizzle-orm/pg-core"
 
 // The users table already exists in your database, so we reference it
 export const users = pgTable("users", {
@@ -70,17 +82,35 @@ export const orders = pgTable("orders", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 })
 
-export const telegramLinks = pgTable("telegram_links", {
-  userId: text("user_id").primaryKey(),
-  telegramUserId: text("telegram_user_id").notNull(),
-  telegramUsername: text("telegram_username"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-})
+export const telegramLinks = pgTable(
+  "telegram_links",
+  {
+    telegramUserId: bigint("telegram_user_id", { mode: "number" }).primaryKey(), // Telegram ID fits in bigint
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    telegramUsername: text("telegram_username"),
+    linkedVia: text("linked_via").notNull().default("code"), // "code" | "login" | "admin"
+    isRevoked: boolean("is_revoked").notNull().default(false),
+
+    // bot-session (store HASH, not raw token!)
+    botTokenHash: text("bot_token_hash"), // sha256 hex of opaque token
+    botTokenExpiresAt: timestamp("bot_token_expires_at", { withTimezone: true }),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => ({
+    byUser: uniqueIndex("telegram_links_user_unique").on(t.userId),
+    byTgId: uniqueIndex("telegram_links_tgid_unique").on(t.telegramUserId),
+    byToken: index("telegram_links_token_idx").on(t.botTokenHash),
+  }),
+)
 
 export const telegramLinkingCodes = pgTable("telegram_linking_codes", {
   code: text("code").primaryKey(), // 8-character alphanumeric code
   userId: text("user_id").notNull(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
   usedAt: timestamp("used_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 })

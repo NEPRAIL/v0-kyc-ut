@@ -28,13 +28,13 @@ importers:
         version: 0.15.12
       '@lucia-auth/adapter-drizzle':
         specifier: latest
-        version: 1.1.0(drizzle-orm@0.44.4(8803ea22db5f9806860daed7b82a1a4a))(lucia@3.2.2)
+        version: 1.1.0(drizzle-orm@0.44.5(c1f6ff45de9581694cc7b5a24c72bcc3))(lucia@3.2.2)
       '@neondatabase/serverless':
         specifier: latest
         version: 1.0.1
       '@op-engineering/op-sqlite':
         specifier: latest
-        version: 14.1.4(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
+        version: 15.0.0(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
       '@opentelemetry/api':
         specifier: latest
         version: 1.9.0
@@ -166,7 +166,7 @@ importers:
         version: 12.2.0
       bun-types:
         specifier: latest
-        version: 1.2.20(@types/react@19.0.0)
+        version: 1.2.21(@types/react@19.0.0)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -180,14 +180,14 @@ importers:
         specifier: latest
         version: 1.0.1
       date-fns:
-        specifier: 4.1.0
+        specifier: latest
         version: 4.1.0
       dotenv:
         specifier: latest
         version: 17.2.1
       drizzle-orm:
         specifier: latest
-        version: 0.44.4(8803ea22db5f9806860daed7b82a1a4a)
+        version: 0.44.5(c1f6ff45de9581694cc7b5a24c72bcc3)
       embla-carousel-react:
         specifier: 8.5.1
         version: 8.5.1(react@19.0.0)
@@ -1672,8 +1672,8 @@ packages:
     engines: {node: '>=10'}
     deprecated: This functionality has been moved to @npmcli/fs
 
-  '@op-engineering/op-sqlite@14.1.4':
-    resolution: {integrity: sha512-ZIZAqfHUKIjSxhaxWovEz4kCp6Gtoi8RPnJ36lPwTr73c7pEFNidE2vFm0dMBEj2ikm9wfYkab1/boW98SkVKA==}
+  '@op-engineering/op-sqlite@15.0.0':
+    resolution: {integrity: sha512-y/ZTuYMOK3X1VyxSdz/O5AHU7FOzmWNNqK84pHznB0ibUm5cqkrDTwSeCLIXngnfcZnwzXJdOvn2raBK76zCqQ==}
     peerDependencies:
       react: '*'
       react-native: '*'
@@ -3368,8 +3368,8 @@ packages:
     resolution: {integrity: sha512-WDtdLmJvAuNNPzByAYpRo2rF1Mmradw6gvWsQKf63476DDXmomT9zUiGypLcG4ibIM67vhAj8jJRdbmEws2Aqw==}
     engines: {node: '>=6.14.2'}
 
-  bun-types@1.2.20:
-    resolution: {integrity: sha512-pxTnQYOrKvdOwyiyd/7sMt9yFOenN004Y6O4lCcCUoKVej48FS5cvTw9geRaEcB9TsDZaJKAxPTVvi8tFsVuXA==}
+  bun-types@1.2.21:
+    resolution: {integrity: sha512-sa2Tj77Ijc/NTLS0/Odjq/qngmEPZfbfnOERi0KRUYhT9R8M4VBioWVmMWE5GrYbKMc+5lVybXygLdibHaqVqw==}
     peerDependencies:
       '@types/react': ^19
 
@@ -3731,8 +3731,8 @@ packages:
     resolution: {integrity: sha512-kQhDYKZecqnM0fCnzI5eIv5L4cAe/iRI+HqMbO/hbRdTAeXDG+M9FjipUxNfbARuEg4iHIbhnhs78BCHNbSxEQ==}
     engines: {node: '>=12'}
 
-  drizzle-orm@0.44.4:
-    resolution: {integrity: sha512-ZyzKFpTC/Ut3fIqc2c0dPZ6nhchQXriTsqTNs4ayRgl6sZcFlMs9QZKPSHXK4bdOf41GHGWf+FrpcDDYwW+W6Q==}
+  drizzle-orm@0.44.5:
+    resolution: {integrity: sha512-jBe37K7d8ZSKptdKfakQFdeljtu3P2Cbo7tJoJSVZADzIKOBo9IAJPOmMsH2bZl90bZgh8FQlD8BjxXA/zuBkQ==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=4'
@@ -7685,9 +7685,9 @@ snapshots:
   '@libsql/win32-x64-msvc@0.5.17':
     optional: true
 
-  '@lucia-auth/adapter-drizzle@1.1.0(drizzle-orm@0.44.4(8803ea22db5f9806860daed7b82a1a4a))(lucia@3.2.2)':
+  '@lucia-auth/adapter-drizzle@1.1.0(drizzle-orm@0.44.5(c1f6ff45de9581694cc7b5a24c72bcc3))(lucia@3.2.2)':
     dependencies:
-      drizzle-orm: 0.44.4(8803ea22db5f9806860daed7b82a1a4a)
+      drizzle-orm: 0.44.5(c1f6ff45de9581694cc7b5a24c72bcc3)
       lucia: 3.2.2
 
   '@neon-rs/load@0.0.4': {}
@@ -7867,7 +7867,7 @@ snapshots:
       rimraf: 3.0.2
     optional: true
 
-  '@op-engineering/op-sqlite@14.1.4(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)':
+  '@op-engineering/op-sqlite@15.0.0(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)':
     dependencies:
       react: 19.0.0
       react-native: 0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0)
@@ -9871,7 +9871,7 @@ snapshots:
     dependencies:
       node-gyp-build: 4.8.4
 
-  bun-types@1.2.20(@types/react@19.0.0):
+  bun-types@1.2.21(@types/react@19.0.0):
     dependencies:
       '@types/node': 22.0.0
       '@types/react': 19.0.0
@@ -10210,7 +10210,7 @@ snapshots:
 
   dotenv@17.2.1: {}
 
-  drizzle-orm@0.44.4(8803ea22db5f9806860daed7b82a1a4a):
+  drizzle-orm@0.44.5(c1f6ff45de9581694cc7b5a24c72bcc3):
     optionalDependencies:
       '@aws-sdk/client-rds-data': 3.873.0
       '@cloudflare/workers-types': 4.20250823.0
@@ -10218,7 +10218,7 @@ snapshots:
       '@libsql/client': 0.15.12(bufferutil@4.0.9)
       '@libsql/client-wasm': 0.15.12
       '@neondatabase/serverless': 1.0.1
-      '@op-engineering/op-sqlite': 14.1.4(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
+      '@op-engineering/op-sqlite': 15.0.0(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
       '@opentelemetry/api': 1.9.0
       '@planetscale/database': 1.19.0
       '@prisma/client': 6.14.0(typescript@5.0.2)
@@ -10230,7 +10230,7 @@ snapshots:
       '@vercel/postgres': 0.10.0
       '@xata.io/client': 0.30.1(typescript@5.0.2)
       better-sqlite3: 12.2.0
-      bun-types: 1.2.20(@types/react@19.0.0)
+      bun-types: 1.2.21(@types/react@19.0.0)
       expo-sqlite: 15.2.14(expo@53.0.20(@babel/core@7.28.3)(bufferutil@4.0.9)(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0))(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
       gel: 2.1.1
       knex: 3.1.0(better-sqlite3@12.2.0)(mysql2@3.14.3)(pg-native@3.5.2)(pg@8.16.3(pg-native@3.5.2))(sqlite3@5.1.7)

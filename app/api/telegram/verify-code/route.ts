@@ -2,16 +2,30 @@ import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { telegramLinkingCodes, telegramLinks } from "@/lib/db/schema"
 import { eq, and, gt, isNull } from "drizzle-orm"
+import { issueBotToken } from "@/lib/auth-server"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 export async function POST(req: Request) {
   try {
+    const secret = process.env.WEBHOOK_SECRET
+    const hdr = req.headers.get("x-webhook-secret")
+    if (secret && hdr !== secret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { code, telegramUserId, telegramUsername } = await req.json()
 
     if (!code || !telegramUserId) {
       return NextResponse.json({ error: "Code and Telegram user ID required" }, { status: 400 })
+    }
+
+    const rateLimitKey = `tg:verify-code:${telegramUserId}`
+    const rateLimit = await checkRateLimit(rateLimitKey, { requests: 5, window: 60 })
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 })
     }
 
     const db = getDb()
@@ -39,30 +53,43 @@ export async function POST(req: Request) {
     // Mark code as used
     await db.update(telegramLinkingCodes).set({ usedAt: now }).where(eq(telegramLinkingCodes.code, code.toUpperCase()))
 
-    // Create or update Telegram link
-    await db
-      .insert(telegramLinks)
-      .values({
-        userId: linkingCode.userId,
-        telegramUserId: telegramUserId.toString(),
-        telegramUsername: telegramUsername || null,
-      })
-      .onConflictDoUpdate({
-        target: telegramLinks.userId,
-        set: {
-          telegramUserId: telegramUserId.toString(),
-          telegramUsername: telegramUsername || null,
-        },
-      })
+    const existing = await db.query.telegramLinks.findFirst({
+      where: eq(telegramLinks.telegramUserId, telegramUserId),
+    })
 
-    console.log(`[v0] Successfully linked user ${linkingCode.userId} to Telegram ${telegramUserId}`)
+    if (existing) {
+      await db
+        .update(telegramLinks)
+        .set({
+          userId: linkingCode.userId,
+          telegramUsername: telegramUsername || null,
+          linkedVia: "code",
+          isRevoked: false,
+          updatedAt: new Date(),
+        })
+        .where(eq(telegramLinks.telegramUserId, telegramUserId))
+    } else {
+      await db.insert(telegramLinks).values({
+        telegramUserId,
+        userId: linkingCode.userId,
+        telegramUsername: telegramUsername || null,
+        linkedVia: "code",
+        isRevoked: false,
+      })
+    }
+
+    const { token, expiresAt } = await issueBotToken(linkingCode.userId, telegramUserId, 30)
+
+    console.log(`[telegram/verify-code] Successfully linked user ${linkingCode.userId} to Telegram ${telegramUserId}`)
 
     return NextResponse.json({
       success: true,
-      message: "Telegram account successfully linked!",
+      message: "Account linked successfully",
+      botToken: token,
+      expiresAt: expiresAt.toISOString(),
     })
   } catch (error) {
-    console.error("[v0] Verify linking code error:", error)
+    console.error("[telegram/verify-code] error:", error)
     return NextResponse.json({ error: "Failed to verify linking code" }, { status: 500 })
   }
 }

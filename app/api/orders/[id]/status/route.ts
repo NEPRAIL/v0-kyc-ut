@@ -2,12 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { orders, orderItems } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
-import { getServerAuth } from "@/lib/auth/middleware"
+import { getAuthFromRequest } from "@/lib/auth-server"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const auth = await getServerAuth()
-    if (!auth) {
+    const auth = await getAuthFromRequest()
+    if (!auth?.userId) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const [order] = await db
       .select()
       .from(orders)
-      .where(and(eq(orders.id, orderId), eq(orders.userId, auth.user.uid)))
+      .where(and(eq(orders.id, orderId), eq(orders.userId, auth.userId)))
       .limit(1)
 
     if (!order) {

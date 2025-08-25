@@ -27,5 +27,10 @@ export function middleware(_req: NextRequest) {
   res.headers.set("X-Content-Type-Options", "nosniff")
   res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 
+  res.headers.set("X-Bot-API-Version", "1.0")
+  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+  res.headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Webhook-Secret")
+  res.headers.set("Access-Control-Max-Age", "86400")
+
   return res
 }

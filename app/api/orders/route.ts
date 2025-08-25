@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { requireAuth } from "@/lib/auth/middleware"
+import { getAuthFromRequest } from "@/lib/auth-server"
 import { db } from "@/lib/db"
 import { orders, listings, products, variants } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
@@ -7,7 +7,11 @@ import { btcpayClient } from "@/lib/btcpay/client"
 
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await requireAuth()
+    const auth = await getAuthFromRequest()
+    if (!auth?.userId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
+
     const { productId, variantId, qty = 1 } = await request.json()
 
     if (!productId) {
@@ -58,7 +62,7 @@ export async function POST(request: NextRequest) {
     const [order] = await db
       .insert(orders)
       .values({
-        userId: user.id,
+        userId: auth.userId,
         productId,
         variantId: variantId || null,
         qty,
@@ -136,7 +140,11 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await requireAuth()
+    const auth = await getAuthFromRequest()
+    if (!auth?.userId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const page = Number.parseInt(searchParams.get("page") || "1")
     const limit = Number.parseInt(searchParams.get("limit") || "10")
@@ -163,7 +171,7 @@ export async function GET(request: NextRequest) {
       .from(orders)
       .leftJoin(products, eq(orders.productId, products.id))
       .leftJoin(variants, eq(orders.variantId, variants.id))
-      .where(eq(orders.userId, user.id))
+      .where(eq(orders.userId, auth.userId))
       .orderBy(orders.createdAt)
       .limit(limit)
       .offset(offset)

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { requireAuth } from "@/lib/auth/middleware"
+import { getAuthFromRequest } from "@/lib/auth-server"
 import { db } from "@/lib/db"
 import { orders, products, variants } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
@@ -7,7 +7,11 @@ import { btcpayClient } from "@/lib/btcpay/client"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { user } = await requireAuth()
+    const auth = await getAuthFromRequest()
+    if (!auth?.userId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
+
     const orderId = Number.parseInt(params.id)
 
     const [order] = await db
@@ -34,7 +38,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       .from(orders)
       .leftJoin(products, eq(orders.productId, products.id))
       .leftJoin(variants, eq(orders.variantId, variants.id))
-      .where(and(eq(orders.id, orderId), eq(orders.userId, user.id)))
+      .where(and(eq(orders.id, orderId), eq(orders.userId, auth.userId)))
       .limit(1)
 
     if (!order) {

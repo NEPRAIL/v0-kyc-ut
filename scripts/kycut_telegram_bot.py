@@ -271,15 +271,16 @@ Welcome to KYCut Bot! To get started, you need to link your account.
             )
             return
         
-        # Verify linking code with website
         result = await self.verify_linking_code(code, user_id, telegram_username)
         
         if result['success']:
-            # Store session info
+            # Store bot token for persistent authentication
             user_sessions[user_id] = {
                 'state': 'linked',
                 'authenticated': True,
                 'linked_via': 'code',
+                'bot_token': result.get('bot_token'),  # Store bot token instead of session cookie
+                'token_expires': result.get('expires_at'),
                 'user_data': {
                     'name': telegram_username or f"User{user_id}",
                     'telegram_username': telegram_username,
@@ -463,6 +464,88 @@ Welcome to KYCut Bot! To get started, you need to link your account.
                 orders_text,
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=reply_markup
+            )
+    async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        text = (
+            "🤖 *KYCut Bot Help*\n\n"
+            "• /menu – main menu\n"
+            "• /link CODE – link your account with 8-char code\n"
+            "• /login EMAIL_OR_USERNAME PASSWORD – sign in to the website\n"
+            "• /orders – list your orders\n"
+            "• /order ID – view a specific order\n"
+            "• /logout – sign out from the bot\n"
+            "• /auth – show your auth status\n"
+            "• /ping – test the bot"
+        )
+        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+
+    async def ping_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.message.reply_text("🏓 pong")
+
+    async def auth_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        uid = update.effective_user.id
+        authed = self.is_authenticated(uid)
+        sess = user_sessions.get(uid, {})
+        how = sess.get("linked_via") or ("login" if "session_token" in sess else "unknown")
+        await update.message.reply_text(f"🔐 Authenticated: {authed}\nVia: {how}")
+
+    async def login_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 2:
+            await update.message.reply_text(
+                "Usage:\n`/login EMAIL_OR_USERNAME PASSWORD`\n\n"
+                "Example:\n`/login user@mail.com StrongPass123`\n\n"
+                "**Note:** For better security, use `/link CODE` instead.",
+                parse_mode=ParseMode.MARKDOWN,
+            )
+            return
+        username = context.args[0]
+        password = " ".join(context.args[1:])
+
+        result = await self.authenticate_user(username, password)
+        if not result.get("success"):
+            await update.message.reply_text(f"❌ Login failed: {result.get('error','Unknown error')}")
+            return
+
+        uid = update.effective_user.id
+        user_sessions[uid] = {
+            "authenticated": True,
+            "linked_via": "login",
+            "bot_token": result.get("bot_token"),  # Use bot token for API calls
+            "token_expires": result.get("expires_at"),
+            "user_data": result.get("user_data", {"name": username}),
+        }
+        await update.message.reply_text("✅ Logged in! Use /orders to view your orders or /menu.")
+        await self.menu_command(update, context)
+
+    async def logout_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        uid = update.effective_user.id
+        user_sessions.pop(uid, None)
+        await update.message.reply_text("🚪 Logged out. Use /login or /link to connect again.")
+
+    async def order_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        # Usage: /order ORDER_ID
+        if not context.args:
+            await update.message.reply_text("Usage: `/order ORDER_ID`", parse_mode=ParseMode.MARKDOWN)
+            return
+        order_id = context.args[0]
+        uid = update.effective_user.id
+        if not self.is_authenticated(uid):
+            await update.message.reply_text("❌ Authentication required. Use /login or /link first.")
+            return
+        result = await self.fetch_order(uid, order_id)
+        if not result.get("success"):
+            await update.message.reply_text(f"❌ {result.get('error','Order not found')}")
+            return
+        await self.show_order_details(update, result["order"])
+
+    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        # Fallback for plain text
+        text = (update.message.text or "").strip().lower()
+        if text in {"menu", "start", "help"}:
+            await self.menu_command(update, context)
+        else:
+            await update.message.reply_text(
+                "I didn’t understand that. Try /menu, /orders, /link CODE or /login EMAIL PASSWORD."
             )
 
     async def handle_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -828,13 +911,71 @@ Please process this order and contact the customer.
             logger.error(f"Failed to send admin notification: {e}")
     
     def is_authenticated(self, user_id: int) -> bool:
-        """Check if user is authenticated"""
-        return (user_id in user_sessions and 
-                user_sessions[user_id].get('authenticated', False))
+        """Check if user is authenticated and token is valid"""
+        if user_id not in user_sessions:
+            return False
+        
+        session = user_sessions[user_id]
+        if not session.get('authenticated', False):
+            return False
+        
+        token_expires = session.get('token_expires')
+        if token_expires:
+            try:
+                from datetime import datetime
+                expires_dt = datetime.fromisoformat(token_expires.replace('Z', '+00:00'))
+                if datetime.now(expires_dt.tzinfo) > expires_dt:
+                    # Token expired, remove session
+                    user_sessions.pop(user_id, None)
+                    return False
+            except:
+                pass
+        
+        return True
+    
+    async def ensure_bot_session(self, user_id: int) -> bool:
+        """Ensure user has a valid bot token, refresh if needed"""
+        if not self.is_authenticated(user_id):
+            return False
+        
+        session = user_sessions[user_id]
+        bot_token = session.get('bot_token')
+        
+        if not bot_token:
+            # Try to get a fresh bot token
+            try:
+                url = urljoin(WEBSITE_URL, '/api/telegram/ensure-session')
+                payload = {'telegramUserId': user_id}
+                headers = {
+                    'Content-Type': 'application/json',
+                    'X-Webhook-Secret': WEBHOOK_SECRET,
+                    'User-Agent': 'KYCut-Bot/2.0'
+                }
+                
+                response = requests.post(url, json=payload, headers=headers, timeout=15)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('success'):
+                        # Update session with new bot token
+                        session['bot_token'] = data.get('botToken')
+                        session['token_expires'] = data.get('expiresAt')
+                        return True
+                
+                # Failed to get token, user needs to re-link
+                user_sessions.pop(user_id, None)
+                return False
+                
+            except Exception as e:
+                logger.error(f"Failed to ensure bot session for user {user_id}: {e}")
+                return False
+        
+        return True
     
     async def authenticate_user(self, username: str, password: str) -> Dict[str, Any]:
-        """Authenticate user with website API"""
+        """Authenticate user with website API and get bot token"""
         try:
+            # First, authenticate with login API
             url = urljoin(WEBSITE_URL, '/api/auth/login')
             
             payload = {
@@ -844,31 +985,24 @@ Please process this order and contact the customer.
             
             headers = {
                 'Content-Type': 'application/json',
-                'X-Webhook-Secret': WEBHOOK_SECRET,
-                'User-Agent': 'KYCut-Bot/1.0'
+                'User-Agent': 'KYCut-Bot/2.0'
             }
             
             response = requests.post(url, json=payload, headers=headers, timeout=15)
             
             if response.status_code == 200:
                 data = response.json()
-                # The API now returns { success: true } with httpOnly cookies
                 if data.get('success'):
-                    # Extract session cookie from response
-                    session_cookie = None
-                    for cookie in response.cookies:
-                        if cookie.name == 'session':
-                            session_cookie = cookie.value
-                            break
-                    
+                    # Note: This requires the user to be linked first via /link command
+                    # For now, we'll return success but recommend using /link instead
                     return {
                         'success': True,
                         'user_data': {
-                            'name': username,  # Use username as fallback since API doesn't return user data
+                            'name': username,
                             'email': username if '@' in username else None,
                             'username': username if '@' not in username else None
                         },
-                        'session_token': session_cookie
+                        'message': 'Login successful, but please use /link CODE for persistent access'
                     }
                 else:
                     return {
@@ -897,13 +1031,217 @@ Please process this order and contact the customer.
                     'error': f"Authentication failed: HTTP {response.status_code}"
                 }
                 
-        except requests.RequestException as e:
+        except requests.exceptions.Timeout:
+            return {
+                'success': False,
+                'error': 'Request timed out. Please try again.'
+            }
+        except requests.exceptions.RequestException as e:
             logger.error(f"Authentication request failed: {e}")
+            return {
+                'success': False,
+                'error': 'Network error. Please try again later.'
+            }
+        except Exception as e:
+            logger.error(f"Authentication error: {e}")
+            return {
+                'success': False,
+                'error': 'Authentication failed. Please try again.'
+            }
+    
+    async def fetch_all_orders(self, user_id: int) -> Dict[str, Any]:
+        """Fetch all orders for authenticated user using bot token"""
+        try:
+            if not await self.ensure_bot_session(user_id):
+                return {
+                    'success': False,
+                    'error': 'Authentication required. Please use /link CODE to connect your account.'
+                }
+            
+            session = user_sessions[user_id]
+            bot_token = session.get('bot_token')
+            
+            # Use bot token authentication
+            url = urljoin(WEBSITE_URL, '/api/orders/user')
+            headers = {
+                'Authorization': f'Bearer {bot_token}',  # Use bot token in Authorization header
+                'Content-Type': 'application/json',
+                'User-Agent': 'KYCut-Bot/2.0'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    return {
+                        'success': True,
+                        'orders': data.get('orders', [])
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'error': data.get('error', 'Failed to fetch orders')
+                    }
+            elif response.status_code == 401:
+                # Token expired or invalid, remove session
+                user_sessions.pop(user_id, None)
+                return {
+                    'success': False,
+                    'error': 'Session expired. Please use /link CODE to reconnect your account.'
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f'Failed to fetch orders: HTTP {response.status_code}'
+                }
+                
+        except requests.exceptions.Timeout:
+            return {
+                'success': False,
+                'error': 'Request timed out. Please try again.'
+            }
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Orders fetch request failed: {e}")
+            return {
+                'success': False,
+                'error': 'Network error. Please try again later.'
+            }
+        except Exception as e:
+            logger.error(f"Orders fetch error: {e}")
+            return {
+                'success': False,
+                'error': 'Failed to fetch orders. Please try again.'
+            }
+
+    async def verify_linking_code(self, code: str, telegram_user_id: int, telegram_username: str = None) -> Dict[str, Any]:
+        """Verify linking code with website API and get bot token"""
+        try:
+            url = urljoin(WEBSITE_URL, '/api/telegram/verify-code')
+            
+            payload = {
+                'code': code,
+                'telegramUserId': telegram_user_id,
+                'telegramUsername': telegram_username
+            }
+            
+            headers = {
+                'Content-Type': 'application/json',
+                'X-Webhook-Secret': WEBHOOK_SECRET,
+                'User-Agent': 'KYCut-Bot/2.0'
+            }
+            
+            response = requests.post(url, json=payload, headers=headers, timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    return {
+                        'success': True,
+                        'bot_token': data.get('botToken'),  # Get bot token from response
+                        'expires_at': data.get('expiresAt'),
+                        'message': data.get('message', 'Account linked successfully')
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'error': data.get('error', 'Failed to verify linking code')
+                    }
+            elif response.status_code == 400:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('error', 'Invalid or expired code')
+                except:
+                    error_msg = 'Invalid or expired code'
+                
+                return {
+                    'success': False,
+                    'error': error_msg
+                }
+            elif response.status_code == 429:
+                return {
+                    'success': False,
+                    'error': 'Too many attempts. Please wait a minute and try again.'
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f"Verification failed: HTTP {response.status_code}"
+                }
+                
+        except requests.exceptions.Timeout:
+            return {
+                'success': False,
+                'error': 'Request timed out. Please try again.'
+            }
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Linking code verification request failed: {e}")
+            return {
+                'success': False,
+                'error': 'Network error. Please try again later.'
+            }
+        except Exception as e:
+            logger.error(f"Linking code verification error: {e}")
+            return {
+                'success': False,
+                'error': 'Verification failed. Please try again.'
+            }
+
+    async def update_order_status(self, user_id: int, order_id: str, status: str) -> Dict[str, Any]:
+        """Update order status via website API"""
+        try:
+            session_token = user_sessions[user_id].get('session_token')
+            url = urljoin(WEBSITE_URL, f'/api/orders/{order_id}/status')
+            
+            payload = {
+                'status': status,
+                'telegram_user_id': user_id,
+                'updated_via': 'telegram_bot'
+            }
+            
+            headers = {
+                'Content-Type': 'application/json',
+                'Cookie': f'session={session_token}',
+                'X-Webhook-Secret': WEBHOOK_SECRET,
+                'User-Agent': 'KYCut-Bot/1.0'
+            }
+            
+            response = requests.patch(url, json=payload, headers=headers, timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                return {
+                    'success': True,
+                    'order_data': data
+                }
+            elif response.status_code == 401:
+                return {
+                    'success': False,
+                    'error': 'Session expired. Please login again with /login'
+                }
+            elif response.status_code == 403:
+                return {
+                    'success': False,
+                    'error': 'You do not have permission to modify this order'
+                }
+            elif response.status_code == 404:
+                return {
+                    'success': False,
+                    'error': 'Order not found'
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f"Status update failed: HTTP {response.status_code}"
+                }
+                
+        except requests.RequestException as e:
+            logger.error(f"Status update request failed: {e}")
             return {
                 'success': False,
                 'error': f"Connection error: {str(e)}"
             }
-    
+
     async def fetch_order(self, user_id: int, order_id: str) -> Dict[str, Any]:
         """Fetch order details from website API"""
         try:
@@ -977,156 +1315,6 @@ Please process this order and contact the customer.
                 
         except requests.RequestException as e:
             logger.error(f"Order fetch request failed: {e}")
-            return {
-                'success': False,
-                'error': f"Connection error: {str(e)}"
-            }
-    
-    async def update_order_status(self, user_id: int, order_id: str, status: str) -> Dict[str, Any]:
-        """Update order status via website API"""
-        try:
-            session_token = user_sessions[user_id].get('session_token')
-            url = urljoin(WEBSITE_URL, f'/api/orders/{order_id}/status')
-            
-            payload = {
-                'status': status,
-                'telegram_user_id': user_id,
-                'updated_via': 'telegram_bot'
-            }
-            
-            headers = {
-                'Content-Type': 'application/json',
-                'Cookie': f'session={session_token}',
-                'X-Webhook-Secret': WEBHOOK_SECRET,
-                'User-Agent': 'KYCut-Bot/1.0'
-            }
-            
-            response = requests.patch(url, json=payload, headers=headers, timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                return {
-                    'success': True,
-                    'order_data': data
-                }
-            elif response.status_code == 401:
-                return {
-                    'success': False,
-                    'error': 'Session expired. Please login again with /login'
-                }
-            elif response.status_code == 403:
-                return {
-                    'success': False,
-                    'error': 'You do not have permission to modify this order'
-                }
-            elif response.status_code == 404:
-                return {
-                    'success': False,
-                    'error': 'Order not found'
-                }
-            else:
-                return {
-                    'success': False,
-                    'error': f"Status update failed: HTTP {response.status_code}"
-                }
-                
-        except requests.RequestException as e:
-            logger.error(f"Status update request failed: {e}")
-            return {
-                'success': False,
-                'error': f"Connection error: {str(e)}"
-            }
-    
-    async def verify_linking_code(self, code: str, telegram_user_id: int, telegram_username: str) -> Dict[str, Any]:
-        """Verify linking code with website API"""
-        try:
-            url = urljoin(WEBSITE_URL, '/api/telegram/verify-code')
-            
-            payload = {
-                'code': code,
-                'telegramUserId': telegram_user_id,
-                'telegramUsername': telegram_username
-            }
-            
-            headers = {
-                'Content-Type': 'application/json',
-                'X-Webhook-Secret': WEBHOOK_SECRET,
-                'User-Agent': 'KYCut-Bot/2.0'
-            }
-            
-            response = requests.post(url, json=payload, headers=headers, timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                return {
-                    'success': True,
-                    'message': data.get('message', 'Account linked successfully!')
-                }
-            else:
-                try:
-                    error_data = response.json()
-                    error_msg = error_data.get('error', 'Invalid or expired code')
-                except:
-                    error_msg = f'Verification failed (HTTP {response.status_code})'
-                
-                return {
-                    'success': False,
-                    'error': error_msg
-                }
-                
-        except requests.RequestException as e:
-            logger.error(f"Linking code verification failed: {e}")
-            return {
-                'success': False,
-                'error': f"Connection error: {str(e)}"
-            }
-    
-    async def fetch_all_orders(self, user_id: int) -> Dict[str, Any]:
-        """Fetch all orders for authenticated user"""
-        try:
-            # For linked users, we need to make API calls differently
-            session_token = user_sessions[user_id].get('session_token')
-            
-            if session_token:
-                # User authenticated via login
-                url = urljoin(WEBSITE_URL, '/api/orders/user')
-                headers = {
-                    'Cookie': f'session={session_token}',
-                    'X-Webhook-Secret': WEBHOOK_SECRET,
-                    'User-Agent': 'KYCut-Bot/2.0'
-                }
-            else:
-                # User linked via code - use Telegram user ID
-                url = urljoin(WEBSITE_URL, '/api/orders/telegram')
-                headers = {
-                    'Content-Type': 'application/json',
-                    'X-Webhook-Secret': WEBHOOK_SECRET,
-                    'User-Agent': 'KYCut-Bot/2.0'
-                }
-                # Add telegram user ID to request
-                url += f'?telegram_user_id={user_id}'
-            
-            response = requests.get(url, headers=headers, timeout=15)
-            
-            if response.status_code == 200:
-                data = response.json()
-                return {
-                    'success': True,
-                    'orders': data.get('orders', [])
-                }
-            elif response.status_code == 401:
-                return {
-                    'success': False,
-                    'error': 'Session expired. Please link your account again.'
-                }
-            else:
-                return {
-                    'success': False,
-                    'error': f"Failed to fetch orders (HTTP {response.status_code})"
-                }
-                
-        except requests.RequestException as e:
-            logger.error(f"Fetch orders request failed: {e}")
             return {
                 'success': False,
                 'error': f"Connection error: {str(e)}"
