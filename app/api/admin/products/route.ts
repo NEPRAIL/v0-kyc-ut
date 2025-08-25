@@ -18,7 +18,7 @@ const createProductSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
 
     const { searchParams } = new URL(request.url)
     const search = searchParams.get("search") || ""
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAdmin()
+    await requireAdmin(request)
 
     const data = await request.json()
     const validatedData = createProductSchema.parse(data)
