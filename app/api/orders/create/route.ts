@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         totalAmount: totalUSD,
         status: "pending",
         customerName: "",
-        customerEmail: auth.user.email || "",
+        customerEmail: "", // Removed auth.user.email since session only contains uid
         customerContact: "",
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         createdAt: new Date(),

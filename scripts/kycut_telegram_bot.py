@@ -584,11 +584,29 @@ Please process this order and contact the customer.
             
             if response.status_code == 200:
                 data = response.json()
-                return {
-                    'success': True,
-                    'user_data': data.get('user', {}),
-                    'session_token': response.cookies.get('session')  # Get session from cookies
-                }
+                # The API now returns { success: true } with httpOnly cookies
+                if data.get('success'):
+                    # Extract session cookie from response
+                    session_cookie = None
+                    for cookie in response.cookies:
+                        if cookie.name == 'session':
+                            session_cookie = cookie.value
+                            break
+                    
+                    return {
+                        'success': True,
+                        'user_data': {
+                            'name': username,  # Use username as fallback since API doesn't return user data
+                            'email': username if '@' in username else None,
+                            'username': username if '@' not in username else None
+                        },
+                        'session_token': session_cookie
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'error': 'Authentication failed'
+                    }
             elif response.status_code == 401:
                 try:
                     error_data = response.json()
@@ -630,20 +648,48 @@ Please process this order and contact the customer.
                 'User-Agent': 'KYCut-Bot/1.0'
             }
             
-            params = {'orderId': order_id}
-            
-            response = requests.get(url, headers=headers, params=params, timeout=15)
+            response = requests.get(url, headers=headers, timeout=15)
             
             if response.status_code == 200:
                 data = response.json()
-                # Find the specific order
+                # Find the specific order by ID or order number
                 orders = data.get('orders', [])
-                order = next((o for o in orders if o.get('id') == order_id or o.get('order_number') == order_id), None)
+                order = None
+                
+                for o in orders:
+                    if (o.get('id') == order_id or 
+                        o.get('order_number') == order_id or
+                        str(o.get('id')) == order_id):
+                        order = o
+                        break
                 
                 if order:
+                    # Transform order data to expected format
+                    transformed_order = {
+                        'id': order.get('id'),
+                        'order_number': order.get('order_number', order.get('id')),
+                        'total': float(order.get('total_amount', 0)),
+                        'status': order.get('status', 'pending'),
+                        'items': [],
+                        'customer': {
+                            'name': order.get('customer_name', 'N/A'),
+                            'email': order.get('customer_email', 'N/A'),
+                            'contact': order.get('customer_email', 'N/A'),
+                            'telegram_username': user_sessions[user_id].get('user_data', {}).get('username', 'N/A')
+                        }
+                    }
+                    
+                    # Transform items
+                    for item in order.get('items', []):
+                        transformed_order['items'].append({
+                            'name': item.get('product_name', 'Unknown Item'),
+                            'quantity': item.get('quantity', 1),
+                            'price': float(item.get('product_price', 0))
+                        })
+                    
                     return {
                         'success': True,
-                        'order': order
+                        'order': transformed_order
                     }
                 else:
                     return {
