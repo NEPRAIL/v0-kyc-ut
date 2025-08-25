@@ -212,13 +212,3 @@ export const securityEventTypes = [
   "suspicious_activity",
 ] as const
 export type SecurityEventType = (typeof securityEventTypes)[number]
-
-export const linkingCodes = pgTable("linking_codes", {
-  code: text("code", { length: 8 }).primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  used: boolean("used").default(false).notNull(),
-})
