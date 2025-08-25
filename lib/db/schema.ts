@@ -14,15 +14,14 @@ import {
 
 // The users table already exists in your database, so we reference it
 export const users = pgTable("users", {
-  id: text("id").primaryKey(), // Changed from uuid to text to match spec
-  username: text("username").notNull().unique(), // Removed varchar length constraint
-  email: text("email").notNull().unique(), // Removed varchar length constraint
+  id: uuid("id").primaryKey().defaultRandom(), // Changed from text to uuid to match other table references
+  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  role: text("role").default("user").notNull(), // Removed varchar length constraint
-  telegramUserId: bigint("telegram_user_id", { mode: "number" }).nullable(), // Added Telegram integration
-  telegramUsername: text("telegram_username").nullable(), // Added Telegram username
+  role: text("role").default("user").notNull(),
+  telegramUserId: bigint("telegram_user_id", { mode: "number" }).nullable(),
+  telegramUsername: text("telegram_username").nullable(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  // Remove other fields not needed for this implementation
 })
 
 export const seasons = pgTable("seasons", {
@@ -68,7 +67,7 @@ export const variants = pgTable("variants", {
 
 export const orders = pgTable("orders", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: text("user_id")
+  userId: uuid("user_id") // Now properly matches users.id type
     .notNull()
     .references(() => users.id),
   orderNumber: text("order_number", { length: 32 }).notNull().unique(),
@@ -107,8 +106,8 @@ export const telegramLinks = pgTable(
 )
 
 export const telegramLinkingCodes = pgTable("telegram_linking_codes", {
-  code: text("code").primaryKey(), // 8-character alphanumeric code
-  userId: text("user_id").notNull(),
+  code: text("code").primaryKey(),
+  userId: uuid("user_id").notNull(), // Changed from text to uuid to match users.id
   expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
   usedAt: timestamp("used_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -135,7 +134,7 @@ export const sessions = pgTable("sessions", {
 
 export const orderItems = pgTable("order_items", {
   id: uuid("id").primaryKey().defaultRandom(),
-  orderId: text("order_id").references(() => orders.id, { onDelete: "cascade" }),
+  orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }), // Changed from text to uuid to match orders.id
   productId: text("product_id").notNull(),
   productName: text("product_name").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
@@ -145,7 +144,7 @@ export const orderItems = pgTable("order_items", {
 
 export const events = pgTable("events", {
   id: uuid("id").primaryKey().defaultRandom(),
-  orderId: text("order_id").references(() => orders.id),
+  orderId: uuid("order_id").references(() => orders.id), // Changed from text to uuid to match orders.id
   kind: text("kind").notNull(),
   data: jsonb("data"),
   createdAt: timestamp("created_at").defaultNow(),
