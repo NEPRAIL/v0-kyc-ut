@@ -1,21 +1,16 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { lucia, validateRequest } from "@/lib/auth/lucia"
-import { cookies } from "next/headers"
+import { NextResponse } from "next/server"
 
-export async function POST(request: NextRequest) {
-  try {
-    const { session } = await validateRequest()
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
-    await lucia.invalidateSession(session.id)
-    const sessionCookie = lucia.createBlankSessionCookie()
-    cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes)
-
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error("Logout error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-  }
+export async function POST() {
+  const res = NextResponse.json({ success: true })
+  res.cookies.set("session", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 0,
+    path: "/",
+  })
+  return res
 }

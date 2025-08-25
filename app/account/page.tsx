@@ -1,220 +1,157 @@
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-import { redirect } from "next/navigation"
-import { getServerAuth } from "@/lib/auth/middleware"
-import { getDb } from "@/lib/db"
-import { users, orders } from "@/lib/db/schema"
-import { eq, desc } from "drizzle-orm"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ShoppingBag, Package, Clock, CheckCircle } from "lucide-react"
+import { unstable_noStore as noStore } from "next/cache"
+import { requireAuth } from "@/lib/auth-server"
+import { loadUserSafe, loadTelegramLinkSafe, loadRecentOrdersSafe } from "@/lib/user"
+import { LogoutButton, CopyButton, OpenTelegramButton } from "./ClientActions"
 import Link from "next/link"
 
+function currency(cents: number, code: string) {
+  try {
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: code }).format(cents / 100)
+  } catch {
+    return `${(cents / 100).toFixed(2)} ${code}`
+  }
+}
+
 export default async function AccountPage() {
-  const auth = await getServerAuth()
-  if (!auth) redirect("/login")
+  noStore()
 
-  const db = getDb()
-
-  const [user] = await db
-    .select({ id: users.id, username: users.username, email: users.email })
-    .from(users)
-    .where(eq(users.id, auth.user.uid))
-    .limit(1)
-
-  if (!user) redirect("/login")
-
-  // Get recent orders with items
-  const recentOrders = await db
-    .select({
-      id: orders.id,
-      orderNumber: orders.orderNumber,
-      totalAmount: orders.totalAmount,
-      status: orders.status,
-      createdAt: orders.createdAt,
-    })
-    .from(orders)
-    .where(eq(orders.userId, auth.user.uid))
-    .orderBy(desc(orders.createdAt))
-    .limit(5)
-
-  // Get order statistics
-  const allOrders = await db
-    .select({
-      id: orders.id,
-      totalAmount: orders.totalAmount,
-      status: orders.status,
-    })
-    .from(orders)
-    .where(eq(orders.userId, auth.user.uid))
-
-  const totalSpent = allOrders.reduce((sum, order) => sum + Number(order.totalAmount), 0)
-  const pendingOrders = allOrders.filter((order) => order.status === "pending").length
-  const completedOrders = allOrders.filter(
-    (order) => order.status === "confirmed" || order.status === "delivered",
-  ).length
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-      case "delivered":
-        return "bg-green-500"
-      case "pending":
-        return "bg-yellow-500"
-      case "cancelled":
-        return "bg-red-500"
-      default:
-        return "bg-gray-500"
-    }
+  const auth = await requireAuth()
+  if (!auth.ok) {
+    // redirect here would be fine too; simple message avoids throwing
+    return (
+      <main className="p-6">
+        <h1 className="text-2xl font-semibold">Please sign in</h1>
+        <p className="mt-2">
+          <Link href="/login" className="underline">
+            Go to login
+          </Link>
+        </p>
+      </main>
+    )
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "confirmed":
-      case "delivered":
-        return CheckCircle
-      case "pending":
-        return Clock
-      default:
-        return Package
-    }
-  }
+  const [me, tg, recent] = await Promise.all([
+    loadUserSafe(auth.userId),
+    loadTelegramLinkSafe(auth.userId),
+    loadRecentOrdersSafe(auth.userId, 10),
+  ])
+
+  const botUsername = process.env.TELEGRAM_BOT_USERNAME || ""
+  const tgDeepLink = botUsername ? `https://t.me/${botUsername}?start=hello_${auth.userId}` : ""
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Welcome back, {user.username}!</h1>
-        <p className="text-muted-foreground">{user.email}</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
-                <ShoppingBag className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{allOrders.length}</p>
-                <p className="text-sm text-muted-foreground">Total Orders</p>
-              </div>
+    <main className="max-w-5xl mx-auto p-6 space-y-8">
+      {/* Top card: profile & session */}
+      <section className="rounded-2xl bg-zinc-900/60 border border-zinc-800 p-6 shadow-sm">
+        <div className="flex items-start justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600" />
+            <div>
+              <h1 className="text-xl font-semibold">
+                {me?.username ?? "User"}
+                {!me && <span className="text-sm text-zinc-400"> (profile row not found)</span>}
+              </h1>
+              <p className="text-sm text-zinc-400">{me?.email ?? "—"}</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <LogoutButton />
+        </div>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{completedOrders}</p>
-                <p className="text-sm text-muted-foreground">Completed</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+          <span className="px-2 py-1 rounded-lg bg-zinc-800 text-zinc-200">Session ID: {auth.session?.uid}</span>
+          <CopyButton text={String(auth.session?.uid ?? "")} label="Copy Session ID" />
+          {me?.id && <CopyButton text={me.id} label="Copy User ID" />}
+        </div>
+      </section>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{pendingOrders}</p>
-                <p className="text-sm text-muted-foreground">Pending</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Grid: Security + Telegram + Orders */}
+      <section className="grid md:grid-cols-3 gap-6">
+        {/* Security */}
+        <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 p-5">
+          <h2 className="text-lg font-semibold mb-2">Security</h2>
+          <ul className="text-sm text-zinc-300 space-y-2">
+            <li>Cookie: httpOnly, SameSite=Lax, Secure in prod</li>
+            <li>HMAC session with exp; invalid cookies = logged out</li>
+            <li>Rotate SESSION_SECRET to invalidate all sessions</li>
+          </ul>
+          <div className="mt-4 text-sm text-zinc-400">
+            Having trouble?{" "}
+            <Link href="/logout" className="underline">
+              Log out
+            </Link>{" "}
+            and back in.
+          </div>
+        </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Recent Orders</CardTitle>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/orders">View All Orders</Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {recentOrders.length === 0 ? (
-            <div className="text-center py-8">
-              <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
-              <p className="text-muted-foreground mb-4">Start shopping to see your orders here</p>
-              <Button asChild>
-                <Link href="/shop">Browse Shop</Link>
-              </Button>
+        {/* Telegram */}
+        <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 p-5">
+          <h2 className="text-lg font-semibold mb-2">Telegram</h2>
+          {tg ? (
+            <div className="space-y-2 text-sm">
+              <p className="text-zinc-300">
+                Linked as <span className="font-medium">@{tg.telegramUsername ?? tg.telegramUserId}</span>
+              </p>
+              {tgDeepLink && <OpenTelegramButton deepLink={tgDeepLink} />}
+              <p className="text-zinc-400">Orders will also be forwarded to your bot.</p>
+              <div className="text-xs text-zinc-500 mt-2">You can unlink by contacting support (UI coming soon).</div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {recentOrders.map((order) => {
-                const StatusIcon = getStatusIcon(order.status)
-                return (
-                  <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-                        <StatusIcon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Order #{order.orderNumber}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-medium">${Number(order.totalAmount).toFixed(2)}</p>
-                        <Badge className={`${getStatusColor(order.status)} text-white text-xs`}>
-                          {order.status.toUpperCase()}
-                        </Badge>
-                      </div>
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/orders/${order.orderNumber}`}>View</Link>
-                      </Button>
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="space-y-3 text-sm">
+              <p className="text-zinc-300">Not linked yet.</p>
+              <Link
+                href="/link-telegram"
+                className="px-3 py-2 rounded-xl bg-sky-600 text-white hover:bg-sky-700 inline-block"
+              >
+                Link Telegram
+              </Link>
+              {tgDeepLink && (
+                <p className="text-xs text-zinc-500">
+                  Tip: you can also open{" "}
+                  <a className="underline" href={tgDeepLink} target="_blank" rel="noreferrer">
+                    the bot
+                  </a>{" "}
+                  and /start.
+                </p>
+              )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {totalSpent > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold">${totalSpent.toFixed(2)}</p>
-                <p className="text-sm text-muted-foreground">Total Spent</p>
+        {/* Orders summary */}
+        <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 p-5">
+          <h2 className="text-lg font-semibold mb-2">Orders</h2>
+          <p className="text-sm text-zinc-400 mb-3">Latest {Math.min(recent.length, 10)} orders</p>
+          <div className="space-y-2">
+            {recent.length === 0 && <p className="text-sm text-zinc-500">No orders yet.</p>}
+            {recent.map((o) => (
+              <div key={o.id} className="flex items-center justify-between gap-4 rounded-xl bg-zinc-800/60 px-3 py-2">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{o.id}</div>
+                  <div className="text-xs text-zinc-400">
+                    {o.createdAt ? new Date(o.createdAt as any).toLocaleString() : "—"}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm">{currency(o.totalCents, o.currency)}</div>
+                  <div className="text-xs uppercase tracking-wide text-zinc-400">{o.status}</div>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{allOrders.length}</p>
-                <p className="text-sm text-muted-foreground">Orders Placed</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{completedOrders}</p>
-                <p className="text-sm text-muted-foreground">Successful Orders</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">
-                  {allOrders.length > 0 ? Math.round((completedOrders / allOrders.length) * 100) : 0}%
-                </p>
-                <p className="text-sm text-muted-foreground">Success Rate</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+            ))}
+          </div>
+          <div className="mt-3 text-xs text-zinc-500">For details, open your Telegram bot thread.</div>
+        </div>
+      </section>
+
+      {/* Danger zone (soft) */}
+      <section className="rounded-2xl bg-zinc-900/60 border border-zinc-800 p-5">
+        <h2 className="text-lg font-semibold mb-2">Danger Zone</h2>
+        <p className="text-sm text-zinc-400">
+          Delete account UI will be added later. Contact support to request deletion.
+        </p>
+      </section>
+    </main>
   )
 }
