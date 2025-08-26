@@ -5,7 +5,6 @@ import { db } from "@/lib/db"
 import { orders, orderItems } from "@/drizzle/schema"
 import { eq, and } from "drizzle-orm"
 import { requireAuthSoft, requireWebhook } from "@/lib/auth-server"
-import { broadcastToUser } from "@/lib/ws"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -73,11 +72,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   await db.update(orders).set({ status }).where(eq(orders.id, params.id))
 
-  // Broadcast via WS to both site user and (if exists) linked telegram user
-  try {
-    broadcastToUser(`sess:`, { type: "order_updated", orderId: params.id, status }) // will be ignored unless you pass session token key; optional
-    broadcastToUser(`tg:${row.userId}`, { type: "order_updated", orderId: params.id, status }) // optional if you map keys
-  } catch {}
+  console.log(`[v0] Order ${params.id} status updated to ${status}`)
 
   return NextResponse.json({ success: true })
 }
