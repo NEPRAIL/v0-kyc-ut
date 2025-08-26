@@ -91,9 +91,9 @@ export default async function AccountPage() {
                   <div className="flex items-center gap-2 px-3 py-2 bg-muted/20 rounded-lg">
                     <span className="text-sm font-medium">Session ID:</span>
                     <code className="text-xs bg-background px-2 py-1 rounded font-mono">
-                      {auth.session?.uid?.slice(0, 8)}...
+                      {auth.session?.userId?.slice(0, 8)}...
                     </code>
-                    <CopyButton text={String(auth.session?.uid ?? "")} label="Copy" />
+                    <CopyButton text={String(auth.session?.userId ?? "")} label="Copy" />
                   </div>
                   {me?.id && (
                     <div className="flex items-center gap-2 px-3 py-2 bg-muted/20 rounded-lg">
