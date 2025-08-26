@@ -52,8 +52,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const id = params?.id
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
-  const { requireAdmin } = await import("@/lib/auth/middleware")
-  const auth = await requireAdmin(req)
+  const { requireAdminAPI } = await import("@/lib/auth/middleware")
+  const auth = await requireAdminAPI(req)
   if (auth instanceof NextResponse) return auth
 
   let body: any
@@ -79,8 +79,8 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
   const id = params?.id
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
-  const { requireAdmin } = await import("@/lib/auth/middleware")
-  const auth = await requireAdmin(req)
+  const { requireAdminAPI } = await import("@/lib/auth/middleware")
+  const auth = await requireAdminAPI(req)
   if (auth instanceof NextResponse) return auth
 
   const { db } = await import("@/lib/db")
