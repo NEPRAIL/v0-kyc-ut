@@ -1,4 +1,4 @@
-import { createHmac } from "crypto"
+import { createHmac } from "node:crypto"
 
 const secret = process.env.SESSION_SECRET || "change-me"
 

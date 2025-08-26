@@ -41,7 +41,20 @@ export async function getAuthFromRequest(): Promise<{ userId: string } | null> {
         ),
       })
       if (row?.userId) {
-        // touch lastSeenAt
+        // Check if token expires within 7 days and refresh if needed
+        const sevenDaysFromNow = addDays(new Date(), 7)
+        const shouldRefresh = row.botTokenExpiresAt && row.botTokenExpiresAt < sevenDaysFromNow
+
+        if (shouldRefresh) {
+          console.log(`[v0] Auto-refreshing bot token for Telegram user ${row.telegramUserId}`)
+          try {
+            await issueBotToken(row.userId, row.telegramUserId, 30)
+          } catch (error) {
+            console.error("[v0] Failed to auto-refresh bot token:", error)
+          }
+        }
+
+        // Update last seen timestamp for session tracking
         await db
           .update(telegramLinks)
           .set({ lastSeenAt: new Date() })
@@ -60,6 +73,10 @@ export async function issueBotToken(userId: string, telegramUserId: number, ttlD
   const hash = hashBotToken(token)
   const expires = addDays(new Date(), ttlDays)
 
+  console.log(
+    `[v0] Issuing bot token for user ${userId}, Telegram ID ${telegramUserId}, expires ${expires.toISOString()}`,
+  )
+
   // upsert link row
   const existing = await db.query.telegramLinks.findFirst({
     where: eq(telegramLinks.telegramUserId, telegramUserId),
@@ -68,7 +85,13 @@ export async function issueBotToken(userId: string, telegramUserId: number, ttlD
   if (existing) {
     await db
       .update(telegramLinks)
-      .set({ botTokenHash: hash, botTokenExpiresAt: expires, updatedAt: new Date(), isRevoked: false })
+      .set({
+        botTokenHash: hash,
+        botTokenExpiresAt: expires,
+        updatedAt: new Date(),
+        isRevoked: false,
+        lastSeenAt: new Date(), // Track when token was issued
+      })
       .where(eq(telegramLinks.telegramUserId, telegramUserId))
   } else {
     await db.insert(telegramLinks).values({
@@ -78,8 +101,60 @@ export async function issueBotToken(userId: string, telegramUserId: number, ttlD
       isRevoked: false,
       botTokenHash: hash,
       botTokenExpiresAt: expires,
+      lastSeenAt: new Date(),
     })
   }
 
   return { token, expiresAt: expires }
+}
+
+export async function validateBotSession(
+  telegramUserId: number,
+): Promise<{ valid: boolean; userId?: string; needsRefresh?: boolean }> {
+  const db = getDb()
+  const now = new Date()
+
+  const link = await db.query.telegramLinks.findFirst({
+    where: and(eq(telegramLinks.telegramUserId, telegramUserId), eq(telegramLinks.isRevoked, false)),
+  })
+
+  if (!link) {
+    return { valid: false }
+  }
+
+  // Check if token is expired
+  if (link.botTokenExpiresAt && link.botTokenExpiresAt <= now) {
+    return { valid: false, userId: link.userId }
+  }
+
+  // Check if token needs refresh (expires within 7 days)
+  const sevenDaysFromNow = addDays(now, 7)
+  const needsRefresh = link.botTokenExpiresAt && link.botTokenExpiresAt < sevenDaysFromNow
+
+  return {
+    valid: true,
+    userId: link.userId,
+    needsRefresh: needsRefresh || false,
+  }
+}
+
+export async function getUserBotSessions(userId: string) {
+  const db = getDb()
+  const now = new Date()
+
+  const sessions = await db.query.telegramLinks.findMany({
+    where: and(
+      eq(telegramLinks.userId, userId),
+      eq(telegramLinks.isRevoked, false),
+      gt(telegramLinks.botTokenExpiresAt, now),
+    ),
+  })
+
+  return sessions.map((session) => ({
+    telegramUserId: session.telegramUserId,
+    telegramUsername: session.telegramUsername,
+    linkedVia: session.linkedVia,
+    lastSeenAt: session.lastSeenAt,
+    expiresAt: session.botTokenExpiresAt,
+  }))
 }

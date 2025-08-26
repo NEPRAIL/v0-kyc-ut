@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db"
 import { users } from "@/lib/db/schema"
 import { eq, or } from "drizzle-orm"
 import bcrypt from "bcryptjs"
-import crypto from "crypto"
+import { createHmac, randomUUID } from "node:crypto"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -27,7 +27,7 @@ function signCookie(uid: string) {
   } catch {
     key = Buffer.from(secret)
   }
-  const mac = crypto.createHmac("sha256", key).update(payload).digest("base64url")
+  const mac = createHmac("sha256", key).update(payload).digest("base64url")
   return `${payload}.${mac}`
 }
 
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
     // Hash password and create user
     const hashedPassword = await bcrypt.hash(password, 12)
-    const userId = crypto.randomUUID()
+    const userId = randomUUID()
 
     const newUsers = await db
       .insert(users)

@@ -1,17 +1,16 @@
-// lib/bot-auth.ts
-import crypto from "crypto"
+import { randomBytes, createHash } from "node:crypto"
 
 const BOT_TOKEN_PREFIX = "bot_"
 
 export function generateBotToken(): string {
   // opaque random token
-  const raw = crypto.randomBytes(32).toString("base64url")
+  const raw = randomBytes(32).toString("base64url")
   return BOT_TOKEN_PREFIX + raw
 }
 
 export function hashBotToken(token: string): string {
   // never store the raw token, only the hash
-  return crypto.createHash("sha256").update(token, "utf8").digest("hex")
+  return createHash("sha256").update(token, "utf8").digest("hex")
 }
 
 export function botTokenFromAuthHeader(req: Request): string | null {

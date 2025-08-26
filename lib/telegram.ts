@@ -1,6 +1,6 @@
-import crypto from "crypto"
+import { createHash, createHmac } from "node:crypto"
 
-const sha256 = (x: Buffer | string) => crypto.createHash("sha256").update(x).digest()
+const sha256 = (x: Buffer | string) => createHash("sha256").update(x).digest()
 
 export function verifyTelegramAuth(initData: URLSearchParams, botToken: string) {
   const dataCheckString = Array.from(initData.entries())
@@ -10,7 +10,7 @@ export function verifyTelegramAuth(initData: URLSearchParams, botToken: string) 
     .join("\n")
 
   const secretKey = sha256(botToken)
-  const hmac = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex")
+  const hmac = createHmac("sha256", secretKey).update(dataCheckString).digest("hex")
   const givenHash = initData.get("hash")
   return hmac === givenHash
 }

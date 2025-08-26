@@ -1,6 +1,6 @@
 import { checkRateLimit } from "@/lib/rate-limit"
 import { securityMonitor } from "@/lib/security/security-monitor"
-import crypto from "crypto"
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
 
 interface BotSecurityConfig {
   maxRequestsPerMinute: number
@@ -44,9 +44,9 @@ export class BotSecurityManager {
 
   validateWebhookSignature(body: string, signature: string, secret: string): boolean {
     try {
-      const expectedSignature = crypto.createHmac("sha256", secret).update(body).digest("hex")
+      const expectedSignature = createHmac("sha256", secret).update(body).digest("hex")
 
-      return crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"))
+      return timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"))
     } catch {
       return false
     }
@@ -101,11 +101,11 @@ export class BotSecurityManager {
       userId: telegramUserId,
       command,
       timestamp: Date.now(),
-      nonce: crypto.randomBytes(16).toString("hex"),
+      nonce: randomBytes(16).toString("hex"),
     }
 
     const secret = process.env.WEBHOOK_SECRET || "fallback-secret"
-    const signature = crypto.createHmac("sha256", secret).update(JSON.stringify(payload)).digest("hex")
+    const signature = createHmac("sha256", secret).update(JSON.stringify(payload)).digest("hex")
 
     return Buffer.from(JSON.stringify({ ...payload, signature })).toString("base64url")
   }
@@ -128,12 +128,9 @@ export class BotSecurityManager {
       // Verify signature
       const expectedPayload = { userId, command, timestamp, nonce }
       const secret = process.env.WEBHOOK_SECRET || "fallback-secret"
-      const expectedSignature = crypto
-        .createHmac("sha256", secret)
-        .update(JSON.stringify(expectedPayload))
-        .digest("hex")
+      const expectedSignature = createHmac("sha256", secret).update(JSON.stringify(expectedPayload)).digest("hex")
 
-      return crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"))
+      return timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"))
     } catch {
       return false
     }

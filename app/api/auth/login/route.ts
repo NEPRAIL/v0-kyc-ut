@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db"
 import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcryptjs"
-import crypto from "crypto"
+import { createHmac } from "node:crypto"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -29,7 +29,7 @@ function signCookie(uid: string) {
   } catch {
     key = Buffer.from(secret, "utf8")
   }
-  const mac = crypto.createHmac("sha256", key).update(payload).digest("base64url")
+  const mac = createHmac("sha256", key).update(payload).digest("base64url")
   return `${payload}.${mac}`
 }
 

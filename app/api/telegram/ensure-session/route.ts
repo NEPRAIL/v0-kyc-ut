@@ -12,19 +12,22 @@ const reqSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    // Optional shared secret header to limit access
     const secret = process.env.WEBHOOK_SECRET
     const hdr = req.headers.get("x-webhook-secret")
     if (secret && hdr !== secret) {
+      console.log("[v0] Telegram ensure-session: Invalid webhook secret")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const body = await req.json()
     const { telegramUserId } = reqSchema.parse(body)
 
+    console.log("[v0] Telegram ensure-session request for user:", telegramUserId)
+
     const rateLimitKey = `tg:ensure-session:${telegramUserId}`
     const rateLimit = await checkRateLimit(rateLimitKey, { requests: 10, window: 60 })
     if (!rateLimit.success) {
+      console.log("[v0] Rate limit exceeded for Telegram user:", telegramUserId)
       return NextResponse.json({ error: "Too many requests" }, { status: 429 })
     }
 
@@ -34,14 +37,14 @@ export async function POST(req: Request) {
     })
 
     if (!link) {
-      console.error("[telegram/ensure-session] No linked account for Telegram user:", telegramUserId)
+      console.log("[v0] No linked account found for Telegram user:", telegramUserId)
       return NextResponse.json({ error: "No linked account for this Telegram user" }, { status: 404 })
     }
 
     // Ensure the user still exists
     const user = await db.query.users.findFirst({ where: eq(users.id, link.userId) })
     if (!user) {
-      console.error("[telegram/ensure-session] Linked user no longer exists:", link.userId)
+      console.log("[v0] Linked user no longer exists, revoking link for:", link.userId)
       // revoke link
       await db
         .update(telegramLinks)
@@ -51,7 +54,7 @@ export async function POST(req: Request) {
     }
 
     const { token, expiresAt } = await issueBotToken(link.userId, telegramUserId, 30)
-    console.log("[telegram/ensure-session] Issued bot token for user:", link.userId)
+    console.log("[v0] Successfully issued bot token for user:", link.userId, "telegram:", telegramUserId)
 
     return NextResponse.json({
       success: true,
@@ -60,7 +63,7 @@ export async function POST(req: Request) {
       expiresAt: expiresAt.toISOString(),
     })
   } catch (err: any) {
-    console.error("[telegram/ensure-session] error:", err)
+    console.error("[v0] Telegram ensure-session error:", err)
     if (err?.name === "ZodError") {
       return NextResponse.json({ error: "Invalid input", issues: err.issues }, { status: 400 })
     }

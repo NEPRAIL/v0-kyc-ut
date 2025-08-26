@@ -2,10 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { orders } from "@/lib/db/schema"
 import { requireAuth } from "@/lib/auth-server"
-import crypto from "crypto"
-
-export const runtime = "nodejs"
-export const dynamic = "force-dynamic"
+import { randomBytes } from "node:crypto"
 
 interface CartItem {
   id: string
@@ -15,6 +12,9 @@ interface CartItem {
   verificationLevel?: string
   category?: string
 }
+
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const totalCents = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100)
     console.log("[v0] Total amount calculated:", totalCents, "cents")
 
-    const id = "ord_" + crypto.randomBytes(12).toString("hex")
+    const id = "ord_" + randomBytes(12).toString("hex")
     const botUser = process.env.TELEGRAM_BOT_USERNAME || ""
     const deepLink = botUser ? `https://t.me/${botUser}?start=order_${id}` : null
 

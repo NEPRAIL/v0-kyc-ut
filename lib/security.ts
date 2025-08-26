@@ -1,4 +1,4 @@
-import crypto from "crypto"
+import { createHmac, timingSafeEqual, randomBytes } from "node:crypto"
 import bcrypt from "bcryptjs"
 
 // Accept base64 or utf8 secret; require >=32 bytes
@@ -29,9 +29,9 @@ export async function verifySession(cookieVal: string): Promise<{ uid: string; e
     const payload = JSON.parse(payloadJson) as { uid?: string; exp?: number }
     if (!payload?.uid || !payload?.exp) return null
 
-    const mac = crypto.createHmac("sha256", key).update(payloadB64u).digest()
+    const mac = createHmac("sha256", key).update(payloadB64u).digest()
     const macCheck = Buffer.from(macB64u.replace(/-/g, "+").replace(/_/g, "/"), "base64")
-    if (mac.length !== macCheck.length || !crypto.timingSafeEqual(mac, macCheck)) return null
+    if (mac.length !== macCheck.length || !timingSafeEqual(mac, macCheck)) return null
 
     if (Math.floor(Date.now() / 1000) > payload.exp) return null
     return { uid: payload.uid, exp: payload.exp }
@@ -60,7 +60,7 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export function randomId(): string {
-  return crypto.randomBytes(16).toString("hex")
+  return randomBytes(16).toString("hex")
 }
 
 export function signSession(uid: string, expiresInSeconds = 86400): string {
@@ -78,8 +78,7 @@ export function signSession(uid: string, expiresInSeconds = 86400): string {
     .replace(/\//g, "_")
     .replace(/=/g, "")
 
-  const mac = crypto
-    .createHmac("sha256", key)
+  const mac = createHmac("sha256", key)
     .update(payloadB64u)
     .digest("base64")
     .replace(/\+/g, "-")

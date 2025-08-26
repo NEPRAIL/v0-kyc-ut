@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import crypto from "crypto"
+import { randomBytes } from "node:crypto"
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const user = users[0]
 
     // Generate secure reset token
-    const resetToken = crypto.randomBytes(32).toString("hex")
+    const resetToken = randomBytes(32).toString("hex")
     const resetTokenExpiry = new Date(Date.now() + 3600000) // 1 hour from now
 
     // Store reset token in database

@@ -3,7 +3,7 @@ import { z } from "zod"
 import { getDb } from "@/lib/db"
 import { orders } from "@/lib/db/schema"
 import { requireAuth } from "@/lib/auth-server"
-import crypto from "crypto"
+import { randomBytes } from "node:crypto"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const { items, currency } = parsed.data
     const totalCents = items.reduce((s, it) => s + it.price_cents * it.qty, 0)
 
-    const id = "ord_" + crypto.randomBytes(12).toString("hex")
+    const id = "ord_" + randomBytes(12).toString("hex")
     const site = process.env.SITE_URL?.replace(/\/+$/, "") || ""
     const botUser = process.env.TELEGRAM_BOT_USERNAME || ""
     const deepLink = botUser ? `https://t.me/${botUser}?start=order_${id}` : null

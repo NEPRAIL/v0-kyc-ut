@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { getDb } from "@/lib/db"
 import { telegramLinkingCodes } from "@/lib/db/schema"
-import { eq, and, gt } from "drizzle-orm"
+import { eq, and, gt, isNull } from "drizzle-orm"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -25,9 +25,13 @@ export async function POST() {
     }
 
     const db = getDb()
+    const now = new Date()
+
+    await db
+      .delete(telegramLinkingCodes)
+      .where(and(eq(telegramLinkingCodes.userId, auth.userId), gt(now, telegramLinkingCodes.expiresAt)))
 
     // Check for existing active codes (not expired and not used)
-    const now = new Date()
     const existingCodes = await db
       .select()
       .from(telegramLinkingCodes)
@@ -35,13 +39,14 @@ export async function POST() {
         and(
           eq(telegramLinkingCodes.userId, auth.userId),
           gt(telegramLinkingCodes.expiresAt, now),
-          eq(telegramLinkingCodes.usedAt, null),
+          isNull(telegramLinkingCodes.usedAt),
         ),
       )
 
     if (existingCodes.length > 0) {
       // Return existing active code
       const code = existingCodes[0]
+      console.log(`[v0] Returning existing linking code ${code.code} for user ${auth.userId}`)
       return NextResponse.json({
         success: true,
         code: code.code,
@@ -67,7 +72,6 @@ export async function POST() {
         .then((r) => r.length > 0)
     )
 
-    // Set expiration to 10 minutes from now
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
     // Insert new code
@@ -77,7 +81,9 @@ export async function POST() {
       expiresAt,
     })
 
-    console.log(`[v0] Generated linking code ${code} for user ${auth.userId}`)
+    console.log(
+      `[v0] Generated new linking code ${code} for user ${auth.userId}, expires at ${expiresAt.toISOString()}`,
+    )
 
     return NextResponse.json({
       success: true,
