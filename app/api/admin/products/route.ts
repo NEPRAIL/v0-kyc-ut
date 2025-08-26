@@ -1,11 +1,11 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/auth/middleware"
-import { db } from "@/lib/db"
-import { products, seasons, rarities } from "@/lib/db/schema"
-import { eq, like, sql } from "drizzle-orm"
-import { z } from "zod"
+// app/api/admin/products/route.ts
+import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
-const createProductSchema = z.object({
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const CreateProductSchema = z.object({
   name: z.string().min(1),
   slug: z.string().min(1),
   description: z.union([z.string(), z.null()]).optional(),
@@ -14,17 +14,26 @@ const createProductSchema = z.object({
   rarityId: z.union([z.string().uuid(), z.null()]).optional(),
   redeemable: z.boolean().optional(),
   series: z.union([z.string(), z.null()]).optional(),
-})
+});
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAdmin(request)
+    // ⬇️ Lazy imports prevent build-time evaluation of other modules
+    const [{ requireAdmin }, { db }, { products, seasons, rarities }, { eq, like, sql }] =
+      await Promise.all([
+        import("@/lib/auth/middleware"),
+        import("@/lib/db"),
+        import("@/lib/db/schema"),
+        import("drizzle-orm"),
+      ]);
 
-    const { searchParams } = new URL(request.url)
-    const search = searchParams.get("search") || ""
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    const limit = Number.parseInt(searchParams.get("limit") || "10")
-    const offset = (page - 1) * limit
+    await requireAdmin(request); // pass request
+
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search") || "";
+    const page = Number.parseInt(searchParams.get("page") || "1");
+    const limit = Number.parseInt(searchParams.get("limit") || "10");
+    const offset = (page - 1) * limit;
 
     let query = db
       .select({
@@ -47,20 +56,20 @@ export async function GET(request: NextRequest) {
       })
       .from(products)
       .leftJoin(seasons, eq(products.seasonId, seasons.id))
-      .leftJoin(rarities, eq(products.rarityId, rarities.id))
+      .leftJoin(rarities, eq(products.rarityId, rarities.id));
 
     if (search) {
-      query = query.where(like(products.name, `%${search}%`))
+      query = query.where(like(products.name, `%${search}%`));
     }
 
-    const results = await query.limit(limit).offset(offset).orderBy(products.createdAt)
+    const results = await query.limit(limit).offset(offset).orderBy(products.createdAt);
 
-    // Get total count
-    let countQuery = db.select({ count: sql<number>`COUNT(*)` }).from(products)
+    // total count
+    let countQuery = db.select({ count: sql<number>`COUNT(*)` }).from(products);
     if (search) {
-      countQuery = countQuery.where(like(products.name, `%${search}%`))
+      countQuery = countQuery.where(like(products.name, `%${search}%`));
     }
-    const [{ count }] = await countQuery
+    const [{ count }] = await countQuery;
 
     return NextResponse.json({
       products: results,
@@ -70,41 +79,49 @@ export async function GET(request: NextRequest) {
         total: count,
         pages: Math.ceil(count / limit),
       },
-    })
+    });
   } catch (error) {
-    console.error("Admin products API error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Admin products GET error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAdmin(request)
+    const [{ requireAdmin }, { db }, { products }] = await Promise.all([
+      import("@/lib/auth/middleware"),
+      import("@/lib/db"),
+      import("@/lib/db/schema"),
+    ]);
 
-    const data = await request.json()
-    const validatedData = createProductSchema.parse(data)
-    const { name, slug, description, imageUrl, seasonId, rarityId, redeemable, series } = validatedData
+    await requireAdmin(request); // pass request
 
-    const [product] = await db
+    const body = await request.json();
+    const data = CreateProductSchema.parse(body);
+
+    const [created] = await db
       .insert(products)
       .values({
-        name,
-        slug,
-        description: description || null,
-        imageUrl: imageUrl || null,
-        seasonId: seasonId || null,
-        rarityId: rarityId || null,
-        redeemable: redeemable || false,
-        series: series || null,
+        name: data.name,
+        slug: data.slug,
+        description: data.description ?? null,
+        imageUrl: data.imageUrl ?? null,
+        seasonId: data.seasonId ?? null,
+        rarityId: data.rarityId ?? null,
+        redeemable: data.redeemable ?? false,
+        series: data.series ?? null,
       })
-      .returning()
+      .returning();
 
-    return NextResponse.json({ product })
-  } catch (error) {
-    console.error("Create product error:", error)
+    return NextResponse.json({ product: created });
+  } catch (error: any) {
+    console.error("Create product error:", error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid request data", details: error.errors }, { status: 400 })
+      return NextResponse.json(
+        { error: "Invalid request data", details: error.errors },
+        { status: 400 },
+      );
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
