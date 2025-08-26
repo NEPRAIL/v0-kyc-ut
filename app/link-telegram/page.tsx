@@ -9,7 +9,7 @@ import { CheckCircle, ExternalLink } from "lucide-react"
 export default function LinkTelegramPage() {
   const [linked, setLinked] = useState(false)
   const [error, setError] = useState("")
-  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "kycut_bot"
+  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "KYCutBot"
 
   useEffect(() => {
     // Check if user came back from successful Telegram auth
