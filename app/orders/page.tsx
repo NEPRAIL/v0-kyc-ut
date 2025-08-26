@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle, Clock, XCircle, Search, Filter, Package, Calendar } from "lucide-react"
+import { CheckCircle, Clock, XCircle, Search, Filter, Package, Calendar, AlertCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
 
 interface OrderItem {
@@ -15,6 +15,7 @@ interface OrderItem {
   product_id: string
   quantity: number
   product_price: number
+  total_price: number
 }
 
 interface Order {
@@ -27,21 +28,27 @@ interface Order {
   updated_at: string
   notes?: string
   items: OrderItem[]
+  total_items: number
+  currency_symbol: string
+  telegram_deeplink?: string
 }
 
 const statusConfig = {
-  pending: { label: "Pending", color: "bg-yellow-500", icon: Clock },
-  confirmed: { label: "Confirmed", color: "bg-green-500", icon: CheckCircle },
-  processing: { label: "Processing", color: "bg-blue-500", icon: Package },
-  shipped: { label: "Shipped", color: "bg-purple-500", icon: Package },
-  delivered: { label: "Delivered", color: "bg-green-600", icon: CheckCircle },
-  cancelled: { label: "Cancelled", color: "bg-red-500", icon: XCircle },
+  pending: { label: "Pending", color: "bg-yellow-500", icon: Clock, variant: "secondary" as const },
+  confirmed: { label: "Confirmed", color: "bg-green-500", icon: CheckCircle, variant: "default" as const },
+  processing: { label: "Processing", color: "bg-blue-500", icon: Package, variant: "default" as const },
+  shipped: { label: "Shipped", color: "bg-purple-500", icon: Package, variant: "default" as const },
+  delivered: { label: "Delivered", color: "bg-green-600", icon: CheckCircle, variant: "default" as const },
+  cancelled: { label: "Cancelled", color: "bg-red-500", icon: XCircle, variant: "destructive" as const },
+  paid: { label: "Paid", color: "bg-green-500", icon: CheckCircle, variant: "default" as const },
+  failed: { label: "Failed", color: "bg-red-500", icon: XCircle, variant: "destructive" as const },
 }
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [sortBy, setSortBy] = useState("newest")
@@ -66,12 +73,15 @@ export default function OrdersPage() {
         const data = await response.json()
         console.log("[v0] Orders API response data:", data)
         setOrders(data.orders || [])
+        setError("")
       } else {
-        const errorText = await response.text()
-        console.error("[v0] Orders API error:", response.status, errorText)
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.error || `Failed to load orders (${response.status})`)
+        console.error("[v0] Orders API error:", response.status, errorData)
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error)
+      setError("Network error. Please check your connection and try again.")
     } finally {
       setLoading(false)
     }
@@ -125,14 +135,37 @@ export default function OrdersPage() {
     return (
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">My Orders</h1>
-          <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="h-32 bg-muted rounded-lg"></div>
-              </div>
-            ))}
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+              <h2 className="text-xl font-semibold mb-2">Loading Orders</h2>
+              <p className="text-muted-foreground">Please wait while we fetch your order history...</p>
+            </div>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-6xl mx-auto">
+          <Card className="border-destructive/50">
+            <CardContent className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2 text-destructive">Error Loading Orders</h2>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={fetchOrders} variant="outline">
+                  Try Again
+                </Button>
+                <Button asChild>
+                  <Link href="/account">Go to Account</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
@@ -147,7 +180,7 @@ export default function OrdersPage() {
             <p className="text-muted-foreground">Track and manage your order history</p>
           </div>
           <Button asChild variant="outline">
-            <Link href="/">Continue Shopping</Link>
+            <Link href="/shop">Continue Shopping</Link>
           </Button>
         </div>
 
@@ -177,7 +210,9 @@ export default function OrdersPage() {
                   <SelectItem value="processing">Processing</SelectItem>
                   <SelectItem value="shipped">Shipped</SelectItem>
                   <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={sortBy} onValueChange={setSortBy}>
@@ -210,7 +245,7 @@ export default function OrdersPage() {
               </p>
               {orders.length === 0 && (
                 <Button asChild>
-                  <Link href="/">Browse Shop</Link>
+                  <Link href="/shop">Browse Shop</Link>
                 </Button>
               )}
             </CardContent>
@@ -230,8 +265,11 @@ export default function OrdersPage() {
                           <div>
                             <h3 className="font-semibold text-lg">Order #{order.order_number}</h3>
                             <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {order.total_items} item{order.total_items !== 1 ? "s" : ""}
+                            </p>
                           </div>
-                          <Badge className={`${statusInfo.color} text-white`}>
+                          <Badge variant={statusInfo.variant} className={statusInfo.color}>
                             <StatusIcon className="h-3 w-3 mr-1" />
                             {statusInfo.label}
                           </Badge>
@@ -244,7 +282,8 @@ export default function OrdersPage() {
                                 {item.quantity}x {item.product_name}
                               </span>
                               <span className="font-medium">
-                                ${((Number(item.product_price) || 0) * item.quantity).toFixed(2)}
+                                {order.currency_symbol}
+                                {item.total_price.toFixed(2)}
                               </span>
                             </div>
                           ))}
@@ -262,15 +301,20 @@ export default function OrdersPage() {
                       <div className="flex flex-col items-end gap-3">
                         <div className="text-right">
                           <p className="text-sm text-muted-foreground">Total</p>
-                          <p className="text-2xl font-bold">${(Number(order.total_amount) || 0).toFixed(2)}</p>
+                          <p className="text-2xl font-bold">
+                            {order.currency_symbol}
+                            {order.total_amount.toFixed(2)}
+                          </p>
                         </div>
                         <div className="flex gap-2">
                           <Button asChild variant="outline" size="sm">
                             <Link href={`/orders/${order.order_number}`}>View Details</Link>
                           </Button>
-                          {order.status === "pending" && (
+                          {order.status === "pending" && order.telegram_deeplink && (
                             <Button asChild size="sm">
-                              <Link href={`/orders/${order.order_number}/telegram`}>Complete Order</Link>
+                              <a href={order.telegram_deeplink} target="_blank" rel="noopener noreferrer">
+                                Complete Payment
+                              </a>
                             </Button>
                           )}
                         </div>
@@ -291,21 +335,25 @@ export default function OrdersPage() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold">{orders.length}</p>
+                  <p className="text-2xl font-bold text-primary">{orders.length}</p>
                   <p className="text-sm text-muted-foreground">Total Orders</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold">
-                    ${orders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0).toFixed(2)}
+                  <p className="text-2xl font-bold text-green-600">
+                    ${orders.reduce((sum, order) => sum + order.total_amount, 0).toFixed(2)}
                   </p>
                   <p className="text-sm text-muted-foreground">Total Spent</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold">{orders.filter((order) => order.status === "delivered").length}</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {orders.filter((order) => ["delivered", "paid", "confirmed"].includes(order.status)).length}
+                  </p>
                   <p className="text-sm text-muted-foreground">Completed</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold">{orders.filter((order) => order.status === "pending").length}</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {orders.filter((order) => order.status === "pending").length}
+                  </p>
                   <p className="text-sm text-muted-foreground">Pending</p>
                 </div>
               </div>

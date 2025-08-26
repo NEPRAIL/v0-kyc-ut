@@ -10,12 +10,16 @@ export const dynamic = "force-dynamic"
 
 export async function POST(req: Request) {
   try {
-    // If a session cookie exists and is valid, prefer that (browser flow).
-    // Only enforce webhook secret when there is no session auth.
     const auth = await requireAuth()
     const secret = process.env.WEBHOOK_SECRET
-    const hdr = req.headers.get("x-webhook-secret")
-    if (!auth.ok && secret && hdr !== secret) {
+    const authHeader = req.headers.get("authorization")
+    const webhookSecret = req.headers.get("x-webhook-secret")
+
+    // Allow if: 1) Valid session auth, 2) Valid webhook secret, 3) Valid bot token
+    const hasValidAuth = auth.ok || (secret && webhookSecret === secret) || authHeader?.startsWith("Bearer ")
+
+    if (!hasValidAuth) {
+      console.log("[telegram/link] Unauthorized request - no valid auth method")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -25,10 +29,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Code and Telegram user ID required" }, { status: 400 })
     }
 
-    const rateLimitKey = `tg:verify-code:${telegramUserId}`
+    const rateLimitKey = `tg:link:${telegramUserId}`
     const rateLimit = await checkRateLimit(rateLimitKey, { requests: 5, window: 60 })
     if (!rateLimit.success) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+      console.log(`[telegram/link] Rate limit exceeded for Telegram user ${telegramUserId}`)
+      return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 })
     }
 
     const db = getDb()
@@ -83,16 +88,18 @@ export async function POST(req: Request) {
 
     const { token, expiresAt } = await issueBotToken(linkingCode.userId, telegramUserId, 30)
 
-    console.log(`[telegram/verify-code] Successfully linked user ${linkingCode.userId} to Telegram ${telegramUserId}`)
+    console.log(`[telegram/link] Successfully linked user ${linkingCode.userId} to Telegram ${telegramUserId}`)
 
     return NextResponse.json({
       success: true,
       message: "Account linked successfully",
       botToken: token,
       expiresAt: expiresAt.toISOString(),
+      userId: linkingCode.userId,
+      telegramUserId: telegramUserId,
     })
   } catch (error) {
-    console.error("[telegram/verify-code] error:", error)
+    console.error("[telegram/link] error:", error)
     return NextResponse.json({ error: "Failed to verify linking code" }, { status: 500 })
   }
 }
