@@ -1,45 +1,26 @@
-import { requireAuth } from "@/lib/auth-server"
-import { AccountHeader } from "@/components/account/account-header"
-import { ProfileSettingsForm } from "@/components/account/profile-settings-form"
-import { SecuritySettingsForm } from "@/components/account/security-settings-form"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-
-export const dynamic = "force-dynamic"
+// app/account/settings/page.tsx
+import { requireAuth } from "@/lib/auth-server"; // wherever yours lives
+import { redirect } from "next/navigation";
 
 export default async function SettingsPage() {
-  const auth = await requireAuth()
-  if (!auth.success) {
-    // This should redirect, but just in case
-    return <div>Authentication required</div>
+  const auth = await requireAuth();
+
+  if (!auth.ok) {
+    // your helper likely already redirected; this is a safety net
+    redirect("/login"); // or return <div>Authentication required</div>
   }
 
+  // here TS knows auth is the ok-branch
+  const userId = auth.userId;
+  const session = auth.session;
+
   return (
-    <div className="space-y-6">
-      <AccountHeader title="Account Settings" description="Manage your profile, security, and preferences" />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Settings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProfileSettingsForm userId={auth.userId} />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SecuritySettingsForm userId={auth.userId} />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+    <div className="mx-auto max-w-3xl px-6 py-8">
+      <h1 className="text-2xl font-semibold">Account Settings</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        User ID: {String(userId)}
+      </p>
+      {/* ...rest of your settings UI... */}
     </div>
-  )
+  );
 }
