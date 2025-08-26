@@ -1,95 +1,38 @@
-import { NextResponse } from "next/server"
-import { getDb } from "@/lib/db"
-import { telegramLinkingCodes, telegramLinks } from "@/lib/db/schema"
-import { eq, and, gt, isNull } from "drizzle-orm"
-import { issueBotToken } from "@/lib/auth-server"
-import { checkRateLimit } from "@/lib/rate-limit"
-
 export const runtime = "nodejs"
-export const dynamic = "force-dynamic"
+
+import { NextResponse } from "next/server"
+import { db } from "@/lib/db"
+import { users, linkingCodes } from "@/drizzle/schema"
+import { eq, and } from "drizzle-orm"
+import { requireWebhook } from "@/lib/auth-server"
 
 export async function POST(req: Request) {
+  if (!(await requireWebhook())) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   try {
-    const secret = process.env.WEBHOOK_SECRET
-    const hdr = req.headers.get("x-webhook-secret")
-    if (secret && hdr !== secret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const { code, telegramUserId, telegramUsername } = await req.json()
+    if (!code || !telegramUserId) return NextResponse.json({ error: "Invalid input" }, { status: 400 })
 
-    if (!code || !telegramUserId) {
-      return NextResponse.json({ error: "Code and Telegram user ID required" }, { status: 400 })
-    }
+    const [lc] = await db.select().from(linkingCodes).where(eq(linkingCodes.code, code)).limit(1)
+    if (!lc) return NextResponse.json({ error: "Invalid code" }, { status: 400 })
+    if (lc.used) return NextResponse.json({ error: "Code already used" }, { status: 400 })
+    if (new Date(lc.expiresAt) < new Date()) return NextResponse.json({ error: "Code expired" }, { status: 400 })
 
-    const rateLimitKey = `tg:verify-code:${telegramUserId}`
-    const rateLimit = await checkRateLimit(rateLimitKey, { requests: 5, window: 60 })
-    if (!rateLimit.success) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 })
-    }
-
-    const db = getDb()
-    const now = new Date()
-
-    // Find valid, unused, non-expired code
-    const linkingCodes = await db
-      .select()
-      .from(telegramLinkingCodes)
-      .where(
-        and(
-          eq(telegramLinkingCodes.code, code.toUpperCase()),
-          gt(telegramLinkingCodes.expiresAt, now),
-          isNull(telegramLinkingCodes.usedAt),
-        ),
-      )
-      .limit(1)
-
-    if (linkingCodes.length === 0) {
-      return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 })
-    }
-
-    const linkingCode = linkingCodes[0]
-
-    // Mark code as used
-    await db.update(telegramLinkingCodes).set({ usedAt: now }).where(eq(telegramLinkingCodes.code, code.toUpperCase()))
-
-    const existing = await db.query.telegramLinks.findFirst({
-      where: eq(telegramLinks.telegramUserId, telegramUserId),
+    await db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ telegramUserId: Number(telegramUserId), telegramUsername })
+        .where(eq(users.id, lc.userId))
+      await tx
+        .update(linkingCodes)
+        .set({ used: true })
+        .where(and(eq(linkingCodes.code, code), eq(linkingCodes.userId, lc.userId)))
     })
 
-    if (existing) {
-      await db
-        .update(telegramLinks)
-        .set({
-          userId: linkingCode.userId,
-          telegramUsername: telegramUsername || null,
-          linkedVia: "code",
-          isRevoked: false,
-          updatedAt: new Date(),
-        })
-        .where(eq(telegramLinks.telegramUserId, telegramUserId))
-    } else {
-      await db.insert(telegramLinks).values({
-        telegramUserId,
-        userId: linkingCode.userId,
-        telegramUsername: telegramUsername || null,
-        linkedVia: "code",
-        isRevoked: false,
-      })
-    }
-
-    const { token, expiresAt } = await issueBotToken(linkingCode.userId, telegramUserId, 30)
-
-    console.log(`[telegram/verify-code] Successfully linked user ${linkingCode.userId} to Telegram ${telegramUserId}`)
-
-    return NextResponse.json({
-      success: true,
-      message: "Account linked successfully",
-      botToken: token,
-      expiresAt: expiresAt.toISOString(),
-    })
-  } catch (error) {
-    console.error("[telegram/verify-code] error:", error)
-    return NextResponse.json({ error: "Failed to verify linking code" }, { status: 500 })
+    return NextResponse.json({ success: true, message: "Account linked" })
+  } catch {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

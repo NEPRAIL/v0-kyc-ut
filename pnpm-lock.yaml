@@ -13,7 +13,7 @@ importers:
         version: 3.873.0
       '@cloudflare/workers-types':
         specifier: latest
-        version: 4.20250823.0
+        version: 4.20250826.0
       '@electric-sql/pglite':
         specifier: latest
         version: 0.3.7
@@ -22,19 +22,19 @@ importers:
         version: 3.10.0(react-hook-form@7.60.0(react@19.0.0))
       '@libsql/client':
         specifier: latest
-        version: 0.15.12(bufferutil@4.0.9)
+        version: 0.15.13(bufferutil@4.0.9)
       '@libsql/client-wasm':
         specifier: latest
-        version: 0.15.12
+        version: 0.15.13
       '@lucia-auth/adapter-drizzle':
         specifier: latest
-        version: 1.1.0(drizzle-orm@0.44.5(c1f6ff45de9581694cc7b5a24c72bcc3))(lucia@3.2.2)
+        version: 1.1.0(drizzle-orm@0.44.5(91ee4eb89fcb6f66e93eb3cb48fae829))(lucia@3.2.2)
       '@neondatabase/serverless':
         specifier: latest
         version: 1.0.1
       '@op-engineering/op-sqlite':
         specifier: latest
-        version: 15.0.0(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
+        version: 15.0.1(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
       '@opentelemetry/api':
         specifier: latest
         version: 1.9.0
@@ -187,7 +187,7 @@ importers:
         version: 17.2.1
       drizzle-orm:
         specifier: latest
-        version: 0.44.5(c1f6ff45de9581694cc7b5a24c72bcc3)
+        version: 0.44.5(91ee4eb89fcb6f66e93eb3cb48fae829)
       embla-carousel-react:
         specifier: 8.5.1
         version: 8.5.1(react@19.0.0)
@@ -233,9 +233,6 @@ importers:
       oslo:
         specifier: latest
         version: 1.2.1
-      otplib:
-        specifier: latest
-        version: 12.0.1
       path:
         specifier: latest
         version: 0.12.7
@@ -937,8 +934,8 @@ packages:
     resolution: {integrity: sha512-ruv7Ae4J5dUYULmeXw1gmb7rYRz57OWCPM57pHojnLq/3Z1CK2lNSLTCVjxVk1F/TZHwOZZrOWi0ur95BbLxNQ==}
     engines: {node: '>=6.9.0'}
 
-  '@cloudflare/workers-types@4.20250823.0':
-    resolution: {integrity: sha512-z5pCggF3jG//h083+GEWCyQLW0A5GHq20akG+jN6ChyHQi/yZj1FcQcMhnvbBY4PiGq+SBiEj/LClG/lDPm+jg==}
+  '@cloudflare/workers-types@4.20250826.0':
+    resolution: {integrity: sha512-nAbTVI81wFSxbESRbfGRlfL4WYNvq8T46yr1ukypHL8O2xnbZfQnQhC7ftSBmDqov8HqQSdqcz9jCgLjVh61SQ==}
 
   '@date-fns/tz@1.2.0':
     resolution: {integrity: sha512-LBrd7MiJZ9McsOgxqWX7AaxrDjcFVjWH/tIKJd7pnR7McaslGYOP1QmmiBXdJH/H/yLCT+rcQ7FaPBUxRGUtrg==}
@@ -1359,24 +1356,24 @@ packages:
   '@jridgewell/trace-mapping@0.3.30':
     resolution: {integrity: sha512-GQ7Nw5G2lTu/BtHTKfXhKHok2WGetd4XYcVKGx00SjAk8GMwgJM3zr6zORiPGuOE+/vkc90KtTosSSvaCjKb2Q==}
 
-  '@libsql/client-wasm@0.15.12':
-    resolution: {integrity: sha512-MUpGWyopVXfIapEHsu8PMzjcvLkrPF9XXxlv14V6s1KydtpbLBAwGH06Bup1NyYodwsq4SDmlDU/OQoKIqsUhg==}
+  '@libsql/client-wasm@0.15.13':
+    resolution: {integrity: sha512-Ayp2OWESIbf5YQUGJ3U25VkRNRCkOWYAn3e0twuLfrtsIi43jcGoZVmXkGnor079JpdSL+h4WDVnkLi+U7iCAg==}
     bundledDependencies:
       - '@libsql/libsql-wasm-experimental'
 
-  '@libsql/client@0.15.12':
-    resolution: {integrity: sha512-JIqB0XsNrqYqBQZuhcgZdTcQoNOoQ5AMF+1yxc7vcZrLtm42QJwRazmTuBfyDwtWASEmVgjxeaLF4NT1iyVX8g==}
+  '@libsql/client@0.15.13':
+    resolution: {integrity: sha512-EnpDWaczD7g9OHq04SnsiT7IF9p9vr9ePUa2oNwP2lbUUJFagVbtAmS7GwBAjryO2wK96WWWFAKvu1J7LB8bnQ==}
 
-  '@libsql/core@0.15.12':
-    resolution: {integrity: sha512-S3tF6885ZizVjfym7f8SevL2VId/+DzxiKmP5zFbrhA8oMLh2XH8bYXChmhab7o9qUSHx+XjK4jCFpUwR5g+Ig==}
+  '@libsql/core@0.15.13':
+    resolution: {integrity: sha512-FbV2sqjqyALAZn1pdK6/yuRpYK5c2zILNklOhznJwc+qIivQBUOxiFASvo+cJG1K6ELh4sdDNKhrMXLqiQH36A==}
 
-  '@libsql/darwin-arm64@0.5.17':
-    resolution: {integrity: sha512-WTYG2skZsUnZmfZ2v7WFj7s3/5s2PfrYBZOWBKOnxHA8g4XCDc/4bFDaqob9Q2e88+GC7cWeJ8VNkVBFpD2Xxg==}
+  '@libsql/darwin-arm64@0.5.19':
+    resolution: {integrity: sha512-CX3qSDz7HACL2xDrxkoKIzoWM8KggMW4qw14cdOfvG6yrRhowaZTB95S80rF1m3U4C+VwmIjMxiR668bEV79Vw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@libsql/darwin-x64@0.5.17':
-    resolution: {integrity: sha512-ab0RlTR4KYrxgjNrZhAhY/10GibKoq6G0W4oi0kdm+eYiAv/Ip8GDMpSaZdAcoKA4T+iKR/ehczKHnMEB8MFxA==}
+  '@libsql/darwin-x64@0.5.19':
+    resolution: {integrity: sha512-cbd4qEs3l+uESlDxG9dPoDOlmPYtDl3DFWeJXB80v/mrNfjOA6Hy4H3uZEXccNLiMCoeCO925/77Wy8fQu0cBQ==}
     cpu: [x64]
     os: [darwin]
 
@@ -1390,38 +1387,38 @@ packages:
   '@libsql/isomorphic-ws@0.1.5':
     resolution: {integrity: sha512-DtLWIH29onUYR00i0GlQ3UdcTRC6EP4u9w/h9LxpUZJWRMARk6dQwZ6Jkd+QdwVpuAOrdxt18v0K2uIYR3fwFg==}
 
-  '@libsql/linux-arm-gnueabihf@0.5.17':
-    resolution: {integrity: sha512-PcASh4k47RqC+kMWAbLUKf1y6Do0q8vnUGi0yhKY4ghJcimMExViBimjbjYRSa+WIb/zh3QxNoXOhQAXx3tiuw==}
+  '@libsql/linux-arm-gnueabihf@0.5.19':
+    resolution: {integrity: sha512-faALiBFerlJgeonl1j3ucxI7sIZKkv63t9EVcDBiVhg/rCGgLwKHpj8cbGepffHKHshIQFikngwWl/UYZYpWyg==}
     cpu: [arm]
     os: [linux]
 
-  '@libsql/linux-arm-musleabihf@0.5.17':
-    resolution: {integrity: sha512-vxOkSLG9Wspit+SNle84nuIzMtr2G2qaxFzW7BhsZBjlZ8+kErf9RXcT2YJQdJYxmBYRbsOrc91gg0jLEQVCqg==}
+  '@libsql/linux-arm-musleabihf@0.5.19':
+    resolution: {integrity: sha512-6bDjCmgOvLP6nWKj2mAsDsRJxHAjUBC7Zkgh0wpihA9fAdk3jO0CL5Qvh3URSvtbcorbfnNaCvh2dCV+HzG8xg==}
     cpu: [arm]
     os: [linux]
 
-  '@libsql/linux-arm64-gnu@0.5.17':
-    resolution: {integrity: sha512-L8jnaN01TxjBJlDuDTX2W2BKzBkAOhcnKfCOf3xzvvygblxnDOK0whkYwIXeTfwtd/rr4jN/d6dZD/bcHiDxEQ==}
+  '@libsql/linux-arm64-gnu@0.5.19':
+    resolution: {integrity: sha512-czThqjdphX0zauHjU/CxtIzIK8zs6H3GTrtILhSXaMoScC3VuhMDgf7AHQplzdpF7G7O4PWwuJ5tHb37dqKhKQ==}
     cpu: [arm64]
     os: [linux]
 
-  '@libsql/linux-arm64-musl@0.5.17':
-    resolution: {integrity: sha512-HfFD7TzQtmmTwyQsuiHhWZdMRtdNpKJ1p4tbMMTMRECk+971NFHrj69D64cc2ClVTAmn7fA9XibKPil7WN/Q7w==}
+  '@libsql/linux-arm64-musl@0.5.19':
+    resolution: {integrity: sha512-VzYmLv8Ukoe1WI0A9Wmg77UMNqfMvxMbEbY133f2+8wpRTJV0LV0Pj6wx1IF0Z19q8+D7hu34eZqSLjMFT3kgQ==}
     cpu: [arm64]
     os: [linux]
 
-  '@libsql/linux-x64-gnu@0.5.17':
-    resolution: {integrity: sha512-5l3XxWqUPVFrtX0xnZaXwqsXs0BFbP4w6ahRFTPSdXU50YBfUOajFznJRB6bJTMsCvraDSD0IkHhjSNfrE1CuQ==}
+  '@libsql/linux-x64-gnu@0.5.19':
+    resolution: {integrity: sha512-4iK7LYccj0diomKMzLHKzoAB4Q5PkuLSSp+MlQUirLRHqWPKfI264WJQ/dxOJ1Qoi89jZc+IYnB1iknsQFvpfA==}
     cpu: [x64]
     os: [linux]
 
-  '@libsql/linux-x64-musl@0.5.17':
-    resolution: {integrity: sha512-FvSpWlwc+dIeYIFYlsSv+UdQ/NiZWr+SstwVji+QZ//8NnvzwWQU9cgP+Vpps6Qiq4jyYQm9chJhTYOVT9Y3BA==}
+  '@libsql/linux-x64-musl@0.5.19':
+    resolution: {integrity: sha512-F5DgJMpYHlYi9EjwtIgetxKQ5/o009m/Aeo8uNYWXeJb20IYyawDxKHFonvCr5koZZaiqntRfUQuFECIutuRLw==}
     cpu: [x64]
     os: [linux]
 
-  '@libsql/win32-x64-msvc@0.5.17':
-    resolution: {integrity: sha512-f5bGH8+3A5sn6Lrqg8FsQ09a1pYXPnKGXGTFiAYlfQXVst1tUTxDTugnuWcJYKXyzDe/T7ccxyIZXeSmPOhq8A==}
+  '@libsql/win32-x64-msvc@0.5.19':
+    resolution: {integrity: sha512-B+LXnNSQXjxBgl1Xyw1zRISk+ajwI2KBq/NQDdmLYgkBKxRol677BmwHhO7CnFMU1flFaJKWRd3abcxOQxZf1Q==}
     cpu: [x64]
     os: [win32]
 
@@ -1675,8 +1672,8 @@ packages:
     engines: {node: '>=10'}
     deprecated: This functionality has been moved to @npmcli/fs
 
-  '@op-engineering/op-sqlite@15.0.0':
-    resolution: {integrity: sha512-y/ZTuYMOK3X1VyxSdz/O5AHU7FOzmWNNqK84pHznB0ibUm5cqkrDTwSeCLIXngnfcZnwzXJdOvn2raBK76zCqQ==}
+  '@op-engineering/op-sqlite@15.0.1':
+    resolution: {integrity: sha512-86tIMm/5OERUIguUq81YdRETlSsMzPdj9XYVdPA19fzNMT+Ptf5Vl5awLMEdvXPvOP9vyef5FealT+3llYwG8w==}
     peerDependencies:
       react: '*'
       react-native: '*'
@@ -1696,21 +1693,6 @@ packages:
 
   '@oslojs/encoding@1.1.0':
     resolution: {integrity: sha512-70wQhgYmndg4GCPxPPxPGevRKqTIJ2Nh4OkiMWmDAVYsTQ+Ta7Sq+rPevXyXGdzr30/qZBnyOalCszoMxlyldQ==}
-
-  '@otplib/core@12.0.1':
-    resolution: {integrity: sha512-4sGntwbA/AC+SbPhbsziRiD+jNDdIzsZ3JUyfZwjtKyc/wufl1pnSIaG4Uqx8ymPagujub0o92kgBnB89cuAMA==}
-
-  '@otplib/plugin-crypto@12.0.1':
-    resolution: {integrity: sha512-qPuhN3QrT7ZZLcLCyKOSNhuijUi9G5guMRVrxq63r9YNOxxQjPm59gVxLM+7xGnHnM6cimY57tuKsjK7y9LM1g==}
-
-  '@otplib/plugin-thirty-two@12.0.1':
-    resolution: {integrity: sha512-MtT+uqRso909UkbrrYpJ6XFjj9D+x2Py7KjTO9JDPhL0bJUYVu5kFP4TFZW4NFAywrAtFRxOVY261u0qwb93gA==}
-
-  '@otplib/preset-default@12.0.1':
-    resolution: {integrity: sha512-xf1v9oOJRyXfluBhMdpOkr+bsE+Irt+0D5uHtvg6x1eosfmHCsCC6ej/m7FXiWqdo0+ZUI6xSKDhJwc8yfiOPQ==}
-
-  '@otplib/preset-v11@12.0.1':
-    resolution: {integrity: sha512-9hSetMI7ECqbFiKICrNa4w70deTUfArtwXykPUvSHWOdzOlfa9ajglu7mNCntlvxycTiOAXkQGwjQCzzDEMRMg==}
 
   '@petamoriken/float16@3.9.2':
     resolution: {integrity: sha512-VgffxawQde93xKxT3qap3OH+meZf7VaSB5Sqd4Rqc+FP5alWbpOyan/7tRbOAvynjpG3GpdtAuGU/NdhQpmrog==}
@@ -4501,8 +4483,8 @@ packages:
   libpq@1.8.15:
     resolution: {integrity: sha512-4lSWmly2Nsj3LaTxxtFmJWuP3Kx+0hYHEd+aNrcXEWT0nKWaPd9/QZPiMkkC680zeALFGHQdQWjBvnilL+vgWA==}
 
-  libsql@0.5.17:
-    resolution: {integrity: sha512-RRlj5XQI9+Wq+/5UY8EnugSWfRmHEw4hn3DKlPrkUgZONsge1PwTtHcpStP6MSNi8ohcbsRgEHJaymA33a8cBw==}
+  libsql@0.5.19:
+    resolution: {integrity: sha512-0+QUpmw/y21uSUwWGb4m653z37toBZ5cJChD2Bmvb/oQN6FHk9D4h94Dg19riRgVJy52pu0UXypminc5DePxJQ==}
     cpu: [x64, arm64, wasm32, arm]
     os: [darwin, linux, win32]
 
@@ -5053,9 +5035,6 @@ packages:
   oslo@1.2.1:
     resolution: {integrity: sha512-HfIhB5ruTdQv0XX2XlncWQiJ5SIHZ7NHZhVyHth0CSZ/xzge00etRyYy/3wp/Dsu+PkxMC+6+B2lS/GcKoewkA==}
     deprecated: Package is no longer supported. Please see https://oslojs.dev for the successor project.
-
-  otplib@12.0.1:
-    resolution: {integrity: sha512-xDGvUOQjop7RDgxTQ+o4pOol0/3xSZzawTiPKRrHnQWAy0WjhNs/5HdIDJCrqC4MBynmjXgULc6YfioaxZeFgg==}
 
   p-limit@2.3.0:
     resolution: {integrity: sha512-//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w==}
@@ -5831,10 +5810,6 @@ packages:
 
   thenify@3.3.1:
     resolution: {integrity: sha512-RVZSIV5IG10Hk3enotrhvz0T9em6cyHBLkH/YAZuKqd8hRkKhSfCGIcP2KUY0EPxndzANBmNllzWPwak+bheSw==}
-
-  thirty-two@1.0.2:
-    resolution: {integrity: sha512-OEI0IWCe+Dw46019YLl6V10Us5bi574EvlJEOcAkB29IzQ/mYD1A6RyNHLjZPiHCmuodxvgF6U+vZO1L15lxVA==}
-    engines: {node: '>=0.2.6'}
 
   throat@5.0.0:
     resolution: {integrity: sha512-fcwX4mndzpLQKBS1DVYhGAcYaYt7vsHNIvQV+WXMvnow5cgjPphq5CaayLaGsjRdSCKZFNGt7/GYAuXaNOiYCA==}
@@ -7107,7 +7082,7 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
 
-  '@cloudflare/workers-types@4.20250823.0': {}
+  '@cloudflare/workers-types@4.20250826.0': {}
 
   '@date-fns/tz@1.2.0': {}
 
@@ -7643,30 +7618,30 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@libsql/client-wasm@0.15.12':
+  '@libsql/client-wasm@0.15.13':
     dependencies:
-      '@libsql/core': 0.15.12
+      '@libsql/core': 0.15.13
       js-base64: 3.7.8
 
-  '@libsql/client@0.15.12(bufferutil@4.0.9)':
+  '@libsql/client@0.15.13(bufferutil@4.0.9)':
     dependencies:
-      '@libsql/core': 0.15.12
+      '@libsql/core': 0.15.13
       '@libsql/hrana-client': 0.7.0(bufferutil@4.0.9)
       js-base64: 3.7.8
-      libsql: 0.5.17
+      libsql: 0.5.19
       promise-limit: 2.7.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@libsql/core@0.15.12':
+  '@libsql/core@0.15.13':
     dependencies:
       js-base64: 3.7.8
 
-  '@libsql/darwin-arm64@0.5.17':
+  '@libsql/darwin-arm64@0.5.19':
     optional: true
 
-  '@libsql/darwin-x64@0.5.17':
+  '@libsql/darwin-x64@0.5.19':
     optional: true
 
   '@libsql/hrana-client@0.7.0(bufferutil@4.0.9)':
@@ -7689,30 +7664,30 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@libsql/linux-arm-gnueabihf@0.5.17':
+  '@libsql/linux-arm-gnueabihf@0.5.19':
     optional: true
 
-  '@libsql/linux-arm-musleabihf@0.5.17':
+  '@libsql/linux-arm-musleabihf@0.5.19':
     optional: true
 
-  '@libsql/linux-arm64-gnu@0.5.17':
+  '@libsql/linux-arm64-gnu@0.5.19':
     optional: true
 
-  '@libsql/linux-arm64-musl@0.5.17':
+  '@libsql/linux-arm64-musl@0.5.19':
     optional: true
 
-  '@libsql/linux-x64-gnu@0.5.17':
+  '@libsql/linux-x64-gnu@0.5.19':
     optional: true
 
-  '@libsql/linux-x64-musl@0.5.17':
+  '@libsql/linux-x64-musl@0.5.19':
     optional: true
 
-  '@libsql/win32-x64-msvc@0.5.17':
+  '@libsql/win32-x64-msvc@0.5.19':
     optional: true
 
-  '@lucia-auth/adapter-drizzle@1.1.0(drizzle-orm@0.44.5(c1f6ff45de9581694cc7b5a24c72bcc3))(lucia@3.2.2)':
+  '@lucia-auth/adapter-drizzle@1.1.0(drizzle-orm@0.44.5(91ee4eb89fcb6f66e93eb3cb48fae829))(lucia@3.2.2)':
     dependencies:
-      drizzle-orm: 0.44.5(c1f6ff45de9581694cc7b5a24c72bcc3)
+      drizzle-orm: 0.44.5(91ee4eb89fcb6f66e93eb3cb48fae829)
       lucia: 3.2.2
 
   '@neon-rs/load@0.0.4': {}
@@ -7892,7 +7867,7 @@ snapshots:
       rimraf: 3.0.2
     optional: true
 
-  '@op-engineering/op-sqlite@15.0.0(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)':
+  '@op-engineering/op-sqlite@15.0.1(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)':
     dependencies:
       react: 19.0.0
       react-native: 0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0)
@@ -7911,29 +7886,6 @@ snapshots:
       '@oslojs/binary': 1.0.0
 
   '@oslojs/encoding@1.1.0': {}
-
-  '@otplib/core@12.0.1': {}
-
-  '@otplib/plugin-crypto@12.0.1':
-    dependencies:
-      '@otplib/core': 12.0.1
-
-  '@otplib/plugin-thirty-two@12.0.1':
-    dependencies:
-      '@otplib/core': 12.0.1
-      thirty-two: 1.0.2
-
-  '@otplib/preset-default@12.0.1':
-    dependencies:
-      '@otplib/core': 12.0.1
-      '@otplib/plugin-crypto': 12.0.1
-      '@otplib/plugin-thirty-two': 12.0.1
-
-  '@otplib/preset-v11@12.0.1':
-    dependencies:
-      '@otplib/core': 12.0.1
-      '@otplib/plugin-crypto': 12.0.1
-      '@otplib/plugin-thirty-two': 12.0.1
 
   '@petamoriken/float16@3.9.2': {}
 
@@ -10258,15 +10210,15 @@ snapshots:
 
   dotenv@17.2.1: {}
 
-  drizzle-orm@0.44.5(c1f6ff45de9581694cc7b5a24c72bcc3):
+  drizzle-orm@0.44.5(91ee4eb89fcb6f66e93eb3cb48fae829):
     optionalDependencies:
       '@aws-sdk/client-rds-data': 3.873.0
-      '@cloudflare/workers-types': 4.20250823.0
+      '@cloudflare/workers-types': 4.20250826.0
       '@electric-sql/pglite': 0.3.7
-      '@libsql/client': 0.15.12(bufferutil@4.0.9)
-      '@libsql/client-wasm': 0.15.12
+      '@libsql/client': 0.15.13(bufferutil@4.0.9)
+      '@libsql/client-wasm': 0.15.13
       '@neondatabase/serverless': 1.0.1
-      '@op-engineering/op-sqlite': 15.0.0(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
+      '@op-engineering/op-sqlite': 15.0.1(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
       '@opentelemetry/api': 1.9.0
       '@planetscale/database': 1.19.0
       '@prisma/client': 6.14.0(typescript@5.0.2)
@@ -10978,20 +10930,20 @@ snapshots:
       bindings: 1.5.0
       nan: 2.22.2
 
-  libsql@0.5.17:
+  libsql@0.5.19:
     dependencies:
       '@neon-rs/load': 0.0.4
       detect-libc: 2.0.2
     optionalDependencies:
-      '@libsql/darwin-arm64': 0.5.17
-      '@libsql/darwin-x64': 0.5.17
-      '@libsql/linux-arm-gnueabihf': 0.5.17
-      '@libsql/linux-arm-musleabihf': 0.5.17
-      '@libsql/linux-arm64-gnu': 0.5.17
-      '@libsql/linux-arm64-musl': 0.5.17
-      '@libsql/linux-x64-gnu': 0.5.17
-      '@libsql/linux-x64-musl': 0.5.17
-      '@libsql/win32-x64-msvc': 0.5.17
+      '@libsql/darwin-arm64': 0.5.19
+      '@libsql/darwin-x64': 0.5.19
+      '@libsql/linux-arm-gnueabihf': 0.5.19
+      '@libsql/linux-arm-musleabihf': 0.5.19
+      '@libsql/linux-arm64-gnu': 0.5.19
+      '@libsql/linux-arm64-musl': 0.5.19
+      '@libsql/linux-x64-gnu': 0.5.19
+      '@libsql/linux-x64-musl': 0.5.19
+      '@libsql/win32-x64-msvc': 0.5.19
 
   lighthouse-logger@1.4.2:
     dependencies:
@@ -11633,12 +11585,6 @@ snapshots:
     dependencies:
       '@node-rs/argon2': 1.7.0
       '@node-rs/bcrypt': 1.9.0
-
-  otplib@12.0.1:
-    dependencies:
-      '@otplib/core': 12.0.1
-      '@otplib/preset-default': 12.0.1
-      '@otplib/preset-v11': 12.0.1
 
   p-limit@2.3.0:
     dependencies:
@@ -12496,8 +12442,6 @@ snapshots:
   thenify@3.3.1:
     dependencies:
       any-promise: 1.3.0
-
-  thirty-two@1.0.2: {}
 
   throat@5.0.0: {}
 

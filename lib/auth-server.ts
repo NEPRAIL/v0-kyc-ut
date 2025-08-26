@@ -2,12 +2,13 @@
 
 import { cookies, headers } from "next/headers"
 import { db } from "@/lib/db"
-import { users } from "@/lib/db/schema"
-import { eq, and, gt } from "drizzle-orm"
+import { users } from "@/drizzle/schema"
+import { eq, gt } from "drizzle-orm"
+import { verifySessionToken } from "@/lib/crypto"
+import { verifySession } from "@/lib/security"
 import { telegramLinks } from "@/lib/db/schema"
 import { botTokenFromAuthHeader, hashBotToken, generateBotToken } from "@/lib/bot-auth"
 import { addDays } from "date-fns"
-import { verifySessionToken } from "@/lib/crypto"
 
 export async function requireAuthSoft() {
   const c = cookies().get("session")?.value
@@ -28,9 +29,9 @@ export async function requireWebhook() {
 export async function requireAuth() {
   const raw = cookies().get("session")?.value
   if (!raw) return { ok: false as const, status: 401 as const }
-  const session = await verifySessionToken(raw)
-  if (!session?.userId) return { ok: false as const, status: 401 as const }
-  return { ok: true as const, userId: session.userId, session }
+  const session = await verifySession(raw)
+  if (!session?.uid) return { ok: false as const, status: 401 as const }
+  return { ok: true as const, userId: session.uid, session }
 }
 
 // Returns { userId } if authenticated via cookie session OR bot token
@@ -39,8 +40,8 @@ export async function getAuthFromRequest(): Promise<{ userId: string } | null> {
   const cookieStore = cookies()
   const sessionCookie = cookieStore.get("session")?.value
   if (sessionCookie) {
-    const s = await verifySessionToken(sessionCookie)
-    if (s?.userId) return { userId: s.userId }
+    const s = await verifySession(sessionCookie)
+    if (s?.uid) return { userId: s.uid }
   }
 
   // 2) try bot token (Authorization header)
@@ -49,13 +50,11 @@ export async function getAuthFromRequest(): Promise<{ userId: string } | null> {
   if (authHeader) {
     const token = botTokenFromAuthHeader(new Request("http://local", { headers: { authorization: authHeader } }))
     if (token) {
+      const hash = hashBotToken(token)
       const now = new Date()
       const row = await db.query.telegramLinks.findFirst({
-        where: and(
-          eq(telegramLinks.botTokenHash, hashBotToken(token)),
-          eq(telegramLinks.isRevoked, false),
-          gt(telegramLinks.botTokenExpiresAt, now),
-        ),
+        where: eq(telegramLinks.botTokenHash, hash),
+        and: [eq(telegramLinks.isRevoked, false), gt(telegramLinks.botTokenExpiresAt, now)],
       })
       if (row?.userId) {
         // touch lastSeenAt

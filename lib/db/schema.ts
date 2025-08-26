@@ -14,14 +14,22 @@ import {
 
 // The users table already exists in your database, so we reference it
 export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(), // Changed from text to uuid to match other table references
+  id: uuid("id").primaryKey().defaultRandom(),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  role: text("role").default("user").notNull(),
-  telegramUserId: bigint("telegram_user_id", { mode: "number" }).nullable(),
-  telegramUsername: text("telegram_username").nullable(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  emailVerified: boolean("email_verified").default(false),
+  emailVerificationToken: text("email_verification_token"),
+  emailVerificationExpires: timestamp("email_verification_expires"),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  twoFactorSecret: text("two_factor_secret"),
+  failedLoginAttempts: integer("failed_login_attempts").default(0),
+  lockedUntil: timestamp("locked_until"),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 })
 
 export const seasons = pgTable("seasons", {
@@ -48,8 +56,6 @@ export const products = pgTable("products", {
   imageUrl: text("image_url"),
   seasonId: uuid("season_id").references(() => seasons.id),
   rarityId: uuid("rarity_id").references(() => rarities.id),
-  redeemable: boolean("redeemable").default(false), // Added missing redeemable and series columns
-  series: text("series"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -66,18 +72,14 @@ export const variants = pgTable("variants", {
 })
 
 export const orders = pgTable("orders", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id") // Now properly matches users.id type
-    .notNull()
-    .references(() => users.id),
-  orderNumber: text("order_number", { length: 32 }).notNull().unique(),
-  totalAmount: decimal("total_amount").default("0").notNull(),
-  status: text("status", { length: 24 }).default("pending").notNull(),
-  items: jsonb("items")
-    .$type<Array<{ product_name: string; quantity: number; product_price: number }>>()
-    .default([])
-    .notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  id: text("id").primaryKey(), // e.g. ord_<hex>
+  userId: text("user_id").notNull(), // fk to users.id (text)
+  items: jsonb("items").notNull(), // [{productId, qty, price_cents}]
+  totalCents: integer("total_cents").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  status: text("status").notNull().default("pending"), // pending|sent|paid|failed|cancelled
+  tgDeeplink: text("tg_deeplink"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 })
 
 export const telegramLinks = pgTable(
@@ -106,8 +108,8 @@ export const telegramLinks = pgTable(
 )
 
 export const telegramLinkingCodes = pgTable("telegram_linking_codes", {
-  code: text("code").primaryKey(),
-  userId: uuid("user_id").notNull(), // Changed from text to uuid to match users.id
+  code: text("code").primaryKey(), // 8-character alphanumeric code
+  userId: text("user_id").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
   usedAt: timestamp("used_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -134,7 +136,7 @@ export const sessions = pgTable("sessions", {
 
 export const orderItems = pgTable("order_items", {
   id: uuid("id").primaryKey().defaultRandom(),
-  orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }), // Changed from text to uuid to match orders.id
+  orderId: text("order_id").references(() => orders.id, { onDelete: "cascade" }),
   productId: text("product_id").notNull(),
   productName: text("product_name").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
@@ -144,7 +146,7 @@ export const orderItems = pgTable("order_items", {
 
 export const events = pgTable("events", {
   id: uuid("id").primaryKey().defaultRandom(),
-  orderId: uuid("order_id").references(() => orders.id), // Changed from text to uuid to match orders.id
+  orderId: text("order_id").references(() => orders.id),
   kind: text("kind").notNull(),
   data: jsonb("data"),
   createdAt: timestamp("created_at").defaultNow(),

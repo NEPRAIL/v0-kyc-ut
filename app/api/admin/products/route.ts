@@ -1,26 +1,12 @@
-// app/api/admin/products/route.ts
 import { type NextRequest, NextResponse } from "next/server"
-import { z } from "zod"
+import { requireAdmin } from "@/lib/auth/middleware"
 import { db } from "@/lib/db"
 import { products, seasons, rarities } from "@/lib/db/schema"
 import { eq, like, sql } from "drizzle-orm"
-import { requireAdmin } from "@/lib/auth/middleware" // ← zero-arg helper
-
-const createProductSchema = z.object({
-  name: z.string().min(1),
-  slug: z.string().min(1),
-  description: z.union([z.string(), z.null()]).optional(),
-  imageUrl: z.union([z.string().url(), z.null()]).optional(),
-  seasonId: z.union([z.string().uuid(), z.null()]).optional(),
-  rarityId: z.union([z.string().uuid(), z.null()]).optional(),
-  redeemable: z.boolean().optional(),
-  series: z.union([z.string(), z.null()]).optional(),
-})
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAdmin()
-    if (auth !== true) return auth
+    await requireAdmin()
 
     const { searchParams } = new URL(request.url)
     const search = searchParams.get("search") || ""
@@ -57,6 +43,7 @@ export async function GET(request: NextRequest) {
 
     const results = await query.limit(limit).offset(offset).orderBy(products.createdAt)
 
+    // Get total count
     let countQuery = db.select({ count: sql<number>`COUNT(*)` }).from(products)
     if (search) {
       countQuery = countQuery.where(like(products.name, `%${search}%`))
@@ -80,33 +67,32 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdmin()
-    if (auth !== true) return auth
+    await requireAdmin()
 
     const data = await request.json()
-    const validatedData = createProductSchema.parse(data)
-    const { name, slug, description, imageUrl, seasonId, rarityId, redeemable, series } = validatedData
+    const { name, slug, description, imageUrl, seasonId, rarityId, redeemable, series } = data
+
+    if (!name || !slug) {
+      return NextResponse.json({ error: "Name and slug are required" }, { status: 400 })
+    }
 
     const [product] = await db
       .insert(products)
       .values({
         name,
         slug,
-        description: description ?? null,
-        imageUrl: imageUrl ?? null,
-        seasonId: seasonId ?? null,
-        rarityId: rarityId ?? null,
-        redeemable: redeemable ?? false,
-        series: series ?? null,
+        description: description || null,
+        imageUrl: imageUrl || null,
+        seasonId: seasonId || null,
+        rarityId: rarityId || null,
+        redeemable: redeemable || false,
+        series: series || null,
       })
       .returning()
 
     return NextResponse.json({ product })
   } catch (error) {
     console.error("Create product error:", error)
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid request data", details: error.errors }, { status: 400 })
-    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

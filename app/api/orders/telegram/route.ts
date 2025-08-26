@@ -1,64 +1,34 @@
 import { NextResponse } from "next/server"
-import { getDb } from "@/lib/db"
-import { orders, telegramLinks } from "@/lib/db/schema"
+import { db } from "@/lib/db"
+import { orders, users } from "@/drizzle/schema"
 import { eq } from "drizzle-orm"
-
-export const runtime = "nodejs"
-export const dynamic = "force-dynamic"
+import { requireWebhook } from "@/lib/auth-server"
 
 export async function GET(req: Request) {
-  try {
-    const url = new URL(req.url)
-    const telegramUserId = url.searchParams.get("telegram_user_id")
+  if (!(await requireWebhook())) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
-    if (!telegramUserId) {
-      return NextResponse.json({ error: "Telegram user ID required" }, { status: 400 })
-    }
+  const url = new URL(req.url)
+  const tg = url.searchParams.get("telegram_user_id")
+  if (!tg) return NextResponse.json({ error: "Missing telegram_user_id" }, { status: 400 })
 
-    const db = getDb()
+  const [u] = await db
+    .select()
+    .from(users)
+    .where(eq(users.telegramUserId, Number(tg)))
+    .limit(1)
+  if (!u) return NextResponse.json({ orders: [] })
 
-    // Find the linked user account
-    const telegramLink = await db
-      .select()
-      .from(telegramLinks)
-      .where(eq(telegramLinks.telegramUserId, telegramUserId))
-      .limit(1)
+  const list = await db.select().from(orders).where(eq(orders.userId, u.id)).orderBy(orders.createdAt)
 
-    if (telegramLink.length === 0) {
-      return NextResponse.json({ error: "Telegram account not linked" }, { status: 404 })
-    }
-
-    const userId = telegramLink[0].userId
-
-    // Get user orders
-    const userOrders = await db
-      .select({
-        id: orders.id,
-        order_number: orders.id, // Using id as order_number for compatibility
-        total_amount: orders.totalCents,
-        status: orders.status,
-        created_at: orders.createdAt,
-        items: orders.items,
-      })
-      .from(orders)
-      .where(eq(orders.userId, userId))
-      .orderBy(orders.createdAt)
-
-    // Transform orders to match expected format
-    const transformedOrders = userOrders.map((order) => ({
-      ...order,
-      total_amount: Number(order.total_amount) / 100, // Convert cents to dollars
-      items: order.items || [],
-    }))
-
-    console.log(`[v0] Fetched ${transformedOrders.length} orders for Telegram user ${telegramUserId}`)
-
-    return NextResponse.json({
-      success: true,
-      orders: transformedOrders,
-    })
-  } catch (error) {
-    console.error("[v0] Failed to fetch Telegram user orders:", error)
-    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
-  }
+  const transformed = list.map((o) => ({
+    id: o.id,
+    order_number: o.orderNumber,
+    total_amount: Number(o.totalAmount),
+    status: o.status,
+    created_at: o.createdAt,
+    items: o.items,
+    customer_name: u.username,
+    customer_email: u.email,
+  }))
+  return NextResponse.json({ orders: transformed })
 }
