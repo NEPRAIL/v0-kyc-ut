@@ -1,9 +1,11 @@
 // app/api/admin/products/[id]/route.ts
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-
-export const runtime = "nodejs"
-export const dynamic = "force-dynamic"
+import { z } from "zod"
+import { requireAdmin } from "@/lib/auth/middleware"
+import { db } from "@/lib/db"
+import { products } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 
 type UpdatePayload = {
   name?: string
@@ -28,18 +30,30 @@ function validateUpdate(b: any): { ok: true; value: UpdatePayload } | { ok: fals
   return { ok: true, value: v }
 }
 
+const ParamsSchema = z.object({
+  id: z.string().uuid(),
+})
+
+const UpdateProductSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.union([z.string(), z.null()]).optional(),
+  imageUrl: z.union([z.string().url(), z.null()]).optional(),
+  seasonId: z.union([z.string().uuid(), z.null()]).optional(),
+  rarityId: z.union([z.string().uuid(), z.null()]).optional(),
+  redeemable: z.boolean().optional(),
+  series: z.union([z.string(), z.null()]).optional(),
+})
+
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const params = await ctx.params
   const id = params?.id
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
-  const { requireAdmin } = await import("@/lib/auth/middleware")
   // we don’t need the request object here because GET might be public; pass if required:
   // const auth = await requireAdmin(_req); if (auth instanceof NextResponse) return auth;
-
-  const { db } = await import("@/lib/db")
-  const { products } = await import("@/lib/db/schema")
-  const { eq } = await import("drizzle-orm")
 
   const row = await db.query.products.findFirst({ where: eq(products.id, id) })
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -49,29 +63,22 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const params = await ctx.params
-  const id = params?.id
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
-  const { requireAdminAPI } = await import("@/lib/auth/middleware")
-  const auth = await requireAdminAPI(req)
-  if (auth instanceof NextResponse) return auth
-
-  let body: any
   try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    const { id } = ParamsSchema.parse(params)
+    const auth = await requireAdmin()
+    if (auth !== true) return auth
+
+    const body = UpdateProductSchema.parse(await req.json())
+
+    const v = validateUpdate(body)
+    if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
+
+    const [row] = await db.update(products).set(v.value).where(eq(products.id, id)).returning()
+    return NextResponse.json({ product: row })
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
   }
-
-  const v = validateUpdate(body)
-  if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 })
-
-  const { db } = await import("@/lib/db")
-  const { products } = await import("@/lib/db/schema")
-  const { eq } = await import("drizzle-orm")
-
-  const [row] = await db.update(products).set(v.value).where(eq(products.id, id)).returning()
-  return NextResponse.json({ product: row })
 }
 
 export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -79,9 +86,8 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
   const id = params?.id
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
-  const { requireAdminAPI } = await import("@/lib/auth/middleware")
-  const auth = await requireAdminAPI(req)
-  if (auth instanceof NextResponse) return auth
+  const auth = await requireAdmin()
+  if (auth !== true) return auth
 
   const { db } = await import("@/lib/db")
   const { products } = await import("@/lib/db/schema")
