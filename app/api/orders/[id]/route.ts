@@ -5,14 +5,15 @@ import { orders, products, variants } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
 import { btcpayClient } from "@/lib/btcpay/client"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await getAuthFromRequest()
     if (!auth?.userId) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
-    const orderId = Number.parseInt(params.id)
+    const { id } = await params
+    const orderId = Number.parseInt(id)
 
     const [order] = await db
       .select({
