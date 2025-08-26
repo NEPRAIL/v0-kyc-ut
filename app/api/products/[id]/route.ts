@@ -3,9 +3,10 @@ import { db } from "@/lib/db"
 import { products, seasons, rarities, variants, listings } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const productId = Number.parseInt(params.id)
+    const { id } = await params
+    const productId = Number.parseInt(id)
 
     const [product] = await db
       .select({
