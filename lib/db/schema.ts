@@ -110,7 +110,8 @@ export const telegramLinks = pgTable(
 export const telegramLinkingCodes = pgTable("telegram_linking_codes", {
   code: text("code").primaryKey(), // 8-character alphanumeric code
   userId: text("user_id").notNull(),
-  expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
+  // Use a full timestamp with timezone so short-lived codes don't appear expired when stored
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   usedAt: timestamp("used_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 })

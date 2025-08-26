@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { telegramLinkingCodes, telegramLinks } from "@/lib/db/schema"
 import { eq, and, gt, isNull } from "drizzle-orm"
-import { issueBotToken } from "@/lib/auth-server"
+import { issueBotToken, requireAuth } from "@/lib/auth-server"
 import { checkRateLimit } from "@/lib/rate-limit"
 
 export const runtime = "nodejs"
@@ -10,9 +10,12 @@ export const dynamic = "force-dynamic"
 
 export async function POST(req: Request) {
   try {
+    // If a session cookie exists and is valid, prefer that (browser flow).
+    // Only enforce webhook secret when there is no session auth.
+    const auth = await requireAuth()
     const secret = process.env.WEBHOOK_SECRET
     const hdr = req.headers.get("x-webhook-secret")
-    if (secret && hdr !== secret) {
+    if (!auth.ok && secret && hdr !== secret) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
