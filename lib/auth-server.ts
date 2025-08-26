@@ -1,30 +1,10 @@
-"use server"
-
 import { cookies, headers } from "next/headers"
-import { db } from "@/lib/db"
-import { users } from "@/drizzle/schema"
-import { eq, gt } from "drizzle-orm"
-import { verifySessionToken } from "@/lib/crypto"
 import { verifySession } from "@/lib/security"
+import { getDb } from "@/lib/db"
+import { eq, and, gt } from "drizzle-orm"
 import { telegramLinks } from "@/lib/db/schema"
 import { botTokenFromAuthHeader, hashBotToken, generateBotToken } from "@/lib/bot-auth"
 import { addDays } from "date-fns"
-
-export async function requireAuthSoft() {
-  const c = cookies().get("session")?.value
-  const session = verifySessionToken(c)
-  if (!session) return null
-
-  const [user] = await db.select().from(users).where(eq(users.id, session.userId)).limit(1)
-  if (!user) return null
-  return { user }
-}
-
-export async function requireWebhook() {
-  const h = headers().get("x-webhook-secret")
-  if (!h || h !== process.env.WEBHOOK_SECRET) return false
-  return true
-}
 
 export async function requireAuth() {
   const raw = cookies().get("session")?.value
@@ -50,11 +30,15 @@ export async function getAuthFromRequest(): Promise<{ userId: string } | null> {
   if (authHeader) {
     const token = botTokenFromAuthHeader(new Request("http://local", { headers: { authorization: authHeader } }))
     if (token) {
+      const db = getDb()
       const hash = hashBotToken(token)
       const now = new Date()
       const row = await db.query.telegramLinks.findFirst({
-        where: eq(telegramLinks.botTokenHash, hash),
-        and: [eq(telegramLinks.isRevoked, false), gt(telegramLinks.botTokenExpiresAt, now)],
+        where: and(
+          eq(telegramLinks.botTokenHash, hash),
+          eq(telegramLinks.isRevoked, false),
+          gt(telegramLinks.botTokenExpiresAt, now),
+        ),
       })
       if (row?.userId) {
         // touch lastSeenAt
@@ -71,6 +55,7 @@ export async function getAuthFromRequest(): Promise<{ userId: string } | null> {
 }
 
 export async function issueBotToken(userId: string, telegramUserId: number, ttlDays = 30) {
+  const db = getDb()
   const token = generateBotToken()
   const hash = hashBotToken(token)
   const expires = addDays(new Date(), ttlDays)
