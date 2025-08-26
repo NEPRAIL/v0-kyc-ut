@@ -124,7 +124,7 @@ export function OrderHistory() {
                 </div>
 
                 <div className="text-right">
-                  <p className="font-medium">${order.total_amount.toFixed(2)}</p>
+                  <p className="font-medium">${(Number(order.total_amount) || 0).toFixed(2)}</p>
                 </div>
 
                 <Badge variant={getStatusColor(order.status)}>{order.status}</Badge>

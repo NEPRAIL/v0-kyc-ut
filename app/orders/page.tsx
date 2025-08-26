@@ -38,11 +38,6 @@ const statusConfig = {
   cancelled: { label: "Cancelled", color: "bg-red-500", icon: XCircle },
 }
 
-const safeToFixed = (value: any, decimals = 2): string => {
-  const num = Number(value)
-  return isNaN(num) ? "0.00" : num.toFixed(decimals)
-}
-
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
@@ -249,7 +244,7 @@ export default function OrdersPage() {
                                 {item.quantity}x {item.product_name}
                               </span>
                               <span className="font-medium">
-                                ${safeToFixed((Number(item.product_price) || 0) * item.quantity)}
+                                ${((Number(item.product_price) || 0) * item.quantity).toFixed(2)}
                               </span>
                             </div>
                           ))}
@@ -267,7 +262,7 @@ export default function OrdersPage() {
                       <div className="flex flex-col items-end gap-3">
                         <div className="text-right">
                           <p className="text-sm text-muted-foreground">Total</p>
-                          <p className="text-2xl font-bold">${safeToFixed(order.total_amount)}</p>
+                          <p className="text-2xl font-bold">${(Number(order.total_amount) || 0).toFixed(2)}</p>
                         </div>
                         <div className="flex gap-2">
                           <Button asChild variant="outline" size="sm">
@@ -301,7 +296,7 @@ export default function OrdersPage() {
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold">
-                    ${safeToFixed(orders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0))}
+                    ${orders.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0).toFixed(2)}
                   </p>
                   <p className="text-sm text-muted-foreground">Total Spent</p>
                 </div>
