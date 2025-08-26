@@ -12,7 +12,7 @@ import hashlib
 import hmac
 import sqlite3
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Optional, Any, List, Union
 from urllib.parse import urljoin
 
@@ -43,12 +43,31 @@ WEBSITE_URL = "https://kycut.com"
 WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "kycut_webhook_2024_secure_key_789xyz")
 ADMIN_ID = int(os.getenv("TELEGRAM_ADMIN_ID", "8321071978"))
 
-# Logging setup
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.INFO,
+    handlers=[
+        logging.FileHandler('kycut_bot.log'),
+        logging.StreamHandler()
+    ]
 )
 logger = logging.getLogger(__name__)
+
+API_ENDPOINTS = {
+    'bot_ping': '/api/bot/ping',
+    'bot_status': '/api/bot/status',
+    'bot_info': '/api/bot/info',
+    'bot_webhook': '/api/bot/webhook',
+    'bot_notifications': '/api/bot/notifications',
+    'telegram_link': '/api/telegram/link',
+    'telegram_verify': '/api/telegram/verify-code',
+    'telegram_generate': '/api/telegram/generate-code',
+    'orders_user': '/api/orders/user',
+    'orders_telegram': '/api/orders/telegram',
+    'orders_search': '/api/orders/search',
+    'orders_stats': '/api/orders/stats',
+    'order_status': '/api/orders/{}/status',
+}
 
 user_sessions: Dict[int, Dict[str, Any]] = {}
 
@@ -66,21 +85,39 @@ class SessionStore:
                 self.conn.execute("""
                     CREATE TABLE IF NOT EXISTS sessions (
                         telegram_user_id INTEGER PRIMARY KEY,
-                        data TEXT NOT NULL
+                        data TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
-                    # table to map telegram users to website users when linking occurs
                 self.conn.execute("""
                         CREATE TABLE IF NOT EXISTS telegram_users (
                             telegram_user_id INTEGER PRIMARY KEY,
                             website_user_id TEXT,
+                            username TEXT,
+                            first_name TEXT,
+                            last_name TEXT,
                             linked INTEGER DEFAULT 0,
+                            bot_token TEXT,
+                            token_expires TIMESTAMP,
                             data TEXT,
-                            last_seen TIMESTAMP
+                            last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                         )
                     """)
+                self.conn.execute("""
+                    CREATE TABLE IF NOT EXISTS command_usage (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        telegram_user_id INTEGER,
+                        command TEXT,
+                        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        success INTEGER DEFAULT 1
+                    )
+                """)
             self.use_sqlite = True
-        except Exception:
+            logger.info("Enhanced database initialized successfully")
+        except Exception as e:
+            logger.error(f"Database initialization failed: {e}")
             self.conn = None
             self.use_sqlite = False
             # Ensure JSON file exists
@@ -111,22 +148,41 @@ class SessionStore:
         if self.use_sqlite:
             with self.lock, self.conn:
                 self.conn.execute(
-                    "INSERT INTO sessions (telegram_user_id, data) VALUES (?, ?) "
-                    "ON CONFLICT(telegram_user_id) DO UPDATE SET data=excluded.data",
+                    """INSERT INTO sessions (telegram_user_id, data, updated_at) 
+                       VALUES (?, ?, CURRENT_TIMESTAMP) 
+                       ON CONFLICT(telegram_user_id) DO UPDATE SET 
+                       data=excluded.data, updated_at=excluded.updated_at""",
                     (telegram_user_id, json.dumps(data)),
                 )
-                # also update telegram_users.linked and data snapshot
+                user_data = data.get('user_data', {})
                 try:
-                    website_user_id = None
-                    if data.get('user_data') and data['user_data'].get('website_user_id'):
-                        website_user_id = data['user_data'].get('website_user_id')
                     self.conn.execute(
-                        "INSERT INTO telegram_users (telegram_user_id, website_user_id, linked, data, last_seen) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP) "
-                        "ON CONFLICT(telegram_user_id) DO UPDATE SET website_user_id=excluded.website_user_id, linked=excluded.linked, data=excluded.data, last_seen=excluded.last_seen",
-                        (telegram_user_id, website_user_id, 1 if website_user_id else 0, json.dumps(data)),
+                        """INSERT INTO telegram_users 
+                           (telegram_user_id, website_user_id, username, first_name, last_name, 
+                            bot_token, token_expires, linked, last_seen) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                           ON CONFLICT(telegram_user_id) DO UPDATE SET
+                           website_user_id=excluded.website_user_id,
+                           username=excluded.username,
+                           first_name=excluded.first_name,
+                           last_name=excluded.last_name,
+                           bot_token=excluded.bot_token,
+                           token_expires=excluded.token_expires,
+                           linked=excluded.linked,
+                           last_seen=excluded.last_seen""",
+                        (
+                            telegram_user_id,
+                            user_data.get('website_user_id'),
+                            user_data.get('telegram_username'),
+                            user_data.get('first_name'),
+                            user_data.get('last_name'),
+                            data.get('bot_token'),
+                            data.get('token_expires'),
+                            1 if data.get('authenticated') else 0
+                        )
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.error(f"Failed to update telegram_users: {e}")
         else:
             with self.lock:
                 store = self.load_all()
@@ -193,6 +249,20 @@ class SessionStore:
                 with open(self.json_path, "w", encoding="utf-8") as f:
                     json.dump(store, f)
 
+    def log_command(self, telegram_user_id: int, command: str, success: bool = True):
+        """Log command usage for analytics"""
+        if not self.use_sqlite or not self.conn:
+            return
+        
+        try:
+            with self.lock, self.conn:
+                self.conn.execute(
+                    "INSERT INTO command_usage (telegram_user_id, command, success) VALUES (?, ?, ?)",
+                    (telegram_user_id, command, 1 if success else 0)
+                )
+        except Exception as e:
+            logger.error(f"Failed to log command usage: {e}")
+
 
 class KYCutBot:
     def __init__(self):
@@ -203,9 +273,23 @@ class KYCutBot:
             persisted = self.store.load_all()
             user_sessions.clear()
             user_sessions.update(persisted)
-        except Exception:
-            pass
+            logger.info(f"Loaded {len(user_sessions)} persisted sessions")
+        except Exception as e:
+            logger.error(f"Failed to load persisted sessions: {e}")
         self.setup_handlers()
+        
+        asyncio.create_task(self._test_api_connectivity())
+    
+    async def _test_api_connectivity(self):
+        """Test API connectivity on startup"""
+        try:
+            result = await self._make_api_request('bot_ping')
+            if result.get('success'):
+                logger.info("✅ API connectivity test passed")
+            else:
+                logger.warning("⚠️ API connectivity test failed")
+        except Exception as e:
+            logger.error(f"❌ API connectivity test error: {e}")
     
     def setup_handlers(self):
         """Set up all command and message handlers"""
@@ -220,6 +304,8 @@ class KYCutBot:
         self.application.add_handler(CommandHandler("menu", self.menu_command))
         self.application.add_handler(CommandHandler("auth", self.auth_command))
         self.application.add_handler(CommandHandler("ping", self.ping_command))
+        self.application.add_handler(CommandHandler("stats", self.stats_command))
+        self.application.add_handler(CommandHandler("status", self.status_command))
         
         # Message handlers
         self.application.add_handler(MessageHandler(
@@ -230,6 +316,65 @@ class KYCutBot:
         self.application.add_handler(CallbackQueryHandler(self.handle_callback))
         
         self.application.add_error_handler(self.on_error)
+        logger.info("All handlers registered successfully")
+
+    async def _make_api_request(self, endpoint_key: str, method: str = 'GET', 
+                               data: Optional[Dict] = None, user_id: Optional[int] = None,
+                               **kwargs) -> Dict[str, Any]:
+        """Enhanced API request method with better error handling"""
+        try:
+            endpoint = API_ENDPOINTS.get(endpoint_key, endpoint_key)
+            if '{}' in endpoint and 'order_id' in kwargs:
+                endpoint = endpoint.format(kwargs['order_id'])
+            
+            url = urljoin(WEBSITE_URL, endpoint)
+            
+            headers = {
+                'Content-Type': 'application/json',
+                'User-Agent': 'KYCut-Enhanced-Bot/2.0',
+                'X-Webhook-Secret': WEBHOOK_SECRET,
+            }
+            
+            # Add bot token if user has one
+            if user_id and user_id in user_sessions:
+                bot_token = user_sessions[user_id].get('bot_token')
+                if bot_token:
+                    headers['Authorization'] = f'Bearer {bot_token}'
+            
+            request_kwargs = {
+                'headers': headers,
+                'timeout': 30,
+            }
+            
+            if data:
+                request_kwargs['json'] = data
+            
+            if method.upper() == 'GET':
+                response = requests.get(url, **request_kwargs)
+            elif method.upper() == 'POST':
+                response = requests.post(url, **request_kwargs)
+            elif method.upper() == 'PATCH':
+                response = requests.patch(url, **request_kwargs)
+            elif method.upper() == 'PUT':
+                response = requests.put(url, **request_kwargs)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+            
+            result = response.json() if response.content else {}
+            result['_status_code'] = response.status_code
+            result['_success'] = response.ok
+            
+            return result
+            
+        except requests.exceptions.Timeout:
+            logger.error(f"API request timeout for {endpoint_key}")
+            return {'success': False, 'error': 'Request timeout'}
+        except requests.exceptions.ConnectionError:
+            logger.error(f"API connection error for {endpoint_key}")
+            return {'success': False, 'error': 'Connection failed'}
+        except Exception as e:
+            logger.error(f"API request error for {endpoint_key}: {e}")
+            return {'success': False, 'error': str(e)}
 
     def _make_headers(self, user_id: Optional[int] = None, json_content: bool = True, include_webhook_secret: bool = True) -> Dict[str, str]:
         """Construct headers preferring Authorization Bearer <bot_token> when available.
@@ -306,63 +451,78 @@ class KYCutBot:
             except Exception:
                 pass
 
-    async def on_error(self, update: object, context: ContextTypes.DEFAULT_TYPE):
-        """Don't crash on unexpected exceptions"""
-        try:
-            if update:
-                await self._reply(update, "⚠️ An unexpected error occurred. Please try again.")
-        except Exception:
-            pass
+    def is_authenticated(self, user_id: int) -> bool:
+        """Check if user is authenticated with enhanced validation"""
+        session = user_sessions.get(user_id) or self.store.get(user_id)
+        if not session:
+            return False
+        
+        # Check if session is still valid
+        if session.get('authenticated'):
+            # Check token expiration
+            token_expires = session.get('token_expires')
+            if token_expires:
+                try:
+                    expires_dt = datetime.fromisoformat(token_expires.replace('Z', '+00:00'))
+                    if datetime.now() > expires_dt:
+                        logger.info(f"Token expired for user {user_id}")
+                        return False
+                except Exception:
+                    pass
+            
+            # Update session in memory if loaded from storage
+            if user_id not in user_sessions:
+                user_sessions[user_id] = session
+            
+            return True
+        
+        return False
 
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /start command with deep link support"""
+        """Enhanced start command with better onboarding"""
         user_id = update.effective_user.id
-        username = update.effective_user.username or "User"
+        user_name = update.effective_user.first_name or "User"
         
-        # Check for deep link parameters
-        if context.args:
-            param = context.args[0]
-            if param.startswith("hello_"):
-                # This is a linking deep link
-                await self.handle_linking_deeplink(update, param)
-                return
+        self.store.log_command(user_id, "start")
         
-        welcome_text = f"""
-🔐 **Welcome to KYCut Bot, {username}!**
+        # Update user activity
+        await self._make_api_request('bot_webhook', 'POST', {
+            'telegram_user_id': user_id,
+            'action': 'update_activity'
+        })
+        
+        welcome_message = f"""
+🎉 **Welcome to KYCut, {user_name}!**
 
-I help you manage your KYCut orders securely with a dynamic interface.
+I'm your personal shopping assistant for premium trading cards and collectibles.
 
-**🚀 Quick Start:**
-• `/menu` - Main navigation menu
-• `/link CODE` - Link your account with 8-digit code
-• `/orders` - View all your orders
-• `/login` - Sign in with website credentials
+**🔗 Get Started:**
+• Use `/link CODE` to connect your account
+• Use `/login EMAIL PASSWORD` for direct login
+• Use `/menu` to see all available options
 
-**📋 Order Management:**
-• Browse orders with interactive menus
-• Confirm/cancel orders with one tap
-• Real-time status updates
-• Admin notifications
+**📦 What I can do:**
+• Show your orders and order history
+• Update you on order status changes
+• Help you track your purchases
+• Provide order statistics
 
-**🔗 Account Linking:**
-1. Get your linking code from the website
-2. Use `/link YOUR_CODE` to connect accounts
-3. Enjoy seamless order management!
+**🆘 Need help?**
+Use `/help` for detailed commands or `/menu` for quick navigation.
 
-Use `/menu` to get started with the interactive interface!
+Ready to get started? 🚀
         """
         
-        # Create main menu keyboard
         keyboard = [
-            [InlineKeyboardButton("📋 My Orders", callback_data="menu_orders")],
-            [InlineKeyboardButton("🔗 Link Account", callback_data="menu_link"),
-             InlineKeyboardButton("ℹ️ Help", callback_data="menu_help")],
-            [InlineKeyboardButton("🔧 Settings", callback_data="menu_settings")]
+            [InlineKeyboardButton("🔗 Link Account", callback_data="action_link")],
+            [InlineKeyboardButton("📦 View Orders", callback_data="action_orders")],
+            [InlineKeyboardButton("📊 Order Stats", callback_data="action_stats")],
+            [InlineKeyboardButton("ℹ️ Help", callback_data="action_help")],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(
-            welcome_text,
+            welcome_message.strip(),
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=reply_markup
         )
@@ -696,7 +856,122 @@ Welcome to KYCut Bot! To get started, you need to link your account.
         await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     async def ping_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await update.message.reply_text("🏓 pong")
+        """Test bot and API connectivity"""
+        user_id = update.effective_user.id
+        self.store.log_command(user_id, "ping")
+        
+        start_time = datetime.now()
+        
+        # Test API ping
+        api_result = await self._make_api_request('bot_ping')
+        
+        end_time = datetime.now()
+        response_time = (end_time - start_time).total_seconds() * 1000
+        
+        if api_result.get('success'):
+            status_emoji = "🟢"
+            status_text = "Online"
+        else:
+            status_emoji = "🔴"
+            status_text = "Offline"
+        
+        message = f"""
+{status_emoji} **Bot Status: {status_text}**
+
+**Response Time:** {response_time:.0f}ms
+**API Server:** {api_result.get('server', 'Unknown')}
+**Timestamp:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+**Your Session:**
+• Authenticated: {'✅' if self.is_authenticated(user_id) else '❌'}
+• User ID: `{user_id}`
+        """
+        
+        await update.message.reply_text(message.strip(), parse_mode=ParseMode.MARKDOWN)
+
+    async def stats_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Show comprehensive order statistics"""
+        user_id = update.effective_user.id
+        self.store.log_command(user_id, "stats")
+        
+        if not self.is_authenticated(user_id):
+            await update.message.reply_text(
+                "❌ Authentication required. Use `/link CODE` or `/login EMAIL PASSWORD` first."
+            )
+            return
+        
+        # Get user stats
+        stats_result = await self._make_api_request('orders_stats', user_id=user_id)
+        
+        if stats_result.get('success'):
+            stats = stats_result.get('stats', {})
+            
+            message = f"""
+📊 **Your Order Statistics**
+
+**📦 Orders Overview:**
+• Total Orders: {stats.get('total_orders', 0)}
+• Total Value: ${stats.get('total_value', 0):.2f}
+• Pending Orders: {stats.get('pending_orders', 0)}
+• Completed Orders: {stats.get('completed_orders', 0)}
+
+**📈 Recent Activity:**
+• Orders (Last 7 Days): {stats.get('recent_orders', 0)}
+
+**💰 Currency:** {stats_result.get('currency', 'USD')}
+**📅 Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            """
+            
+            keyboard = [
+                [InlineKeyboardButton("📦 View All Orders", callback_data="action_orders")],
+                [InlineKeyboardButton("🔍 Search Orders", callback_data="action_search")],
+                [InlineKeyboardButton("🏠 Main Menu", callback_data="action_menu")],
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await update.message.reply_text(
+                message.strip(),
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup
+            )
+        else:
+            await update.message.reply_text(
+                f"❌ Failed to get statistics: {stats_result.get('error', 'Unknown error')}"
+            )
+
+    async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Show bot status and system information"""
+        user_id = update.effective_user.id
+        self.store.log_command(user_id, "status")
+        
+        # Get bot status from API
+        status_result = await self._make_api_request('bot_status')
+        
+        if status_result.get('success'):
+            status_data = status_result.get('status', {})
+            
+            message = f"""
+🤖 **Bot System Status**
+
+**🔧 System Health:**
+• Database: {'✅ Connected' if status_data.get('database') else '❌ Disconnected'}
+• API Server: {'✅ Online' if status_data.get('api_server') else '❌ Offline'}
+• Redis Cache: {'✅ Connected' if status_data.get('redis') else '❌ Disconnected'}
+
+**📊 Statistics:**
+• Active Users: {status_data.get('active_users', 0)}
+• Total Sessions: {status_data.get('total_sessions', 0)}
+• Commands Today: {status_data.get('commands_today', 0)}
+
+**⏰ Uptime:** {status_data.get('uptime', 'Unknown')}
+**🔄 Last Updated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            """
+            
+            await update.message.reply_text(message.strip(), parse_mode=ParseMode.MARKDOWN)
+        else:
+            await update.message.reply_text(
+                f"❌ Failed to get bot status: {status_result.get('error', 'Unknown error')}"
+            )
 
     async def auth_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         uid = update.effective_user.id
@@ -1131,16 +1406,6 @@ Please process this order and contact the customer.
         except Exception as e:
             logger.error(f"Failed to send admin notification: {e}")
     
-    def is_authenticated(self, user_id: int) -> bool:
-        """Check if user is authenticated (in-memory or persisted)."""
-        if user_id in user_sessions and user_sessions[user_id].get('authenticated'):
-            return True
-        persisted = self.store.get(user_id)
-        if persisted and persisted.get('authenticated'):
-            user_sessions[user_id] = persisted  # hydrate cache
-            return True
-        return False
-    
     async def fetch_all_orders(self, user_id: int) -> Dict[str, Any]:
         """Fetch all orders either using session cookie (login) or telegram link."""
         try:
@@ -1476,44 +1741,53 @@ Please process this order and contact the customer.
                 'error': f"Connection error: {str(e)}"
             }
 
-    def run(self):
-        """Start the bot"""
-        logger.info("Starting KYCut Telegram Bot v2.0 with Dynamic Interface...")
-        logger.info(f"Website URL: {WEBSITE_URL}")
-        logger.info(f"Admin ID: {ADMIN_ID}")
+    async def on_error(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Enhanced error handler with better logging"""
+        logger.error(f"Exception while handling an update: {context.error}")
         
-        if not ADMIN_ID:
-            logger.warning("ADMIN_ID not set! Admin notifications will not work.")
+        # Log error details
+        if update and hasattr(update, 'effective_user'):
+            user_id = update.effective_user.id if update.effective_user else 'Unknown'
+            logger.error(f"Error for user {user_id}: {context.error}")
+            
+            # Log failed command
+            if hasattr(update, 'message') and update.message and update.message.text:
+                command = update.message.text.split()[0] if update.message.text.startswith('/') else 'message'
+                self.store.log_command(user_id, command, success=False)
         
-        self.application.run_polling(drop_pending_updates=True)
+        # Send error notification to admin
+        try:
+            if update and hasattr(update, 'effective_message'):
+                await context.bot.send_message(
+                    chat_id=ADMIN_ID,
+                    text=f"🚨 Bot Error:\n\`\`\`\n{str(context.error)[:500]}\n\`\`\`",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+        except Exception:
+            pass  # Don't fail on error notification failure
 
+# Enhanced main function with better startup handling
 def main():
-    """Main function"""
-    if not BOT_TOKEN:
-        print("❌ Error: BOT_TOKEN not configured!")
-        print("Please set your bot token in the script or environment variable.")
-        return
-    
-    if not WEBSITE_URL:
-        print("❌ Error: WEBSITE_URL not configured!")
-        print("Please set WEBSITE_URL environment variable to your deployed site.")
-        return
-    
-    print(f"🤖 KYCut Telegram Bot v2.0 Configuration:")
-    print(f"   Website: {WEBSITE_URL}")
-    print(f"   Admin ID: {ADMIN_ID}")
-    print(f"   Webhook Secret: {'✅ Set' if WEBHOOK_SECRET else '❌ Not Set'}")
-    print(f"   Features: Dynamic Interface, Linking Codes, Order Management")
-    
-    # Start bot
-    bot = KYCutBot()
+    """Enhanced main function with better startup handling"""
+    logger.info("🚀 Starting Enhanced KYCut Telegram Bot...")
     
     try:
-        bot.run()
+        bot = KYCutBot()
+        logger.info("✅ Bot initialized successfully")
+        
+        # Start the bot
+        logger.info("🔄 Starting bot polling...")
+        bot.application.run_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True
+        )
+        
     except KeyboardInterrupt:
-        logger.info("Bot stopped by user")
+        logger.info("👋 Bot stopped by user")
     except Exception as e:
-        logger.error(f"Bot crashed: {e}")
+        logger.error(f"❌ Bot startup failed: {e}")
+        raise
+
 
 if __name__ == "__main__":
     main()
