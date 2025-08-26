@@ -15,7 +15,7 @@ export default async function AdminDashboard() {
     const [listingCount] = await db
       .select({ count: sql<number>`COUNT(*)` })
       .from(listings)
-      .where(eq(listings.active, true))
+      .where(eq(listings.isActive, true))
     const [orderCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(orders)
 
     stats = [
