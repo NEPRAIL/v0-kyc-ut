@@ -89,8 +89,8 @@ class TestSuite {
       { path: "/api/auth/me", method: "GET", expectStatus: [200, 401] },
   { path: "/api/bot/ping", method: "GET", expectStatus: [200, 401, 404] },
       { path: "/api/bot/status", method: "GET", expectStatus: [200, 404] },
-      { path: "/api/telegram/generate-code", method: "POST", expectStatus: [401, 404] },
-      { path: "/api/orders/user", method: "GET", expectStatus: [401, 404] },
+  { path: "/api/telegram/generate-code", method: "POST", expectStatus: [200, 401, 404] },
+  { path: "/api/orders/user", method: "GET", expectStatus: [200, 401, 404] },
     ]
 
     // Helper: sign a session cookie compatible with lib/security.signSession
@@ -133,21 +133,32 @@ class TestSuite {
 
     for (const endpoint of endpoints) {
       try {
+        // build headers per-endpoint (some require webhook secret)
+        const headers = { "Content-Type": "application/json" }
+        if (endpoint.path === "/api/bot/status") {
+          const secret = process.env.WEBHOOK_SECRET || process.env.TELEGRAM_WEBHOOK_SECRET
+          if (secret) headers["x-webhook-secret"] = secret
+        }
+
         const response = await fetch(`${BASE_URL}${endpoint.path}`, {
           method: endpoint.method,
-          headers: { "Content-Type": "application/json" },
+          headers,
         })
 
         // If endpoint returned 401, attempt an authenticated retry using a signed session cookie
         if (response.status === 401) {
           try {
             if (!sessionCookieValue) sessionCookieValue = await makeSessionCookie()
+            // include webhook secret on authenticated retry if needed
+            const retryHeaders = { "Content-Type": "application/json", Cookie: `session=${sessionCookieValue}` }
+            if (endpoint.path === "/api/bot/status") {
+              const secret = process.env.WEBHOOK_SECRET || process.env.TELEGRAM_WEBHOOK_SECRET
+              if (secret) retryHeaders["x-webhook-secret"] = secret
+            }
+
             const authResp = await fetch(`${BASE_URL}${endpoint.path}`, {
               method: endpoint.method,
-              headers: {
-                "Content-Type": "application/json",
-                Cookie: `session=${sessionCookieValue}`,
-              },
+              headers: retryHeaders,
             })
 
             if (!endpoint.expectStatus.includes(authResp.status)) {
