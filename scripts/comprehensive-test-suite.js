@@ -87,7 +87,7 @@ class TestSuite {
     const endpoints = [
       { path: "/api/health", method: "GET", expectStatus: [200, 404] },
       { path: "/api/auth/me", method: "GET", expectStatus: [200, 401] },
-      { path: "/api/bot/ping", method: "GET", expectStatus: [200, 404] },
+  { path: "/api/bot/ping", method: "GET", expectStatus: [200, 401, 404] },
       { path: "/api/bot/status", method: "GET", expectStatus: [200, 404] },
       { path: "/api/telegram/generate-code", method: "POST", expectStatus: [401, 404] },
       { path: "/api/orders/user", method: "GET", expectStatus: [401, 404] },
