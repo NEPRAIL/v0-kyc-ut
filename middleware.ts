@@ -8,7 +8,23 @@ export const config = {
   ],
 }
 
-export function middleware(_req: NextRequest) {
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+  // Lightweight API request logging (dev-friendly). Avoid printing secrets.
+  try {
+    if (pathname.startsWith("/api")) {
+      const method = req.method
+      const hasAuth = !!req.headers.get("authorization")
+      const hasWebhook = !!req.headers.get("x-webhook-secret")
+      // Timestamped one-line summary
+      console.log(
+        `[API] ${new Date().toISOString()} ${method} ${pathname} auth=${hasAuth} webhook=${hasWebhook}`,
+      )
+    }
+  } catch {
+    // noop
+  }
+
   const res = NextResponse.next()
 
   const csp = [
