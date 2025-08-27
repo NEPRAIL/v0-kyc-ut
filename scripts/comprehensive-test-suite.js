@@ -93,12 +93,76 @@ class TestSuite {
       { path: "/api/orders/user", method: "GET", expectStatus: [401, 404] },
     ]
 
+    // Helper: sign a session cookie compatible with lib/security.signSession
+    const makeSessionCookie = async (uid = "test-user") => {
+      const { createHmac } = await import("node:crypto")
+
+      const s = process.env.SESSION_SECRET || ""
+      if (!s) throw new Error("SESSION_SECRET is missing for signing session cookie")
+
+      // try base64 then raw utf8
+      let key
+      try {
+        const b64 = Buffer.from(s, "base64")
+        if (b64.length >= 32) key = b64
+      } catch {}
+      if (!key) key = Buffer.from(s, "utf8")
+      if (!key || key.length < 32) throw new Error("SESSION_SECRET missing or too short")
+
+      const exp = Math.floor(Date.now() / 1000) + 24 * 60 * 60
+      const payload = { uid, exp }
+      const payloadJson = JSON.stringify(payload)
+      const payloadB64u = Buffer.from(payloadJson, "utf8")
+        .toString("base64")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=/g, "")
+
+      const mac = createHmac("sha256", key)
+        .update(payloadB64u)
+        .digest("base64")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=/g, "")
+
+      return `${payloadB64u}.${mac}`
+    }
+
+    // Prepare an authenticated session cookie once (used only if endpoints return 401)
+    let sessionCookieValue = null
+
     for (const endpoint of endpoints) {
       try {
         const response = await fetch(`${BASE_URL}${endpoint.path}`, {
           method: endpoint.method,
           headers: { "Content-Type": "application/json" },
         })
+
+        // If endpoint returned 401, attempt an authenticated retry using a signed session cookie
+        if (response.status === 401) {
+          try {
+            if (!sessionCookieValue) sessionCookieValue = await makeSessionCookie()
+            const authResp = await fetch(`${BASE_URL}${endpoint.path}`, {
+              method: endpoint.method,
+              headers: {
+                "Content-Type": "application/json",
+                Cookie: `session=${sessionCookieValue}`,
+              },
+            })
+
+            if (!endpoint.expectStatus.includes(authResp.status)) {
+              throw new Error(
+                `${endpoint.path} returned ${authResp.status} after auth retry, expected one of ${endpoint.expectStatus.join(", ")}`,
+              )
+            }
+
+            console.log(`[TEST] API endpoint ${endpoint.path} responding (${authResp.status})`)
+            continue
+          } catch (err) {
+            // If auth retry failed, fall through to the original error handling
+            throw err
+          }
+        }
 
         if (!endpoint.expectStatus.includes(response.status)) {
           throw new Error(
