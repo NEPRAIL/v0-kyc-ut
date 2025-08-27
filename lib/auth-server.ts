@@ -14,6 +14,15 @@ export async function requireAuth() {
   return { ok: true as const, userId: session.uid, session }
 }
 
+export async function verifySessionTolerant(cookieVal?: string): Promise<{ userId: string; role?: string } | null> {
+  if (!cookieVal) return null
+  const session = await verifySession(cookieVal)
+  if (!session?.uid) return null
+
+  // For now, return basic session info - can be enhanced with role lookup from DB if needed
+  return { userId: session.uid, role: "user" }
+}
+
 // Returns { userId } if authenticated via cookie session OR bot token
 export async function getAuthFromRequest(): Promise<{ userId: string } | null> {
   // 1) try cookie session (browser)

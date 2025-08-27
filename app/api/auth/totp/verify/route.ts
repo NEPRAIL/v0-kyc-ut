@@ -1,9 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { validateRequest } from "@/lib/auth/lucia"
-import { verifyTOTP } from "@/lib/auth/totp"
+import { verifyTotpToken } from "@/lib/security"
 import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
+import { z } from "zod"
+
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
+const verifyTotpSchema = z.object({
+  token: z.string().optional(),
+  disable: z.boolean().optional(),
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,12 +21,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { token, disable } = await request.json()
+    const body = await request.json()
+    const { token, disable } = verifyTotpSchema.parse(body)
 
     if (disable) {
       // Disable TOTP
       await db.update(users).set({ totpSecret: null }).where(eq(users.id, user.id))
-
       return NextResponse.json({ success: true, message: "TOTP disabled" })
     }
 
@@ -31,13 +40,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "TOTP not set up" }, { status: 400 })
     }
 
-    const isValid = verifyTOTP(currentUser.totpSecret, token)
+    const isValid = verifyTotpToken({ token, secret: currentUser.totpSecret })
     if (!isValid) {
       return NextResponse.json({ error: "Invalid TOTP token" }, { status: 400 })
     }
 
     return NextResponse.json({ success: true, message: "TOTP verified successfully" })
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 })
+    }
     console.error("TOTP verify error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

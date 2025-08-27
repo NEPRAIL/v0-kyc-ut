@@ -27,9 +27,14 @@ export async function POST() {
     const db = getDb()
     const now = new Date()
 
-    await db
+    const deletedCount = await db
       .delete(telegramLinkingCodes)
       .where(and(eq(telegramLinkingCodes.userId, auth.userId), gt(now, telegramLinkingCodes.expiresAt)))
+      .returning({ code: telegramLinkingCodes.code })
+
+    if (deletedCount.length > 0) {
+      console.log(`[v0] Cleaned up ${deletedCount.length} expired linking codes for user ${auth.userId}`)
+    }
 
     // Check for existing active codes (not expired and not used)
     const existingCodes = await db
@@ -52,6 +57,7 @@ export async function POST() {
         code: code.code,
         expiresAt: code.expiresAt,
         isNew: false,
+        message: "Using existing active code",
       })
     }
 
@@ -90,9 +96,17 @@ export async function POST() {
       code,
       expiresAt,
       isNew: true,
+      message: "New linking code generated",
+      expiresInMinutes: 10,
     })
   } catch (error) {
     console.error("[v0] Generate linking code error:", error)
-    return NextResponse.json({ error: "Failed to generate linking code" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to generate linking code",
+        details: error.message,
+      },
+      { status: 500 },
+    )
   }
 }

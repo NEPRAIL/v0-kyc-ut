@@ -1,9 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { validateRequest } from "@/lib/auth/lucia"
-import { generateTOTPSecret, generateTOTPUri, generateQRCodeUrl } from "@/lib/auth/totp"
+import { issueTotpSecret, buildTotpURI } from "@/lib/security"
 import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
+
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,10 +15,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Generate new TOTP secret
-    const secret = generateTOTPSecret()
-    const uri = generateTOTPUri(secret, user.username)
-    const qrCodeUrl = generateQRCodeUrl(uri)
+    const secret = issueTotpSecret()
+    const uri = buildTotpURI({ secret, label: user.username, issuer: "KYCut" })
 
     // Store the secret temporarily (not activated until verified)
     await db.update(users).set({ totpSecret: secret }).where(eq(users.id, user.id))
@@ -23,7 +24,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       secret,
       uri,
-      qrCodeUrl,
       manualEntryKey: secret,
     })
   } catch (error) {

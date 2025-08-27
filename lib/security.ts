@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual, randomBytes } from "node:crypto"
 import bcrypt from "bcryptjs"
+import { authenticator } from "otplib"
 
 // Accept base64 or utf8 secret; require >=32 bytes
 function getKey(): Buffer | null {
@@ -86,4 +87,34 @@ export function signSession(uid: string, expiresInSeconds = 86400): string {
     .replace(/=/g, "")
 
   return `${payloadB64u}.${mac}`
+}
+
+export function issueTotpSecret() {
+  return authenticator.generateSecret()
+}
+
+export function buildTotpURI({ secret, label, issuer }: { secret: string; label: string; issuer: string }) {
+  return authenticator.keyuri(label, issuer, secret)
+}
+
+export function verifyTotpToken({ token, secret }: { token: string; secret: string }) {
+  return authenticator.check(token, secret)
+}
+
+export async function verifyPassword(plain: string, hash: string) {
+  try {
+    return await bcrypt.compare(plain, hash)
+  } catch {
+    return false
+  }
+}
+
+export async function recordSecurityEvent(_event: {
+  userId?: string
+  type: string
+  ip?: string
+  ua?: string
+  meta?: Record<string, unknown>
+}) {
+  /* no-op, or write to DB if available */
 }

@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
   const auth = await requireAuth()
-  if (!auth.success) {
+  if (!auth.ok) {
     // This should redirect, but just in case
     return <div>Authentication required</div>
   }

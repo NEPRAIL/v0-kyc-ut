@@ -1,9 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { validateRequest } from "@/lib/auth/lucia"
-import { compare, hash } from "bcryptjs"
+import { hashPassword, verifyPassword } from "@/lib/security"
 import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
+import { z } from "zod"
+
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6),
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,15 +21,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { currentPassword, newPassword } = await request.json()
-
-    if (!currentPassword || !newPassword) {
-      return NextResponse.json({ error: "Current password and new password are required" }, { status: 400 })
-    }
-
-    if (newPassword.length < 6) {
-      return NextResponse.json({ error: "New password must be at least 6 characters" }, { status: 400 })
-    }
+    const body = await request.json()
+    const { currentPassword, newPassword } = changePasswordSchema.parse(body)
 
     // Get current user data
     const [currentUser] = await db.select().from(users).where(eq(users.id, user.id)).limit(1)
@@ -29,19 +31,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify current password
-    const validPassword = await compare(currentPassword, currentUser.passwordHash)
+    const validPassword = await verifyPassword(currentPassword, currentUser.passwordHash)
     if (!validPassword) {
       return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 })
     }
 
     // Hash new password
-    const newPasswordHash = await hash(newPassword, 12)
+    const newPasswordHash = await hashPassword(newPassword)
 
     // Update password
     await db.update(users).set({ passwordHash: newPasswordHash }).where(eq(users.id, user.id))
 
     return NextResponse.json({ success: true, message: "Password updated successfully" })
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 })
+    }
     console.error("Change password error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

@@ -3,18 +3,46 @@ import { requireAdmin } from "@/lib/auth/middleware"
 import { db } from "@/lib/db"
 import { products, seasons, rarities } from "@/lib/db/schema"
 import { eq, like, sql } from "drizzle-orm"
+import { z } from "zod"
+
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
+const createProductSchema = z.object({
+  name: z.string().min(1),
+  slug: z.string().min(1),
+  description: z.union([z.string(), z.null()]).optional(),
+  imageUrl: z.union([z.string().url(), z.null()]).optional(),
+  seasonId: z.union([z.string().uuid(), z.null()]).optional(),
+  rarityId: z.union([z.string().uuid(), z.null()]).optional(),
+  redeemable: z.boolean().optional(),
+  series: z.union([z.string(), z.null()]).optional(),
+})
+
+const querySchema = z.object({
+  search: z.string().optional(),
+  page: z.string().optional(),
+  limit: z.string().optional(),
+})
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAdmin()
+    const auth = await requireAdmin()
+    if (auth instanceof NextResponse) return auth
 
     const { searchParams } = new URL(request.url)
-    const search = searchParams.get("search") || ""
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    const limit = Number.parseInt(searchParams.get("limit") || "10")
+    const parsedQuery = querySchema.parse({
+      search: searchParams.get("search"),
+      page: searchParams.get("page"),
+      limit: searchParams.get("limit"),
+    })
+
+    const search = parsedQuery.search || ""
+    const page = Number.parseInt(parsedQuery.page || "1")
+    const limit = Number.parseInt(parsedQuery.limit || "10")
     const offset = (page - 1) * limit
 
-    let query = db
+    let dbQuery = db
       .select({
         id: products.id,
         slug: products.slug,
@@ -38,10 +66,10 @@ export async function GET(request: NextRequest) {
       .leftJoin(rarities, eq(products.rarityId, rarities.id))
 
     if (search) {
-      query = query.where(like(products.name, `%${search}%`))
+      dbQuery = dbQuery.where(like(products.name, `%${search}%`))
     }
 
-    const results = await query.limit(limit).offset(offset).orderBy(products.createdAt)
+    const results = await dbQuery.limit(limit).offset(offset).orderBy(products.createdAt)
 
     // Get total count
     let countQuery = db.select({ count: sql<number>`COUNT(*)` }).from(products)
@@ -67,31 +95,31 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAdmin()
+    const auth = await requireAdmin()
+    if (auth instanceof NextResponse) return auth
 
-    const data = await request.json()
-    const { name, slug, description, imageUrl, seasonId, rarityId, redeemable, series } = data
-
-    if (!name || !slug) {
-      return NextResponse.json({ error: "Name and slug are required" }, { status: 400 })
-    }
+    const body = await request.json()
+    const data = createProductSchema.parse(body)
 
     const [product] = await db
       .insert(products)
       .values({
-        name,
-        slug,
-        description: description || null,
-        imageUrl: imageUrl || null,
-        seasonId: seasonId || null,
-        rarityId: rarityId || null,
-        redeemable: redeemable || false,
-        series: series || null,
+        name: data.name,
+        slug: data.slug,
+        description: data.description || null,
+        imageUrl: data.imageUrl || null,
+        seasonId: data.seasonId || null,
+        rarityId: data.rarityId || null,
+        redeemable: data.redeemable || false,
+        series: data.series || null,
       })
       .returning()
 
     return NextResponse.json({ product })
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 })
+    }
     console.error("Create product error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
