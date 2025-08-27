@@ -42,13 +42,18 @@ export async function getAuthFromRequest(): Promise<{ userId: string } | null> {
       const db = getDb()
       const hash = hashBotToken(token)
       const now = new Date()
-      const row = await db.query.telegramLinks.findFirst({
-        where: and(
-          eq(telegramLinks.botTokenHash, hash),
-          eq(telegramLinks.isRevoked, false),
-          gt(telegramLinks.botTokenExpiresAt, now),
-        ),
-      })
+      const rows = await db
+        .select()
+        .from(telegramLinks)
+        .where(
+          and(
+            eq(telegramLinks.botTokenHash, hash),
+            eq(telegramLinks.isRevoked, false),
+            gt(telegramLinks.botTokenExpiresAt, now),
+          ),
+        )
+        .limit(1)
+      const row = rows && rows.length ? rows[0] : null
       if (row?.userId) {
         // Check if token expires within 7 days and refresh if needed
         const sevenDaysFromNow = addDays(new Date(), 7)
@@ -87,9 +92,12 @@ export async function issueBotToken(userId: string, telegramUserId: number, ttlD
   )
 
   // upsert link row
-  const existing = await db.query.telegramLinks.findFirst({
-    where: eq(telegramLinks.telegramUserId, telegramUserId),
-  })
+  const existingRows = await db
+    .select()
+    .from(telegramLinks)
+    .where(eq(telegramLinks.telegramUserId, telegramUserId))
+    .limit(1)
+  const existing = existingRows && existingRows.length ? existingRows[0] : null
 
   if (existing) {
     await db
@@ -123,9 +131,12 @@ export async function validateBotSession(
   const db = getDb()
   const now = new Date()
 
-  const link = await db.query.telegramLinks.findFirst({
-    where: and(eq(telegramLinks.telegramUserId, telegramUserId), eq(telegramLinks.isRevoked, false)),
-  })
+  const linkRows = await db
+    .select()
+    .from(telegramLinks)
+    .where(and(eq(telegramLinks.telegramUserId, telegramUserId), eq(telegramLinks.isRevoked, false)))
+    .limit(1)
+  const link = linkRows && linkRows.length ? linkRows[0] : null
 
   if (!link) {
     return { valid: false }

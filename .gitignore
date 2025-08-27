@@ -19,6 +19,21 @@ yarn-error.log*
 # env files
 .env*
 
+# Telegram bot local artifacts and secrets
+scripts/TELEGRAM-BOT/.env
+scripts/TELEGRAM-BOT/.venv/
+scripts/TELEGRAM-BOT/*.db
+scripts/TELEGRAM-BOT/*.pid
+
+# Avoid committing local session/db/log files
+*.session
+telethon_*.session
+telethon_test.session
+*.db
+kycut_bot.db
+logs/*.log
+logs/*.pid
+
 # vercel
 .vercel
 

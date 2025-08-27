@@ -58,12 +58,22 @@ export async function POST(req: Request) {
 
     const linkingCode = linkingCodes[0]
 
+    // Basic validation: linkingCode must include a userId
+    if (!linkingCode.userId) {
+      console.error("[telegram/link] linking code missing userId", linkingCode)
+      return NextResponse.json({ error: "Linking code not associated with a user" }, { status: 400 })
+    }
+
     // Mark code as used
     await db.update(telegramLinkingCodes).set({ usedAt: now }).where(eq(telegramLinkingCodes.code, code.toUpperCase()))
 
-    const existing = await db.query.telegramLinks.findFirst({
-      where: eq(telegramLinks.telegramUserId, telegramUserId),
-    })
+    const existingRows = await db
+      .select()
+      .from(telegramLinks)
+      .where(eq(telegramLinks.telegramUserId, telegramUserId))
+      .limit(1)
+
+    const existing = existingRows && existingRows.length ? existingRows[0] : null
 
     if (existing) {
       await db
@@ -86,7 +96,16 @@ export async function POST(req: Request) {
       })
     }
 
-    const { token, expiresAt } = await issueBotToken(linkingCode.userId, telegramUserId, 30)
+    let token
+    let expiresAt
+    try {
+      const issued = await issueBotToken(linkingCode.userId, telegramUserId, 30)
+      token = issued.token
+      expiresAt = issued.expiresAt
+    } catch (err) {
+      console.error("[telegram/link] issueBotToken failed:", err)
+      return NextResponse.json({ error: "Failed to issue bot token", details: err?.message || String(err) }, { status: 500 })
+    }
 
     console.log(`[telegram/link] Successfully linked user ${linkingCode.userId} to Telegram ${telegramUserId}`)
 
@@ -100,6 +119,8 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error("[telegram/link] error:", error)
-    return NextResponse.json({ error: "Failed to verify linking code" }, { status: 500 })
+    const payload: any = { error: "Failed to verify linking code" }
+    if (process.env.NODE_ENV !== "production") payload.details = error?.message || String(error)
+    return NextResponse.json(payload, { status: 500 })
   }
 }

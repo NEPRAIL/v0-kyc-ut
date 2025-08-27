@@ -18,10 +18,9 @@ export async function POST(request: NextRequest) {
 
     const db = getDb()
 
-    // Check if user has a Telegram link
-    const existingLink = await db.query.telegramLinks.findFirst({
-      where: eq(telegramLinks.userId, auth.userId),
-    })
+    // Check if user has a Telegram link (use select() pattern to avoid runtime .findFirst mismatch)
+    const linkRows = await db.select().from(telegramLinks).where(eq(telegramLinks.userId, auth.userId)).limit(1)
+    const existingLink = linkRows && linkRows.length ? linkRows[0] : null
 
     if (!existingLink) {
       console.log("[v0] No Telegram link found for user:", auth.userId)

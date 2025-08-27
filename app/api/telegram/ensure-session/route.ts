@@ -32,9 +32,12 @@ export async function POST(req: Request) {
     }
 
     const db = getDb()
-    const link = await db.query.telegramLinks.findFirst({
-      where: and(eq(telegramLinks.telegramUserId, telegramUserId), eq(telegramLinks.isRevoked, false)),
-    })
+    const linkRows = await db
+      .select()
+      .from(telegramLinks)
+      .where(and(eq(telegramLinks.telegramUserId, telegramUserId), eq(telegramLinks.isRevoked, false)))
+      .limit(1)
+    const link = linkRows && linkRows.length ? linkRows[0] : null
 
     if (!link) {
       console.log("[v0] No linked account found for Telegram user:", telegramUserId)
@@ -42,7 +45,8 @@ export async function POST(req: Request) {
     }
 
     // Ensure the user still exists
-    const user = await db.query.users.findFirst({ where: eq(users.id, link.userId) })
+  const userRows = await db.select().from(users).where(eq(users.id, link.userId)).limit(1)
+  const user = userRows && userRows.length ? userRows[0] : null
     if (!user) {
       console.log("[v0] Linked user no longer exists, revoking link for:", link.userId)
       // revoke link

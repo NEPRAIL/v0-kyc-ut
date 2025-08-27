@@ -1,4 +1,3 @@
-import https from "https"
 import { URL } from "url"
 
 // Configuration
@@ -11,73 +10,40 @@ console.log("[TEST] Website URL:", WEBSITE_URL)
 console.log("[TEST] Test email:", TEST_EMAIL)
 
 // HTTP request helper
-function makeRequest(url, options = {}) {
-  return new Promise((resolve, reject) => {
-    const urlObj = new URL(url)
+async function makeRequest(url, options = {}) {
+  const init = {
+    method: options.method || "GET",
+    headers: {
+      "User-Agent": "KYCut-Test-Script/1.0",
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  }
 
-    const requestOptions = {
-      hostname: urlObj.hostname,
-      port: urlObj.port || (urlObj.protocol === "https:" ? 443 : 80),
-      path: urlObj.pathname + urlObj.search,
-      method: options.method || "GET",
-      headers: {
-        "User-Agent": "KYCut-Test-Script/1.0",
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-    }
+  console.log(`[HTTP] ${init.method} ${url}`)
+  if (options.body) console.log("[HTTP] Request body:", JSON.stringify(options.body, null, 2))
 
-    if (options.body) {
-      const bodyString = JSON.stringify(options.body)
-      requestOptions.headers["Content-Length"] = Buffer.byteLength(bodyString)
-    }
+  const res = await fetch(url, init)
+  const headers = {}
+  res.headers.forEach((v, k) => (headers[k] = v))
+  let data
+  try {
+    data = await res.json()
+    console.log("[HTTP] Response body:", JSON.stringify(data, null, 2))
+  } catch (e) {
+    data = await res.text()
+    console.log("[HTTP] Response body (raw):", data.substring(0, 500))
+  }
 
-    console.log(`[HTTP] ${requestOptions.method} ${url}`)
-    if (options.body) {
-      console.log("[HTTP] Request body:", JSON.stringify(options.body, null, 2))
-    }
+  const setCookie = headers["set-cookie"]
+  const cookies = setCookie ? (Array.isArray(setCookie) ? setCookie : [setCookie]) : []
 
-    const req = https.request(requestOptions, (res) => {
-      let data = ""
+  console.log(`[HTTP] Response status: ${res.status}`)
+  console.log("[HTTP] Response headers:", JSON.stringify(headers, null, 2))
 
-      res.on("data", (chunk) => {
-        data += chunk
-      })
-
-      res.on("end", () => {
-        console.log(`[HTTP] Response status: ${res.statusCode}`)
-        console.log("[HTTP] Response headers:", JSON.stringify(res.headers, null, 2))
-
-        let parsedData
-        try {
-          parsedData = JSON.parse(data)
-          console.log("[HTTP] Response body:", JSON.stringify(parsedData, null, 2))
-        } catch (e) {
-          parsedData = data
-          console.log("[HTTP] Response body (raw):", data.substring(0, 500))
-        }
-
-        resolve({
-          status: res.statusCode,
-          headers: res.headers,
-          data: parsedData,
-          cookies: res.headers["set-cookie"] || [],
-        })
-      })
-    })
-
-    req.on("error", (error) => {
-      console.error("[HTTP] Request error:", error)
-      reject(error)
-    })
-
-    if (options.body) {
-      req.write(JSON.stringify(options.body))
-    }
-
-    req.end()
-  })
+  return { status: res.status, headers, data, cookies }
 }
 
 // Extract cookies from response
@@ -186,10 +152,10 @@ async function testFlow() {
       body: {
         items: [
           {
-            id: "test-product-1",
+            productId: "test-product-1",
             name: "Test Product",
-            price: 2999, // $29.99 in cents
-            quantity: 1,
+            price_cents: 2999, // $29.99 in cents
+            qty: 1,
             image: "/placeholder.svg?height=100&width=100",
           },
         ],
@@ -275,27 +241,67 @@ async function testFlow() {
       console.error("[ERROR] Failed to generate linking code")
     }
 
-    console.log("\n=== STEP 7: Test Telegram Linking (Verify Code) ===")
+    console.log("\n=== STEP 7: Test Telegram Linking (Send /link via real Telegram account) ===")
 
     if (linkingCode) {
-      // Simulate bot verification
-      const verifyCodeResponse = await makeRequest(`${WEBSITE_URL}/api/telegram/verify-code`, {
-        method: "POST",
-        body: {
-          code: linkingCode,
-          telegram_user_id: 123456789,
-          telegram_username: "testuser",
-        },
-      })
+      // Use the Telethon helper to send /link <CODE> from the real Telegram account
+      try {
+        const { execSync } = await import('node:child_process')
+        console.log('[INFO] Sending /link via Telethon helper...')
+        const cmd = `python3 scripts/integration/telethon_send_commands.py "/link ${linkingCode}"`
+        console.log('[DEBUG] Running:', cmd)
+        const out = execSync(cmd, { stdio: 'inherit' })
+        console.log('[INFO] Telethon send complete')
 
-      console.log("[INFO] Verify code response:", verifyCodeResponse.status, verifyCodeResponse.data)
+        // Poll the server for the linking to appear before unlinking.
+        // We'll check both the public orders-by-telegram endpoint and the
+        // authenticated /api/auth/me (to see telegram info) for the web session.
+        const telegramUserId = null // not known here; we'll only poll orders endpoint by hard-coded id if provided by env
+        const pollTimeoutMs = 10000
+        const pollIntervalMs = 1000
+        const start = Date.now()
+        let linked = false
 
-      if (verifyCodeResponse.status === 200) {
-        console.log("[SUCCESS] Telegram account linked successfully")
+        console.log('[INFO] Polling for link to be created (up to', pollTimeoutMs, 'ms)...')
+        while (Date.now() - start < pollTimeoutMs) {
+          try {
+            // 1) Check orders-by-telegram endpoint using the Telethon account id if present via env
+            // This is an optional check; if TELETHON_TEST_TG_ID is set we will use it.
+            const tgId = process.env.TELETHON_TEST_TG_ID
+            if (tgId) {
+              const ordersByTg = await makeRequest(`${WEBSITE_URL}/api/orders/telegram?telegram_user_id=${tgId}`, {
+                method: 'GET',
+              })
+              if (ordersByTg.status === 200 && ordersByTg.data && Array.isArray(ordersByTg.data.orders)) {
+                console.log('[INFO] orders/telegram responded; linked state detected')
+                linked = true
+                break
+              }
+            }
 
-        console.log("\n=== STEP 8: Test Telegram Unlink ===")
+            // 2) Check authenticated session /api/auth/me for telegram info
+            const meCheck = await makeRequest(`${WEBSITE_URL}/api/auth/me`, {
+              method: 'GET',
+              headers: {
+                Cookie: formatCookies(sessionCookies),
+              },
+            })
+            if (meCheck.status === 200 && meCheck.data && meCheck.data.telegram) {
+              console.log('[INFO] /api/auth/me shows telegram linked for the web user')
+              linked = true
+              break
+            }
+          } catch (e) {
+            // ignore transient errors and retry
+          }
 
-        // Test unlink functionality
+          await new Promise((r) => setTimeout(r, pollIntervalMs))
+        }
+
+        if (!linked) console.log('[WARN] Link not observed within timeout; continuing to unlink test anyway')
+
+        // Now call unlink (via authenticated session) to exercise unlink endpoint
+        console.log('\n=== STEP 8: Test Telegram Unlink ===')
         const unlinkResponse = await makeRequest(`${WEBSITE_URL}/api/telegram/unlink`, {
           method: "POST",
           headers: {
@@ -310,8 +316,8 @@ async function testFlow() {
         } else {
           console.error("[ERROR] Failed to unlink Telegram account")
         }
-      } else {
-        console.error("[ERROR] Failed to verify linking code")
+      } catch (e) {
+        console.error('[ERROR] Telethon helper failed:', e)
       }
     }
 
