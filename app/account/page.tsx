@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { User, Shield, MessageCircle, Package, Settings, ExternalLink } from "lucide-react"
+import { User, Shield, MessageCircle, Package, Settings, ExternalLink, Smartphone, Monitor } from "lucide-react"
 import Link from "next/link"
 
 function currency(cents: number, code: string) {
@@ -32,7 +32,7 @@ export default async function AccountPage() {
   const auth = await requireAuth()
   if (!auth.ok) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center p-6">
+      <main className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-6">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">Authentication Required</CardTitle>
@@ -59,35 +59,37 @@ export default async function AccountPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Header Section */}
-        <div className="flex items-center justify-between">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
+        {/* Header Section - Mobile Optimized */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-foreground">Account Dashboard</h1>
-            <p className="text-muted-foreground mt-2">Manage your profile, orders, and integrations</p>
+            <h1 className="text-2xl sm:text-4xl font-bold text-foreground">Account Dashboard</h1>
+            <p className="text-muted-foreground mt-1 sm:mt-2">Manage your profile, orders, and integrations</p>
           </div>
-          <LogoutButton />
+          <div className="flex sm:justify-end">
+            <LogoutButton />
+          </div>
         </div>
 
-        {/* Profile Overview Card */}
+        {/* Profile Overview Card - Mobile Optimized */}
         <Card className="card-professional">
-          <CardContent className="p-8">
-            <div className="flex items-start gap-6">
-              <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <User className="h-10 w-10 text-primary-foreground" />
+          <CardContent className="p-4 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto sm:mx-0">
+                <User className="h-8 w-8 sm:h-10 sm:w-10 text-primary-foreground" />
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h2 className="text-2xl font-bold text-foreground">{me?.username ?? "User"}</h2>
+              <div className="flex-1 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground">{me?.username ?? "User"}</h2>
                   {!me && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs mx-auto sm:mx-0 w-fit">
                       Profile Loading
                     </Badge>
                   )}
                 </div>
-                <p className="text-lg text-muted-foreground mb-4">{me?.email ?? "Email not available"}</p>
+                <p className="text-base sm:text-lg text-muted-foreground mb-4">{me?.email ?? "Email not available"}</p>
 
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3">
                   <div className="flex items-center gap-2 px-3 py-2 bg-muted/20 rounded-lg">
                     <span className="text-sm font-medium">Session ID:</span>
                     <code className="text-xs bg-background px-2 py-1 rounded font-mono">
@@ -108,12 +110,12 @@ export default async function AccountPage() {
           </CardContent>
         </Card>
 
-        {/* Main Dashboard Grid */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        {/* Main Dashboard Grid - Mobile Optimized */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Security Card */}
           <Card className="card-professional">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-base sm:text-lg">
                 <Shield className="h-5 w-5 text-primary" />
                 Security & Privacy
               </CardTitle>
@@ -152,7 +154,7 @@ export default async function AccountPage() {
           {/* Telegram Integration Card */}
           <Card className="card-professional">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-base sm:text-lg">
                 <MessageCircle className="h-5 w-5 text-accent" />
                 Telegram Integration
               </CardTitle>
@@ -214,23 +216,23 @@ export default async function AccountPage() {
           {/* Recent Orders Card */}
           <Card className="card-professional">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex items-center justify-between text-base sm:text-lg">
                 <div className="flex items-center gap-3">
                   <Package className="h-5 w-5 text-secondary" />
                   Recent Orders
                 </div>
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/orders">
-                    View All
-                    <ExternalLink className="h-3 w-3 ml-2" />
+                    <span className="hidden sm:inline">View All</span>
+                    <ExternalLink className="h-3 w-3 sm:ml-2" />
                   </Link>
                 </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
               {recent.length === 0 ? (
-                <div className="text-center py-8">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <div className="text-center py-6 sm:py-8">
+                  <Package className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">No orders yet</p>
                   <Button asChild>
                     <Link href="/">Start Shopping</Link>
@@ -269,13 +271,13 @@ export default async function AccountPage() {
           </Card>
         </div>
 
-        {/* Account Management Section */}
+        {/* Account Management Section - Mobile Optimized */}
         <Card className="card-professional">
           <CardHeader>
-            <CardTitle className="text-xl">Account Management</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">Account Management</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="font-semibold mb-3">Quick Actions</h3>
                 <div className="space-y-2">
@@ -287,9 +289,11 @@ export default async function AccountPage() {
                     <Shield className="h-4 w-4 mr-2" />
                     Change Password
                   </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
-                    <Package className="h-4 w-4 mr-2" />
-                    Order History
+                  <Button variant="outline" className="w-full justify-start bg-transparent" asChild>
+                    <Link href="/orders">
+                      <Package className="h-4 w-4 mr-2" />
+                      Order History
+                    </Link>
                   </Button>
                 </div>
               </div>
@@ -310,6 +314,19 @@ export default async function AccountPage() {
             </div>
 
             <Separator />
+
+            {/* Device Optimization Indicators */}
+            <div className="flex items-center justify-center gap-6 py-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Smartphone className="h-4 w-4" />
+                <span className="block sm:hidden">Mobile Optimized</span>
+                <span className="hidden sm:block">Mobile Ready</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Monitor className="h-4 w-4" />
+                <span>Desktop Enhanced</span>
+              </div>
+            </div>
 
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
               <h3 className="font-semibold text-destructive mb-2">Danger Zone</h3>
