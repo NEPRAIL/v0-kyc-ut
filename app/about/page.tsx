@@ -9,19 +9,19 @@ const teamMembers = [
     name: "Alex Chen",
     role: "Founder & CEO",
     description: "Former blockchain architect with 10+ years in fintech and cryptocurrency exchanges.",
-    avatar: "/professional-male-avatar.png",
+    avatar: "/placeholder-user.jpg",
   },
   {
     name: "Sarah Rodriguez",
     role: "Head of Security",
     description: "Cybersecurity expert specializing in crypto payment systems and digital asset protection.",
-    avatar: "/professional-female-avatar.png",
+    avatar: "/placeholder-user.jpg",
   },
   {
     name: "Marcus Thompson",
     role: "Lead Developer",
     description: "Full-stack developer with expertise in blockchain integration and secure payment processing.",
-    avatar: "/professional-male-developer.png",
+    avatar: "/placeholder-user.jpg",
   },
 ]
 

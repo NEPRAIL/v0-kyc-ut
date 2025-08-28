@@ -6,15 +6,33 @@ import path from "node:path"
 const ROOT = process.cwd()
 const APP_DIR = path.join(ROOT, "app")
 
+function isValidFile(filePath: string): boolean {
+  try {
+    const stats = fs.statSync(filePath)
+    return stats.isFile()
+  } catch {
+    return false
+  }
+}
+
+function isValidDirectory(dirPath: string): boolean {
+  try {
+    const stats = fs.statSync(dirPath)
+    return stats.isDirectory()
+  } catch {
+    return false
+  }
+}
+
 function listTsxFiles(dir: string, out: string[] = []) {
-  if (!fs.existsSync(dir)) return out
+  if (!isValidDirectory(dir)) return out
 
   try {
     const entries = fs.readdirSync(dir, { withFileTypes: true })
     for (const entry of entries) {
       const p = path.join(dir, entry.name)
 
-      // Skip hidden files and directories that might cause issues
+      // Skip hidden files and directories
       if (entry.name.startsWith(".")) continue
 
       if (entry.isDirectory()) {
@@ -31,14 +49,8 @@ function listTsxFiles(dir: string, out: string[] = []) {
 }
 
 function patchFile(p: string) {
-  try {
-    const stats = fs.statSync(p)
-    if (!stats.isFile()) {
-      console.warn(`Skipping ${p}: not a regular file`)
-      return
-    }
-  } catch (error) {
-    console.warn(`Skipping ${p}: cannot access file:`, error.message)
+  if (!isValidFile(p)) {
+    console.warn(`Skipping ${p}: not a valid file`)
     return
   }
 
@@ -127,19 +139,8 @@ function patchFile(p: string) {
 }
 
 function run() {
-  try {
-    if (!fs.existsSync(APP_DIR)) {
-      console.warn(`App directory ${APP_DIR} does not exist, skipping...`)
-      return
-    }
-
-    const stats = fs.statSync(APP_DIR)
-    if (!stats.isDirectory()) {
-      console.warn(`${APP_DIR} is not a directory, skipping...`)
-      return
-    }
-  } catch (error) {
-    console.error(`Cannot access app directory ${APP_DIR}:`, error.message)
+  if (!isValidDirectory(APP_DIR)) {
+    console.warn(`App directory ${APP_DIR} does not exist or is not a directory, skipping...`)
     return
   }
 
