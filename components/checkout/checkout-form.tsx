@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
 import { ProductImage } from "@/components/product-image"
-import { ExternalLink, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { ExternalLink, CheckCircle, AlertCircle, Loader2, Package, MessageCircle } from "lucide-react"
 
 export function CheckoutForm() {
   const { state, clearCart } = useCart()
@@ -97,63 +97,140 @@ export function CheckoutForm() {
 
   if (orderResult) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-green-600">
-            <CheckCircle className="h-5 w-5" />
-            Order Created Successfully!
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <div className="space-y-2">
-              <p className="font-medium">Order #{orderResult.orderNumber || orderResult.orderId}</p>
-              <p className="text-sm text-muted-foreground">
-                Total: {(orderResult.totalCents / 100).toFixed(2)} {orderResult.currency}
-              </p>
-              <p className="text-sm text-green-600 dark:text-green-400">
-                Your order has been created and is ready for payment.
-              </p>
-            </div>
-          </div>
-
-          {orderResult.tgDeepLink ? (
-            <div className="space-y-4">
-              <div className="text-center">
-                <h3 className="font-medium mb-2">Complete Your Payment</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Click the button below to securely complete your payment via our Telegram bot.
-                </p>
+      <div className="space-y-6">
+        <Card className="shadow-lg border-0 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-green-700 dark:text-green-400">
+              <div className="p-2 bg-green-500/20 rounded-full">
+                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
+              Order Created Successfully!
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="p-6 bg-white/80 dark:bg-background/80 rounded-xl border border-green-200 dark:border-green-800 backdrop-blur">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Order Number:</span>
+                  <span className="font-mono font-bold text-lg">#{orderResult.orderNumber || orderResult.orderId}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total Amount:</span>
+                  <span className="font-bold text-xl text-green-600">
+                    {(orderResult.totalCents / 100).toFixed(2)} {orderResult.currency}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Your order has been created and is ready for payment</span>
+                </div>
+              </div>
+            </div>
 
-              <Button onClick={handleTelegramPayment} className="w-full" size="lg">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Complete Payment in Telegram
+            {orderResult.tgDeepLink ? (
+              <div className="space-y-6">
+                <div className="text-center space-y-3">
+                  <h3 className="font-semibold text-lg">Complete Your Payment</h3>
+                  <p className="text-muted-foreground">
+                    Click the button below to securely complete your Bitcoin payment via our Telegram bot.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold">
+                      ₿
+                    </div>
+                    <div>
+                      <p className="font-medium">Bitcoin Payment</p>
+                      <p className="text-sm text-muted-foreground">Secure cryptocurrency processing</p>
+                    </div>
+                  </div>
+
+                  <Button onClick={handleTelegramPayment} className="w-full h-12 text-base font-medium" size="lg">
+                    <ExternalLink className="h-5 w-5 mr-2" />
+                    Complete Payment in Telegram
+                  </Button>
+                </div>
+
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">
+                    🔒 Secure Bitcoin payment processing • 🤖 Automated order confirmation • ⚡ Real-time updates
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                  Payment link is being generated. Please check your order details or contact support if this persists.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="pt-6 border-t space-y-3">
+              <Button
+                variant="outline"
+                onClick={handleViewOrder}
+                className="w-full h-11 bg-transparent hover:bg-muted/50"
+              >
+                <Package className="h-4 w-4 mr-2" />
+                View Order Details
               </Button>
-
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">Secure Bitcoin payment processing via Telegram</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" onClick={() => router.push("/account")} className="h-11 bg-transparent">
+                  Account Dashboard
+                </Button>
+                <Button variant="outline" onClick={() => router.push("/orders")} className="h-11 bg-transparent">
+                  All Orders
+                </Button>
               </div>
             </div>
-          ) : (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Payment link is being generated. Please check your order details or contact support if this persists.
-              </AlertDescription>
-            </Alert>
-          )}
+          </CardContent>
+        </Card>
 
-          <div className="pt-4 border-t space-y-3">
-            <Button variant="outline" onClick={handleViewOrder} className="w-full bg-transparent">
-              View Order Details
-            </Button>
-            <Button variant="outline" onClick={() => router.push("/account")} className="w-full">
-              Go to Account Dashboard
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <Card className="shadow-lg border-0 bg-card/95 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <MessageCircle className="h-5 w-5 text-accent" />
+              What Happens Next?
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                  1
+                </div>
+                <div>
+                  <p className="font-medium">Complete Payment</p>
+                  <p className="text-sm text-muted-foreground">Use the Telegram bot to securely pay with Bitcoin</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                  2
+                </div>
+                <div>
+                  <p className="font-medium">Automatic Confirmation</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your order will be confirmed automatically after payment
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-secondary rounded-full flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                  3
+                </div>
+                <div>
+                  <p className="font-medium">Real-time Updates</p>
+                  <p className="text-sm text-muted-foreground">Get instant notifications via Telegram and email</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 

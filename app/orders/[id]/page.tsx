@@ -251,15 +251,22 @@ export default function OrderDetailsPage() {
                 </div>
 
                 {order.status === "pending" && order.telegram_deeplink && (
-                  <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <div className="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-yellow-800 dark:text-yellow-200">Payment Required</h3>
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                          <Clock className="h-5 w-5" />
+                          Payment Required
+                        </h3>
                         <p className="text-sm text-yellow-600 dark:text-yellow-300">
-                          Complete your payment to proceed with this order
+                          Complete your Bitcoin payment to proceed with this order
                         </p>
+                        <div className="flex items-center gap-2 text-xs text-yellow-600 dark:text-yellow-400">
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                          <span>Secure payment via Telegram bot</span>
+                        </div>
                       </div>
-                      <Button asChild>
+                      <Button asChild size="lg" className="h-12 px-6">
                         <a href={order.telegram_deeplink} target="_blank" rel="noopener noreferrer">
                           <ExternalLink className="h-4 w-4 mr-2" />
                           Complete Payment
@@ -270,14 +277,20 @@ export default function OrderDetailsPage() {
                 )}
 
                 {order.status === "confirmed" && (
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                    <div className="flex items-center">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                      <div>
-                        <h3 className="font-medium text-green-800 dark:text-green-200">Order Confirmed</h3>
+                  <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-green-500/20 rounded-full">
+                        <CheckCircle className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 className="font-semibold text-green-800 dark:text-green-200">Order Confirmed</h3>
                         <p className="text-sm text-green-600 dark:text-green-300">
                           Your order has been successfully confirmed and is being processed
                         </p>
+                        <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                          <CheckCircle className="h-3 w-3" />
+                          <span>Payment received and verified</span>
+                        </div>
                       </div>
                     </div>
                   </div>
