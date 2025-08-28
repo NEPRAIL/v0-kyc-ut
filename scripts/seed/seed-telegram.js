@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// Node CLI entry (shebang removed to avoid preview transformers inserting imports before it)
 /*
  Seed Neon DB with:
   - a test user
