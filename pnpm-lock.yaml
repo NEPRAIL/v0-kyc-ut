@@ -13,7 +13,7 @@ importers:
         version: 3.876.0
       '@cloudflare/workers-types':
         specifier: latest
-        version: 4.20250826.0
+        version: 4.20250828.0
       '@electric-sql/pglite':
         specifier: latest
         version: 0.3.7
@@ -28,7 +28,7 @@ importers:
         version: 0.15.14
       '@lucia-auth/adapter-drizzle':
         specifier: latest
-        version: 1.1.0(drizzle-orm@0.44.5(0355c291b347e3739e67f3c26d58ec7f))(lucia@3.2.2)
+        version: 1.1.0(drizzle-orm@0.44.5(670d04f4e37c79331b4abdc6e34ece42))(lucia@3.2.2)
       '@op-engineering/op-sqlite':
         specifier: latest
         version: 15.0.1(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
@@ -40,7 +40,7 @@ importers:
         version: 1.19.0
       '@prisma/client':
         specifier: latest
-        version: 6.14.0(typescript@5.0.2)
+        version: 6.15.0(typescript@5.0.2)
       '@radix-ui/react-accordion':
         specifier: 1.2.2
         version: 1.2.2(@types/react-dom@19.0.0)(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -181,13 +181,16 @@ importers:
         version: 4.1.0
       drizzle-orm:
         specifier: latest
-        version: 0.44.5(0355c291b347e3739e67f3c26d58ec7f)
+        version: 0.44.5(670d04f4e37c79331b4abdc6e34ece42)
       embla-carousel-react:
         specifier: 8.5.1
         version: 8.5.1(react@19.0.0)
       expo-sqlite:
         specifier: latest
         version: 15.2.14(expo@53.0.20(@babel/core@7.28.3)(bufferutil@4.0.9)(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0))(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
+      fs:
+        specifier: latest
+        version: 0.0.1-security
       geist:
         specifier: latest
         version: 1.4.2(next@15.2.4(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))
@@ -940,8 +943,8 @@ packages:
     resolution: {integrity: sha512-ruv7Ae4J5dUYULmeXw1gmb7rYRz57OWCPM57pHojnLq/3Z1CK2lNSLTCVjxVk1F/TZHwOZZrOWi0ur95BbLxNQ==}
     engines: {node: '>=6.9.0'}
 
-  '@cloudflare/workers-types@4.20250826.0':
-    resolution: {integrity: sha512-nAbTVI81wFSxbESRbfGRlfL4WYNvq8T46yr1ukypHL8O2xnbZfQnQhC7ftSBmDqov8HqQSdqcz9jCgLjVh61SQ==}
+  '@cloudflare/workers-types@4.20250828.0':
+    resolution: {integrity: sha512-5sovAOf3H/ni9qCFd4iZK8k73rQJLtnDnnwvE9uS9aAfiqMiBPz2xOgtGhGEvkutmOVv5fA7STsPJ6TleRSwwQ==}
 
   '@date-fns/tz@1.2.0':
     resolution: {integrity: sha512-LBrd7MiJZ9McsOgxqWX7AaxrDjcFVjWH/tIKJd7pnR7McaslGYOP1QmmiBXdJH/H/yLCT+rcQ7FaPBUxRGUtrg==}
@@ -1726,8 +1729,8 @@ packages:
     resolution: {integrity: sha512-Tv4jcFUFAFjOWrGSio49H6R2ijALv0ZzVBfJKIdm+kl9X046Fh4LLawrF9OMsglVbK6ukqMJsUCeucGAFTBcMA==}
     engines: {node: '>=16'}
 
-  '@prisma/client@6.14.0':
-    resolution: {integrity: sha512-8E/Nk3eL5g7RQIg/LUj1ICyDmhD053STjxrPxUtCRybs2s/2sOEcx9NpITuAOPn07HEpWBfhAVe1T/HYWXUPOw==}
+  '@prisma/client@6.15.0':
+    resolution: {integrity: sha512-wR2LXUbOH4cL/WToatI/Y2c7uzni76oNFND7+23ypLllBmIS8e3ZHhO+nud9iXSXKFt1SoM3fTZvHawg63emZw==}
     engines: {node: '>=18.18'}
     peerDependencies:
       prisma: '*'
@@ -4117,6 +4120,9 @@ packages:
 
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
+
+  fs@0.0.1-security:
+    resolution: {integrity: sha512-3XY9e1pP0CVEUCdj5BmfIZxRBTSDycnbqhIOGec9QYtmVH2fbLpj86CFWkrNOkt/Fvty4KZG5lTglL9j/gJ87w==}
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -7110,7 +7116,7 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
 
-  '@cloudflare/workers-types@4.20250826.0': {}
+  '@cloudflare/workers-types@4.20250828.0': {}
 
   '@date-fns/tz@1.2.0': {}
 
@@ -7713,9 +7719,9 @@ snapshots:
   '@libsql/win32-x64-msvc@0.5.20':
     optional: true
 
-  '@lucia-auth/adapter-drizzle@1.1.0(drizzle-orm@0.44.5(0355c291b347e3739e67f3c26d58ec7f))(lucia@3.2.2)':
+  '@lucia-auth/adapter-drizzle@1.1.0(drizzle-orm@0.44.5(670d04f4e37c79331b4abdc6e34ece42))(lucia@3.2.2)':
     dependencies:
-      drizzle-orm: 0.44.5(0355c291b347e3739e67f3c26d58ec7f)
+      drizzle-orm: 0.44.5(670d04f4e37c79331b4abdc6e34ece42)
       lucia: 3.2.2
 
   '@neon-rs/load@0.0.4': {}
@@ -7945,7 +7951,7 @@ snapshots:
 
   '@planetscale/database@1.19.0': {}
 
-  '@prisma/client@6.14.0(typescript@5.0.2)':
+  '@prisma/client@6.15.0(typescript@5.0.2)':
     optionalDependencies:
       typescript: 5.0.2
 
@@ -10261,10 +10267,10 @@ snapshots:
 
   dotenv@17.2.1: {}
 
-  drizzle-orm@0.44.5(0355c291b347e3739e67f3c26d58ec7f):
+  drizzle-orm@0.44.5(670d04f4e37c79331b4abdc6e34ece42):
     optionalDependencies:
       '@aws-sdk/client-rds-data': 3.876.0
-      '@cloudflare/workers-types': 4.20250826.0
+      '@cloudflare/workers-types': 4.20250828.0
       '@electric-sql/pglite': 0.3.7
       '@libsql/client': 0.15.14(bufferutil@4.0.9)
       '@libsql/client-wasm': 0.15.14
@@ -10272,7 +10278,7 @@ snapshots:
       '@op-engineering/op-sqlite': 15.0.1(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.0.0)(bufferutil@4.0.9)(react@19.0.0))(react@19.0.0)
       '@opentelemetry/api': 1.9.0
       '@planetscale/database': 1.19.0
-      '@prisma/client': 6.14.0(typescript@5.0.2)
+      '@prisma/client': 6.15.0(typescript@5.0.2)
       '@tidbcloud/serverless': 0.2.0
       '@types/better-sqlite3': 7.6.13
       '@types/pg': 8.15.5
@@ -10576,6 +10582,8 @@ snapshots:
     optional: true
 
   fs.realpath@1.0.0: {}
+
+  fs@0.0.1-security: {}
 
   fsevents@2.3.3:
     optional: true
