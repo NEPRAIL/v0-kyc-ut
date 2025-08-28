@@ -4,14 +4,14 @@ import { db } from "@/lib/db"
 import { orders } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const auth = await getAuthFromRequest()
     if (!auth?.userId) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
-    const orderId = params.id
+  const { id: orderId } = await ctx.params
 
   const whereClause = and(eq(orders.id, orderId), eq(orders.userId, auth.userId))
 
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const auth = await getAuthFromRequest()
     if (!auth?.userId) {
@@ -75,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     const { status } = await request.json()
-    const orderId = params.id
+  const { id: orderId } = await ctx.params
 
     if (!["confirmed", "cancelled", "paid"].includes(status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 })

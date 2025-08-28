@@ -4,14 +4,13 @@ import { orders, orderItems } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
 import { getAuthFromRequest } from "@/lib/auth-server"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const auth = await getAuthFromRequest()
     if (!auth?.userId) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
-
-    const orderId = params.id
+  const { id: orderId } = await ctx.params
     const db = getDb()
 
     // Get order details
@@ -57,13 +56,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
-  return PUT(request, { params })
+export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  return PUT(request, ctx)
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const orderId = params.id
+    const { id: orderId } = await ctx.params
     const body = await request.json()
     const { status, telegram_user_id, updated_via, notes } = body
 

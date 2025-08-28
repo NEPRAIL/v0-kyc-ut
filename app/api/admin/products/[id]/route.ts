@@ -20,12 +20,12 @@ const updateProductSchema = z.object({
   series: z.union([z.string(), z.null()]).optional(),
 })
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin()
     if (auth instanceof NextResponse) return auth
 
-    const productId = params.id // products.id is UUID (string)
+  const { id: productId } = await ctx.params // products.id is UUID (string)
     const body = await request.json()
     const data = updateProductSchema.parse(body)
 
@@ -52,12 +52,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAdmin()
     if (auth instanceof NextResponse) return auth
 
-  const productId = params.id
+  const { id: productId } = await ctx.params
 
     await db.delete(products).where(eq(products.id, productId))
 

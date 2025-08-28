@@ -1,6 +1,9 @@
 // middleware.ts — SAFE version
 import { NextResponse, type NextRequest } from "next/server"
 import { verifySession } from "../security"
+import { db } from "../db"
+import { users } from "../db/schema"
+import { eq } from "drizzle-orm"
 import { cookies } from "next/headers"
 
 export const config = {
@@ -39,8 +42,8 @@ export async function getServerAuth() {
       return null
     }
 
-    const session = await verifySession(sessionCookie)
-    return session ? { user: session } : null
+  const session = await verifySession(sessionCookie)
+  return session ? { user: { id: session.uid } } : null
   } catch (error) {
     console.error("[v0] Server auth error:", error)
     return null
@@ -59,12 +62,17 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const auth = await requireAuth()
+  // Prefer env-based allowlist for simplicity; fallback to DB role if present
+  const adminUserId = process.env.ADMIN_USER_ID
+  if (adminUserId && auth.user.id === adminUserId) return auth
 
-  if (auth.user.role !== "admin") {
-    throw new Error("Admin access required")
-  }
+  // Optional DB role check if users table has a role column; ignore if not found
+  try {
+    const [u] = await db.select().from(users).where(eq(users.id, auth.user.id)).limit(1)
+    if (u && (u as any).role === "admin") return auth
+  } catch {}
 
-  return auth
+  throw new Error("Admin access required")
 }
 
 export async function requireAuthAPI(request: NextRequest) {
@@ -75,12 +83,12 @@ export async function requireAuthAPI(request: NextRequest) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
-    const session = await verifySession(sessionCookie)
-    if (!session) {
+  const session = await verifySession(sessionCookie)
+  if (!session) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 })
     }
 
-    return { user: session }
+  return { user: { id: session.uid } }
   } catch (error) {
     console.error("[v0] Auth middleware error:", error)
     return NextResponse.json({ error: "Authentication failed" }, { status: 401 })
@@ -96,11 +104,15 @@ export async function requireAdminAPI(request: NextRequest) {
     }
 
     const { user } = authResult
-    if (user.role !== "admin") {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
-    }
+    const adminUserId = process.env.ADMIN_USER_ID
+    if (adminUserId && user.id === adminUserId) return { user }
 
-    return { user }
+    try {
+      const [u] = await db.select().from(users).where(eq(users.id, user.id)).limit(1)
+      if (u && (u as any).role === "admin") return { user }
+    } catch {}
+
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 })
   } catch (error) {
     console.error("[v0] Admin middleware error:", error)
     return NextResponse.json({ error: "Authorization failed" }, { status: 403 })
