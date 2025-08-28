@@ -4,7 +4,7 @@ import { users, orders, telegramLinks } from "@/lib/db/schema"
 import { eq, sql, desc } from "drizzle-orm"
 
 export type SafeUser = { id: string; username: string | null; email: string | null } | null
-export type SafeTelegram = { telegramUserId: string; telegramUsername: string | null } | null
+export type SafeTelegram = { telegramUserId: number; telegramUsername: string | null } | null
 export type SafeOrder = {
   id: string
   totalCents: number
