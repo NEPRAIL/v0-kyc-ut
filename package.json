@@ -64,7 +64,11 @@
     "@xata.io/client": "latest",
     "autoprefixer": "^10.4.20",
     "bcryptjs": "latest",
-    
+    "better-sqlite3": "latest",
+    "bun-types": "latest",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "crypto": "latest",
     "date-fns": "latest",
     "drizzle-orm": "latest",
     "embla-carousel-react": "8.5.1",
@@ -100,7 +104,8 @@
     "sqlite3": "latest",
     "tailwind-merge": "^2.5.5",
     "tailwindcss": "^4.1.9",
-  "tailwindcss-animate": "^1.0.7",
+    "tailwindcss-animate": "^1.0.7",
+    "url": "latest",
     "vaul": "^0.9.9",
     "zod": "3.25.67"
   },
