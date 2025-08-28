@@ -9,19 +9,19 @@ const teamMembers = [
     name: "Alex Chen",
     role: "Founder & CEO",
     description: "Former blockchain architect with 10+ years in fintech and cryptocurrency exchanges.",
-    avatar: "/placeholder-user.jpg",
+  avatar: "https://placehold.co/160x160?text=Alex",
   },
   {
     name: "Sarah Rodriguez",
     role: "Head of Security",
     description: "Cybersecurity expert specializing in crypto payment systems and digital asset protection.",
-    avatar: "/placeholder-user.jpg",
+  avatar: "https://placehold.co/160x160?text=Sarah",
   },
   {
     name: "Marcus Thompson",
     role: "Lead Developer",
     description: "Full-stack developer with expertise in blockchain integration and secure payment processing.",
-    avatar: "/placeholder-user.jpg",
+  avatar: "https://placehold.co/160x160?text=Marcus",
   },
 ]
 
