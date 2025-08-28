@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { db } from "@/lib/db"
 import { products, seasons, rarities, listings, orders } from "@/lib/db/schema"
 import { sql, eq } from "drizzle-orm"
+import Link from "next/link"
+import { Suspense } from "react"
 
 export default async function AdminDashboard() {
   let stats
@@ -15,7 +17,7 @@ export default async function AdminDashboard() {
     const [listingCount] = await db
       .select({ count: sql<number>`COUNT(*)` })
       .from(listings)
-      .where(eq(listings.active, true))
+      .where(eq(listings.isActive, true))
     const [orderCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(orders)
 
     stats = [
@@ -85,23 +87,72 @@ export default async function AdminDashboard() {
             <CardTitle>System Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Database</span>
-                <span className="text-sm text-green-500">Connected</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Authentication</span>
-                <span className="text-sm text-green-500">Active</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">BTCPay Server</span>
-                <span className="text-sm text-yellow-500">Pending Setup</span>
+            <div className="space-y-3 text-sm">
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading status…</div>}>
+                <StatusRows />
+              </Suspense>
+              <div className="pt-2">
+                <Link href="/admin/settings" className="underline text-muted-foreground">
+                  View settings
+                </Link>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+    </div>
+  )
+}
+
+"use client"
+import { useEffect, useState } from "react"
+
+function StatusRows() {
+  const [health, setHealth] = useState<any>(null)
+  const [bot, setBot] = useState<any>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      try {
+        const [h, b] = await Promise.all([
+          fetch(`/api/health`, { cache: "no-store" }).then((r) => r.json()).catch(() => null),
+          fetch(`/api/bot/status`, {
+            headers: { "x-webhook-secret": process.env.NEXT_PUBLIC_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET || "" },
+            cache: "no-store",
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null),
+        ])
+        if (!cancelled) {
+          setHealth(h)
+          setBot(b)
+        }
+      } catch {}
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const dbOk = !!health?.checks?.database
+  const tgOk = !!bot?.bot?.connected
+  const envOk = !!health?.checks?.environment
+
+  const Row = ({ name, ok, note }: { name: string; ok: boolean; note?: string }) => (
+    <div className="flex items-center justify-between">
+      <span>{name}</span>
+      <span className={ok ? "text-green-500" : "text-red-500"}>{ok ? "Connected" : "Not Connected"}</span>
+      {note ? <span className="ml-2 text-muted-foreground">{note}</span> : null}
+    </div>
+  )
+
+  return (
+    <div className="space-y-2">
+      <Row name="Database" ok={dbOk} />
+      <Row name="Telegram Bot" ok={tgOk} note={bot?.bot?.username ? `@${bot.bot.username}` : undefined} />
+      <Row name="Environment" ok={envOk} />
     </div>
   )
 }

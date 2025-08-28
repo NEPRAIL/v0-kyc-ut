@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (target === "admin") {
       // Send to admin
-      const adminId = process.env.TELEGRAM_ADMIN_ID
+  const adminId = process.env.TELEGRAM_ADMIN_CHAT_ID || process.env.TELEGRAM_ADMIN_ID
       if (!adminId) {
         return NextResponse.json({ error: "Admin ID not configured" }, { status: 500 })
       }

@@ -5,17 +5,15 @@ import { eq, and } from "drizzle-orm"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const productId = Number.parseInt(params.id)
+  const productId = params.id // UUID string
 
     const [product] = await db
       .select({
         id: products.id,
         slug: products.slug,
         name: products.name,
-        description: products.description,
-        imageUrl: products.imageUrl,
-        redeemable: products.redeemable,
-        series: products.series,
+  description: products.description,
+  imageUrl: products.imageUrl,
         createdAt: products.createdAt,
         season: {
           id: seasons.id,
@@ -29,7 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       .from(products)
       .leftJoin(seasons, eq(products.seasonId, seasons.id))
       .leftJoin(rarities, eq(products.rarityId, rarities.id))
-      .where(eq(products.id, productId))
+  .where(eq(products.id, productId))
       .limit(1)
 
     if (!product) {
@@ -40,30 +38,29 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const productVariants = await db
       .select({
         id: variants.id,
-        label: variants.label,
-        isHolographic: variants.isHolographic,
-        color: variants.color,
+        name: variants.name,
+        isActive: variants.isActive,
         listings: {
           id: listings.id,
-          priceSats: listings.priceSats,
+          price: listings.price,
           stock: listings.stock,
-          active: listings.active,
+          isActive: listings.isActive,
         },
       })
       .from(variants)
-      .leftJoin(listings, and(eq(listings.variantId, variants.id), eq(listings.active, true)))
+      .leftJoin(listings, and(eq(listings.variantId, variants.id), eq(listings.isActive, true)))
       .where(eq(variants.productId, productId))
 
     // Get base product listings (no variant)
     const baseListings = await db
       .select({
         id: listings.id,
-        priceSats: listings.priceSats,
+        price: listings.price,
         stock: listings.stock,
-        active: listings.active,
+        isActive: listings.isActive,
       })
       .from(listings)
-      .where(and(eq(listings.productId, productId), eq(listings.active, true), eq(listings.variantId, null)))
+      .where(and(eq(listings.productId, productId), eq(listings.isActive, true)))
 
     return NextResponse.json({
       product,

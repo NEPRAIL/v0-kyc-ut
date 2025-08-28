@@ -17,9 +17,7 @@ export function BuyButton({ productId, variantId, priceSats, stock, disabled }: 
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  const formatPrice = (sats: number) => {
-    return `${(sats / 100000000).toFixed(8)} BTC`
-  }
+  const formatPrice = (sats: number) => `${(sats / 100000000).toFixed(8)} BTC`
 
   const handleBuy = async () => {
     setLoading(true)
@@ -37,10 +35,13 @@ export function BuyButton({ productId, variantId, priceSats, stock, disabled }: 
       const data = await response.json()
 
       if (response.ok) {
-        // Redirect to BTCPay checkout
-        window.open(data.checkoutLink, "_blank")
-        // Also redirect to order page
-        router.push(`/orders/${data.orderId}`)
+        // Open Telegram bot deep link if available
+        if (data.tgDeepLink) {
+          window.open(data.tgDeepLink, "_blank")
+        }
+        // Redirect to the order page to track status
+        const id = data.order?.id || data.orderId
+        if (id) router.push(`/orders/${id}`)
       } else {
         alert(data.error || "Failed to create order")
       }

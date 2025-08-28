@@ -15,6 +15,7 @@ const updateProductSchema = z.object({
   imageUrl: z.union([z.string().url(), z.null()]).optional(),
   seasonId: z.union([z.string().uuid(), z.null()]).optional(),
   rarityId: z.union([z.string().uuid(), z.null()]).optional(),
+  // legacy fields removed from schema; keep input tolerant but ignore
   redeemable: z.boolean().optional(),
   series: z.union([z.string(), z.null()]).optional(),
 })
@@ -24,7 +25,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const auth = await requireAdmin()
     if (auth instanceof NextResponse) return auth
 
-    const productId = Number.parseInt(params.id)
+    const productId = params.id // products.id is UUID (string)
     const body = await request.json()
     const data = updateProductSchema.parse(body)
 
@@ -37,8 +38,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         imageUrl: data.imageUrl || null,
         seasonId: data.seasonId || null,
         rarityId: data.rarityId || null,
-        redeemable: data.redeemable || false,
-        series: data.series || null,
       })
       .where(eq(products.id, productId))
       .returning()
@@ -58,7 +57,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const auth = await requireAdmin()
     if (auth instanceof NextResponse) return auth
 
-    const productId = Number.parseInt(params.id)
+  const productId = params.id
 
     await db.delete(products).where(eq(products.id, productId))
 

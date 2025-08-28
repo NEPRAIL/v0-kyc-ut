@@ -35,20 +35,20 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(query.limit || "10")
     const offset = (page - 1) * limit
 
-    let querySeasons = db.select().from(seasons)
-
-    if (search) {
-      querySeasons = querySeasons.where(like(seasons.name, `%${search}%`))
-    }
-
-    const results = await querySeasons.limit(limit).offset(offset).orderBy(seasons.name)
+    const where = search ? like(seasons.name, `%${search}%`) : undefined
+    const results = await db
+      .select()
+      .from(seasons)
+      .where(where)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(seasons.name)
 
     // Get total count
-    let countQuery = db.select({ count: sql<number>`COUNT(*)` }).from(seasons)
-    if (search) {
-      countQuery = countQuery.where(like(seasons.name, `%${search}%`))
-    }
-    const [{ count }] = await countQuery
+    const [{ count }] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(seasons)
+      .where(where)
 
     return NextResponse.json({
       seasons: results,

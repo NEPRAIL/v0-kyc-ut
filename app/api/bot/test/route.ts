@@ -4,7 +4,7 @@ export async function GET(request: NextRequest) {
   try {
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET
-    const adminId = process.env.TELEGRAM_ADMIN_ID
+  const adminId = process.env.TELEGRAM_ADMIN_CHAT_ID || process.env.TELEGRAM_ADMIN_ID
 
     if (!botToken || !webhookSecret || !adminId) {
       return NextResponse.json(
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         id: botData.result.id,
       },
       config: {
-        adminId,
+  adminId,
         webhookSecret: webhookSecret.substring(0, 8) + "...",
       },
     })

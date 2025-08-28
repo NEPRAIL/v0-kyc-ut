@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
     const webhookSecret = request.headers.get("x-webhook-secret")
     const expectedSecret = process.env.WEBHOOK_SECRET || process.env.TELEGRAM_WEBHOOK_SECRET
 
-    if (!expectedSecret || webhookSecret !== expectedSecret) {
+    // If a secret is configured, enforce it. If not configured, allow read-only access (useful for dev/status pages)
+    if (expectedSecret && webhookSecret !== expectedSecret) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -43,7 +44,6 @@ export async function GET(request: NextRequest) {
       try {
         const botResponse = await fetch(`https://api.telegram.org/bot${botToken}/getMe`, {
           method: "GET",
-          timeout: 5000,
         })
         const botData = await botResponse.json()
 
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+  return NextResponse.json({
       success: true,
       timestamp: now.toISOString(),
       bot: botStatus,
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       environment: {
         has_bot_token: !!process.env.TELEGRAM_BOT_TOKEN,
         has_webhook_secret: !!process.env.WEBHOOK_SECRET,
-        has_admin_id: !!process.env.TELEGRAM_ADMIN_ID,
+  has_admin_id: !!(process.env.TELEGRAM_ADMIN_CHAT_ID || process.env.TELEGRAM_ADMIN_ID),
         database_connected: true,
       },
     })

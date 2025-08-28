@@ -256,14 +256,14 @@ export default function OrderDetailsPage() {
                       <div className="space-y-2">
                         <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
                           <Clock className="h-5 w-5" />
-                          Payment Required
+                          Action Required
                         </h3>
                         <p className="text-sm text-yellow-600 dark:text-yellow-300">
-                          Complete your Bitcoin payment to proceed with this order
+                          Complete payment and confirmation via the Telegram bot to proceed with this order
                         </p>
                         <div className="flex items-center gap-2 text-xs text-yellow-600 dark:text-yellow-400">
                           <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                          <span>Secure payment via Telegram bot</span>
+                          <span>Secure flow via Telegram bot</span>
                         </div>
                       </div>
                       <Button asChild size="lg" className="h-12 px-6">

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth/middleware"
 import { db } from "@/lib/db"
 import { products, seasons, rarities } from "@/lib/db/schema"
-import { eq, like, sql } from "drizzle-orm"
+import { and, like, sql, eq } from "drizzle-orm"
 import { z } from "zod"
 
 export const runtime = "nodejs"
@@ -15,6 +15,7 @@ const createProductSchema = z.object({
   imageUrl: z.union([z.string().url(), z.null()]).optional(),
   seasonId: z.union([z.string().uuid(), z.null()]).optional(),
   rarityId: z.union([z.string().uuid(), z.null()]).optional(),
+  // legacy fields removed from schema; keep input tolerant but ignore
   redeemable: z.boolean().optional(),
   series: z.union([z.string(), z.null()]).optional(),
 })
@@ -42,15 +43,13 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(parsedQuery.limit || "10")
     const offset = (page - 1) * limit
 
-    let dbQuery = db
+    const baseSelect = db
       .select({
         id: products.id,
         slug: products.slug,
         name: products.name,
         description: products.description,
         imageUrl: products.imageUrl,
-        redeemable: products.redeemable,
-        series: products.series,
         createdAt: products.createdAt,
         season: {
           id: seasons.id,
@@ -64,19 +63,18 @@ export async function GET(request: NextRequest) {
       .from(products)
       .leftJoin(seasons, eq(products.seasonId, seasons.id))
       .leftJoin(rarities, eq(products.rarityId, rarities.id))
-
-    if (search) {
-      dbQuery = dbQuery.where(like(products.name, `%${search}%`))
-    }
-
-    const results = await dbQuery.limit(limit).offset(offset).orderBy(products.createdAt)
+    const where = search ? like(products.name, `%${search}%`) : undefined
+    const results = await baseSelect
+      .where(where)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(products.createdAt)
 
     // Get total count
-    let countQuery = db.select({ count: sql<number>`COUNT(*)` }).from(products)
-    if (search) {
-      countQuery = countQuery.where(like(products.name, `%${search}%`))
-    }
-    const [{ count }] = await countQuery
+    const [{ count }] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(products)
+      .where(where)
 
     return NextResponse.json({
       products: results,
@@ -110,8 +108,6 @@ export async function POST(request: NextRequest) {
         imageUrl: data.imageUrl || null,
         seasonId: data.seasonId || null,
         rarityId: data.rarityId || null,
-        redeemable: data.redeemable || false,
-        series: data.series || null,
       })
       .returning()
 

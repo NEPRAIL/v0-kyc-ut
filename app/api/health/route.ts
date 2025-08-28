@@ -29,9 +29,7 @@ export async function GET() {
     try {
       const botToken = process.env.TELEGRAM_BOT_TOKEN
       if (botToken) {
-        const response = await fetch(`https://api.telegram.org/bot${botToken}/getMe`, {
-          timeout: 5000,
-        })
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/getMe`)
         const data = await response.json()
         checks.telegram = data.ok || false
       }

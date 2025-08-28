@@ -1,9 +1,10 @@
-import { db } from "./index"
+import { getDb } from "./index"
 import { seasons, rarities, products, variants, listings, users } from "./schema"
 import { hash } from "bcryptjs"
 
 export async function seedDatabase() {
   try {
+  const db = getDb()
     // Seed seasons
     const seasonData = [{ name: "Season 1" }, { name: "Season 2" }, { name: "Genesis" }]
 
@@ -29,12 +30,13 @@ export async function seedDatabase() {
 
     // Seed admin user
     const adminPassword = await hash("admin123", 12)
-    const adminUser = await db
+    await db
       .insert(users)
       .values({
         username: "admin",
+        email: "admin@example.com",
         passwordHash: adminPassword,
-        role: "admin",
+        emailVerified: true,
       })
       .returning()
     console.log("Seeded admin user")
@@ -48,7 +50,7 @@ export async function seedDatabase() {
         imageUrl: "https://placehold.co/400x400/00aa5b/ffffff?text=Arcade+Token",
         seasonId: insertedSeasons[0].id,
         rarityId: insertedRarities[2].id, // Rare
-        series: "Arcade",
+  // optional legacy fields removed; align with current schema
       },
       {
         slug: "arcade-season-1-redemption-gold",
@@ -57,8 +59,7 @@ export async function seedDatabase() {
         imageUrl: "https://placehold.co/400x400/f0c419/111111?text=Redemption+Gold",
         seasonId: insertedSeasons[0].id,
         rarityId: insertedRarities[9].id, // Redeemable
-        redeemable: true,
-        series: "Arcade",
+  // optional legacy fields removed; align with current schema
       },
     ]
 
@@ -69,15 +70,15 @@ export async function seedDatabase() {
     const variantData = [
       {
         productId: insertedProducts[1].id,
-        label: "Gold",
-        isHolographic: false,
-        color: "gold",
+        name: "Gold",
+        description: "Gold variant",
+        isActive: true,
       },
       {
         productId: insertedProducts[1].id,
-        label: "Holographic Gold",
-        isHolographic: true,
-        color: "gold",
+        name: "Holographic Gold",
+        description: "Holographic Gold variant",
+        isActive: true,
       },
     ]
 
@@ -88,23 +89,23 @@ export async function seedDatabase() {
     const listingData = [
       {
         productId: insertedProducts[0].id,
-        priceSats: 100000, // 0.001 BTC
+        price: "49.99",
         stock: 5,
-        active: true,
+        isActive: true,
       },
       {
         productId: insertedProducts[1].id,
         variantId: insertedVariants[0].id,
-        priceSats: 500000, // 0.005 BTC
+        price: "199.00",
         stock: 2,
-        active: true,
+        isActive: true,
       },
       {
         productId: insertedProducts[1].id,
         variantId: insertedVariants[1].id,
-        priceSats: 1000000, // 0.01 BTC
+        price: "399.00",
         stock: 1,
-        active: true,
+        isActive: true,
       },
     ]
 

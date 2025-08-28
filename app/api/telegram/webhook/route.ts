@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     const chatId = message.chat.id
     const text: string = message.text || ""
 
-    if (text.startsWith("/start")) {
+  if (text.startsWith("/start")) {
       const [, param] = text.split(" ")
       if (param && param.startsWith("order_")) {
         const orderId = param.slice("order_".length)
@@ -60,6 +60,53 @@ export async function POST(req: Request) {
       await send({
         method: "sendMessage",
         body: { chat_id: chatId, text: `Payment flow coming soon for ${orderId}.` },
+      })
+    } else if (text.startsWith("/confirm")) {
+      const [, orderId] = text.split(" ")
+      const adminChat = process.env.TELEGRAM_ADMIN_CHAT_ID
+      if (!adminChat || String(chatId) !== String(adminChat)) {
+        await send({ method: "sendMessage", body: { chat_id: chatId, text: "Unauthorized." } })
+        return NextResponse.json({ ok: true })
+      }
+
+      if (!orderId) {
+        await send({ method: "sendMessage", body: { chat_id: chatId, text: "Usage: /confirm <order_id>" } })
+        return NextResponse.json({ ok: true })
+      }
+
+      const db = getDb()
+      const [existing] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1)
+      if (!existing) {
+        await send({ method: "sendMessage", body: { chat_id: chatId, text: `Order ${orderId} not found.` } })
+        return NextResponse.json({ ok: true })
+      }
+
+      await db.update(orders).set({ status: "confirmed" as any }).where(eq(orders.id, orderId))
+      await send({
+        method: "sendMessage",
+        body: { chat_id: chatId, text: `✅ Order ${orderId} confirmed.` },
+      })
+    } else if (text.startsWith("/status")) {
+      const [, orderId] = text.split(" ")
+      if (!orderId) {
+        await send({ method: "sendMessage", body: { chat_id: chatId, text: "Usage: /status <order_id>" } })
+        return NextResponse.json({ ok: true })
+      }
+
+      const db = getDb()
+      const [existing] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1)
+      if (!existing) {
+        await send({ method: "sendMessage", body: { chat_id: chatId, text: `Order ${orderId} not found.` } })
+        return NextResponse.json({ ok: true })
+      }
+
+      const sum = (existing.totalCents / 100).toFixed(2) + " " + (existing.currency || "USD")
+      await send({
+        method: "sendMessage",
+        body: {
+          chat_id: chatId,
+          text: `Order ${orderId}\nTotal: ${sum}\nStatus: ${existing.status}`,
+        },
       })
     }
 
