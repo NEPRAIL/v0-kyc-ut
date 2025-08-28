@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "next build",
+    "check:images": "tsx scripts/fetch-logos.ts",
     "dev": "next dev",
     "fix:params": "tsx scripts/fix-next-async-params.ts",
     "lint": "next lint",

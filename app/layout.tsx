@@ -36,8 +36,8 @@ html {
       </head>
       <body>
         <ThemeProvider>
-          <Header />
           <CartProvider>
+            <Header />
             {children}
             <Toaster />
           </CartProvider>
