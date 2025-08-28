@@ -33,6 +33,14 @@ telethon_test.session
 kycut_bot.db
 logs/*.log
 logs/*.pid
+logs/*
+
+# python caches
+__pycache__/
+*.pyc
+
+# archives
+*.zip
 
 # vercel
 .vercel
