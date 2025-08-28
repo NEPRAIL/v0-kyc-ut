@@ -13,6 +13,26 @@ export async function POST(request: NextRequest) {
     const webhookSecret = request.headers.get("x-webhook-secret")
     const expectedSecret = process.env.WEBHOOK_SECRET || process.env.TELEGRAM_WEBHOOK_SECRET
 
+    // Structured connection log (do NOT log the raw secret value)
+    try {
+      const origin = request.headers.get('origin') || request.headers.get('referer') || 'unknown'
+      const ip = request.headers.get('x-forwarded-for') || 'unknown'
+      const hasSecret = !!webhookSecret
+      const secretMatch = !!expectedSecret && webhookSecret === expectedSecret
+      console.info(JSON.stringify({
+        event: 'BOT_WEBHOOK_CONN',
+        timestamp: new Date().toISOString(),
+        origin,
+        ip,
+        has_secret: hasSecret,
+        secret_match: secretMatch,
+        path: '/api/bot/webhook'
+      }))
+    } catch (err) {
+      // logging must not break webhook handling
+      console.warn('[v0] Failed to write webhook connection log', err)
+    }
+
     if (!expectedSecret || webhookSecret !== expectedSecret) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

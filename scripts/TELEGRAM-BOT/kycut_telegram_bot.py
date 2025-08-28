@@ -18,7 +18,11 @@ import re
 from urllib.parse import urljoin
 import sys
 import atexit
-import fcntl
+try:
+    import fcntl
+except Exception:
+    # fcntl is Unix-only; on Windows this will be None and we'll use a cross-platform lock fallback
+    fcntl = None
 import signal
 import time
 
@@ -64,13 +68,45 @@ try:
 except Exception:
     log_stream = sys.stdout
 
+class ColorFormatter(logging.Formatter):
+    COLORS = {
+        'DEBUG': '\x1b[36m',  # cyan
+        'INFO': '\x1b[37m',   # white
+        'WARNING': '\x1b[33m',# yellow
+        'ERROR': '\x1b[31m',  # red
+        'CRITICAL': '\x1b[41m' # red background
+    }
+    RESET = '\x1b[0m'
+
+    def format(self, record):
+        levelname = record.levelname
+        msg = super().format(record)
+        color = self.COLORS.get(levelname, '')
+        # make success (INFO) green-ish for bot success messages when explicitly flagged
+        if getattr(record, 'success', False):
+            color = '\x1b[32m'  # green
+        return f"{color}{msg}{self.RESET}"
+
 handler = logging.StreamHandler(log_stream)
-handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+handler.setFormatter(ColorFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 
 root = logging.getLogger()
 root.handlers.clear()
 root.setLevel(logging.INFO)
 root.addHandler(handler)
+
+# Add a JSONL debug log so we can tail structured events (requests/responses/errors)
+debug_logger = logging.getLogger('telegram.debug')
+debug_logger.setLevel(logging.DEBUG)
+debug_file = os.path.join(os.getcwd(), 'logs', 'telegram_bot.debug.log')
+try:
+    os.makedirs(os.path.dirname(debug_file), exist_ok=True)
+    df_handler = logging.FileHandler(debug_file, encoding='utf-8')
+    df_handler.setLevel(logging.DEBUG)
+    df_handler.setFormatter(logging.Formatter('%(asctime)s\t%(levelname)s\t%(message)s'))
+    debug_logger.addHandler(df_handler)
+except Exception:
+    pass
 
 logger = logging.getLogger(__name__)
 # --------------------------------------------------------------
@@ -310,19 +346,60 @@ class KYCutBot:
         # Single-instance PID file to avoid getUpdates conflicts
         self.lockfile = os.path.join(os.getcwd(), '.kycut_bot.pid')
         self.lockfile_fd = None
-        # Atomic file lock to prevent double instance (Linux/Unix)
+        # Atomic file lock to prevent double instance.
+        # Use fcntl on Unix-like systems when available, otherwise use an
+        # atomic create (O_CREAT|O_EXCL) based approach which works on Windows.
         try:
-            self.lockfile_fd = open(self.lockfile, 'a+')
-            try:
-                fcntl.flock(self.lockfile_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError:
-                logger.error('Another bot instance is already running (atomic file lock)')
-                raise SystemExit(1)
-            # Write our PID for visibility
-            self.lockfile_fd.seek(0)
-            self.lockfile_fd.truncate()
-            self.lockfile_fd.write(str(os.getpid()) + '\n')
-            self.lockfile_fd.flush()
+            if fcntl:
+                self.lockfile_fd = open(self.lockfile, 'a+')
+                try:
+                    fcntl.flock(self.lockfile_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    logger.error('Another bot instance is already running (atomic file lock)')
+                    raise SystemExit(1)
+                # Write our PID for visibility
+                self.lockfile_fd.seek(0)
+                self.lockfile_fd.truncate()
+                self.lockfile_fd.write(str(os.getpid()) + '\n')
+                self.lockfile_fd.flush()
+            else:
+                # Cross-platform fallback: attempt to atomically create the pid file.
+                flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
+                try:
+                    fd = os.open(self.lockfile, flags)
+                    self.lockfile_fd = os.fdopen(fd, 'w+')
+                    self.lockfile_fd.write(str(os.getpid()) + '\n')
+                    self.lockfile_fd.flush()
+                except FileExistsError:
+                    # Existing lockfile: try to read PID and check if process is alive.
+                    try:
+                        with open(self.lockfile, 'r') as f:
+                            lines = f.read().strip().splitlines()
+                            existing_pid = int(lines[0]) if lines else None
+                    except Exception:
+                        existing_pid = None
+
+                    if existing_pid:
+                        # Attempt to detect whether the PID is still running.
+                        try:
+                            # os.kill with signal 0 checks for process existence on both Unix and Windows
+                            os.kill(existing_pid, 0)
+                            logger.error('Another bot instance is already running (pid %s)', existing_pid)
+                            raise SystemExit(1)
+                        except OSError:
+                            # Process not running — stale lockfile. Remove and retry create.
+                            try:
+                                os.remove(self.lockfile)
+                                fd = os.open(self.lockfile, flags)
+                                self.lockfile_fd = os.fdopen(fd, 'w+')
+                                self.lockfile_fd.write(str(os.getpid()) + '\n')
+                                self.lockfile_fd.flush()
+                            except Exception as e:
+                                logger.error('Failed to acquire lock after removing stale lockfile: %s', e)
+                                raise SystemExit(1)
+                    else:
+                        logger.error('Lockfile exists and PID could not be determined; aborting')
+                        raise SystemExit(1)
         except Exception as e:
             logger.error(f'Failed to acquire atomic lock: {e}')
             raise SystemExit(1)
@@ -594,6 +671,16 @@ class KYCutBot:
                 if data:
                     request_kwargs['json'] = data
 
+                # Log attempt
+                debug_logger.debug(json.dumps({
+                    'event': 'api_request_attempt',
+                    'endpoint_key': endpoint_key,
+                    'method': method.upper(),
+                    'url': url,
+                    'attempt': attempt + 1,
+                    'user_id': user_id,
+                }))
+
                 if method.upper() == 'GET':
                     response = requests.get(url, **request_kwargs)
                 elif method.upper() == 'POST':
@@ -615,6 +702,18 @@ class KYCutBot:
                 result = response.json() if response.content else {}
                 result['_status_code'] = response.status_code
                 result['_success'] = response.ok
+
+                # Log success/failure
+                debug_logger.debug(json.dumps({
+                    'event': 'api_request_result',
+                    'endpoint_key': endpoint_key,
+                    'method': method.upper(),
+                    'url': url,
+                    'status_code': response.status_code,
+                    'ok': response.ok,
+                    'user_id': user_id,
+                }))
+
                 return result
 
             except requests.exceptions.Timeout as e:
