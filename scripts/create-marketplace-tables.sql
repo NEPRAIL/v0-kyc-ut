@@ -101,7 +101,7 @@ SELECT
   'First rank token from the original arcade season',
   s.id,
   r.id,
-  '/green-arcade-token.png'
+  'https://placehold.co/400x400/00aa5b/ffffff?text=Arcade+Token'
 FROM seasons s, rarities r 
 WHERE s.name = 'Season 1' AND r.name = 'Common'
 ON CONFLICT (slug) DO NOTHING;
@@ -113,7 +113,7 @@ SELECT
   'Rare gold redemption token from Season 1',
   s.id,
   r.id,
-  '/placeholder.svg?height=200&width=200'
+  'https://placehold.co/200x200?text=Placeholder'
 FROM seasons s, rarities r 
 WHERE s.name = 'Season 1' AND r.name = 'Legendary'
 ON CONFLICT (slug) DO NOTHING;

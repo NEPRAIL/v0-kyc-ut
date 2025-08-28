@@ -113,7 +113,7 @@ async function debugAuthAndOrders() {
           name: "Test Product",
           price: 29.99,
           quantity: 1,
-          image: "/placeholder.svg?height=100&width=100",
+          image: "https://placehold.co/100x100?text=Item",
         },
       ],
       total: 29.99,

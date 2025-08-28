@@ -156,7 +156,7 @@ async function testFlow() {
             name: "Test Product",
             price_cents: 2999, // $29.99 in cents
             qty: 1,
-            image: "/placeholder.svg?height=100&width=100",
+            image: "https://placehold.co/100x100?text=Item",
           },
         ],
         total: 2999,

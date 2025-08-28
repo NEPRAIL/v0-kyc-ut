@@ -45,7 +45,7 @@ export async function seedDatabase() {
         slug: "arcade-season-1-rank-1",
         name: "Arcade Season 1 Rank 1",
         description: "First rank token from Arcade Season 1",
-        imageUrl: "/green-arcade-token.png",
+        imageUrl: "https://placehold.co/400x400/00aa5b/ffffff?text=Arcade+Token",
         seasonId: insertedSeasons[0].id,
         rarityId: insertedRarities[2].id, // Rare
         series: "Arcade",
@@ -54,7 +54,7 @@ export async function seedDatabase() {
         slug: "arcade-season-1-redemption-gold",
         name: "Arcade Season 1 Redemption Token - Gold",
         description: "Special gold redemption token from Season 1",
-        imageUrl: "/placeholder-c5j3z.png",
+        imageUrl: "https://placehold.co/400x400/f0c419/111111?text=Redemption+Gold",
         seasonId: insertedSeasons[0].id,
         rarityId: insertedRarities[9].id, // Redeemable
         redeemable: true,
