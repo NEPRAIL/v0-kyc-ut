@@ -35,7 +35,10 @@ export function ProductCard({ product, isSelected, onClick }: ProductCardProps) 
         <div className="aspect-square relative mb-3 bg-muted rounded-lg overflow-hidden">
           {product.imageUrl ? (
             <Image
-              src={product.imageUrl || "/placeholder.svg?height=200&width=200"}
+              src={
+                product.imageUrl ||
+                "https://dummyimage.com/400x400/1f2937/ffffff.png&text=Placeholder"
+              }
               alt={product.name}
               fill
               className="object-cover"

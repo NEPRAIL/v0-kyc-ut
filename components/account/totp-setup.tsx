@@ -157,7 +157,10 @@ export function TOTPSetup({ isEnabled, onStatusChange }: TOTPSetupProps) {
               </p>
               <div className="flex justify-center mb-4">
                 <Image
-                  src={setupData.qrCodeUrl || "/placeholder.svg"}
+                  src={
+                    setupData.qrCodeUrl ||
+                    "https://dummyimage.com/200x200/1f2937/ffffff.png&text=QR"
+                  }
                   alt="TOTP QR Code"
                   width={200}
                   height={200}

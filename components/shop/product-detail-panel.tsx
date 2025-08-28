@@ -87,19 +87,19 @@ export function ProductDetailPanel({ productId, onClose }: ProductDetailPanelPro
   }
 
   const getLowestPrice = () => {
-    const prices = []
+    const prices: number[] = []
 
     // Add base listing prices
     product.baseListings.forEach((listing) => {
       if (listing.stock > 0) {
-        prices.push(Number.parseFloat(listing.price))
+  prices.push(Number.parseFloat(listing.price))
       }
     })
 
     // Add variant listing prices
     product.variants.forEach((variant) => {
       if (variant.listings && variant.listings.stock > 0) {
-        prices.push(Number.parseFloat(variant.listings.price))
+  prices.push(Number.parseFloat(variant.listings.price))
       }
     })
 
@@ -134,7 +134,10 @@ export function ProductDetailPanel({ productId, onClose }: ProductDetailPanelPro
         <div className="aspect-square relative mb-4 bg-muted rounded-lg overflow-hidden">
           {product.product.imageUrl ? (
             <Image
-              src={product.product.imageUrl || "/placeholder.svg?height=400&width=400"}
+              src={
+                product.product.imageUrl ||
+                "https://dummyimage.com/800x800/1f2937/ffffff.png&text=Placeholder"
+              }
               alt={product.product.name}
               fill
               className="object-cover"
