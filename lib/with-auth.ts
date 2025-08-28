@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import "server-only"
 import { verifySession } from "@/lib/security"
 
 /**

@@ -1,3 +1,4 @@
+import "server-only"
 import { cookies, headers } from "next/headers"
 import { verifySession } from "@/lib/security"
 import { getDb } from "@/lib/db"

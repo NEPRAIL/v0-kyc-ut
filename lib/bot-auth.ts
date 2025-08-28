@@ -1,3 +1,4 @@
+import "server-only"
 import { randomBytes, createHash } from "node:crypto"
 
 const BOT_TOKEN_PREFIX = "bot_"

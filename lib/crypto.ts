@@ -1,3 +1,4 @@
+import "server-only"
 import { createHmac } from "node:crypto"
 
 const secret = process.env.SESSION_SECRET || "change-me"

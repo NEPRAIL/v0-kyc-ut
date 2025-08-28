@@ -1,3 +1,4 @@
+import "server-only"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { securityMonitor } from "@/lib/security/security-monitor"
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
@@ -46,7 +47,9 @@ export class BotSecurityManager {
     try {
       const expectedSignature = createHmac("sha256", secret).update(body).digest("hex")
 
-      return timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"))
+  const a = new Uint8Array(Buffer.from(signature, "hex"))
+  const b = new Uint8Array(Buffer.from(expectedSignature, "hex"))
+  return timingSafeEqual(a, b)
     } catch {
       return false
     }
@@ -130,7 +133,9 @@ export class BotSecurityManager {
       const secret = process.env.WEBHOOK_SECRET || "fallback-secret"
       const expectedSignature = createHmac("sha256", secret).update(JSON.stringify(expectedPayload)).digest("hex")
 
-      return timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"))
+  const a = new Uint8Array(Buffer.from(signature, "hex"))
+  const b = new Uint8Array(Buffer.from(expectedSignature, "hex"))
+  return timingSafeEqual(a, b)
     } catch {
       return false
     }

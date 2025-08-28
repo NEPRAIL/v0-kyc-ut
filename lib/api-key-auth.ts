@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/db"
 import { apiKeys } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
+import "server-only"
 import { compareApiKeyHash, parseApiKey } from "@/lib/security"
 import type { NextRequest } from "next/server"
 
