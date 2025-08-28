@@ -1,13 +1,28 @@
 const path = require("path")
 const dotenv = require("dotenv")
 
-// Load .env file with explicit path
 const envPath = path.resolve(__dirname, "..", ".env")
 console.log("[v0] Loading .env from:", envPath)
-const result = dotenv.config({ path: envPath, debug: true })
 
-if (result.error) {
-  console.log("[v0] Dotenv error:", result.error.message)
+try {
+  const fs = require("fs")
+  if (fs.existsSync(envPath)) {
+    const stats = fs.statSync(envPath)
+    if (stats.isFile()) {
+      const result = dotenv.config({ path: envPath, debug: true })
+      if (result.error) {
+        console.log("[v0] Dotenv error:", result.error.message)
+        // Fallback: try loading from current directory
+        dotenv.config({ debug: true })
+      }
+    } else {
+      console.log("[v0] .env exists but is not a regular file, using process.env only")
+    }
+  } else {
+    console.log("[v0] .env file not found, using process.env only")
+  }
+} catch (error) {
+  console.log("[v0] Error accessing .env file:", error.message)
   // Fallback: try loading from current directory
   dotenv.config({ debug: true })
 }
