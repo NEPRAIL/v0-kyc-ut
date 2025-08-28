@@ -35,9 +35,8 @@ html {
         `}</style>
       </head>
       <body>
-        {/* Keep Header as a server component at the root to avoid any client reclassification */}
-        <Header />
         <ThemeProvider>
+          <Header />
           <CartProvider>
             {children}
             <Toaster />
