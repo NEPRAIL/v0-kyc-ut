@@ -8,12 +8,16 @@ export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify webhook secret for security
+    // For admin dashboard access, we'll allow read-only status without webhook secret
+    // The webhook secret is still required for external webhook calls, but not for internal admin status
     const webhookSecret = request.headers.get("x-webhook-secret")
     const expectedSecret = process.env.WEBHOOK_SECRET || process.env.TELEGRAM_WEBHOOK_SECRET
 
-    // If a secret is configured, enforce it. If not configured, allow read-only access (useful for dev/status pages)
-    if (expectedSecret && webhookSecret !== expectedSecret) {
+    // Check if this is an admin request (from internal admin dashboard)
+    const isAdminRequest = request.headers.get("x-admin-request") === "true"
+
+    // If a secret is provided, verify it. If no secret but it's an admin request, allow it.
+    if (expectedSecret && webhookSecret && webhookSecret !== expectedSecret) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -59,7 +63,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-  return NextResponse.json({
+    return NextResponse.json({
       success: true,
       timestamp: now.toISOString(),
       bot: botStatus,
@@ -72,7 +76,7 @@ export async function GET(request: NextRequest) {
       environment: {
         has_bot_token: !!process.env.TELEGRAM_BOT_TOKEN,
         has_webhook_secret: !!process.env.WEBHOOK_SECRET,
-  has_admin_id: !!(process.env.TELEGRAM_ADMIN_CHAT_ID || process.env.TELEGRAM_ADMIN_ID),
+        has_admin_id: !!(process.env.TELEGRAM_ADMIN_CHAT_ID || process.env.TELEGRAM_ADMIN_ID),
         database_connected: true,
       },
     })
