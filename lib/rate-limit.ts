@@ -70,7 +70,7 @@ export async function checkRateLimit(
 
     const current = existing[0]
 
-    if (current.count >= config.requests) {
+  if ((current.count ?? 0) >= config.requests) {
       return {
         success: false,
         remaining: 0,
@@ -81,12 +81,12 @@ export async function checkRateLimit(
     // Increment count
     await db
       .update(rateLimits)
-      .set({ count: current.count + 1 })
+  .set({ count: (current.count ?? 0) + 1 })
       .where(eq(rateLimits.id, current.id))
 
     return {
       success: true,
-      remaining: config.requests - current.count - 1,
+  remaining: config.requests - (current.count ?? 0) - 1,
       resetTime: current.resetTime.getTime(),
     }
   } catch (error) {

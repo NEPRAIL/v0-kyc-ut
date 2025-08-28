@@ -88,11 +88,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const db = getDb()
 
-    let orderQuery = eq(orders.id, orderId)
-    if (auth?.userId && !webhookHeader) {
-      // If user authenticated and not webhook, scope to user's orders
-      orderQuery = and(eq(orders.id, orderId), eq(orders.userId, auth.userId))
-    }
+  const orderQuery = auth?.userId && !webhookHeader ? and(eq(orders.id, orderId), eq(orders.userId, auth.userId)) : eq(orders.id, orderId)
 
     // Update order status
     const [updatedOrder] = await db
@@ -116,17 +112,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       const adminChat = process.env.TELEGRAM_ADMIN_CHAT_ID
 
       if (botToken && adminChat && updated_via !== "admin") {
-        const statusEmoji =
-          {
-            pending: "⏳",
-            confirmed: "✅",
-            processing: "🔄",
-            shipped: "📦",
-            delivered: "🎉",
-            cancelled: "❌",
-            paid: "💰",
-            failed: "⚠️",
-          }[status] || "📋"
+        const emojiMap = {
+          pending: "⏳",
+          confirmed: "✅",
+          processing: "🔄",
+          shipped: "📦",
+          delivered: "🎉",
+          cancelled: "❌",
+          paid: "💰",
+          failed: "⚠️",
+        } as const
+        const statusEmoji = emojiMap[(status as keyof typeof emojiMap)] ?? "📋"
 
         const message = `${statusEmoji} **Order Status Update**
 

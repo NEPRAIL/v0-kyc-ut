@@ -3,7 +3,10 @@
  * Centralized configuration management using environment variables
  */
 
-import { env, isDevelopment, isProduction } from "./env"
+// Use JS proxy that re-exports TS env if present
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { env, isDevelopment, isProduction } from "./env.js"
 
 export const config = {
   // Application

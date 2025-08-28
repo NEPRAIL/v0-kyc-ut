@@ -13,9 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     const orderId = params.id
 
-    const whereClause = orderId.startsWith("ord_")
-      ? and(eq(orders.id, orderId), eq(orders.userId, auth.userId))
-      : and(eq(orders.id, Number.parseInt(orderId) || 0), eq(orders.userId, auth.userId))
+  const whereClause = and(eq(orders.id, orderId), eq(orders.userId, auth.userId))
 
     const [order] = await db
       .select({
@@ -83,9 +81,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: "Invalid status" }, { status: 400 })
     }
 
-    const whereClause = orderId.startsWith("ord_")
-      ? and(eq(orders.id, orderId), eq(orders.userId, auth.userId))
-      : and(eq(orders.id, Number.parseInt(orderId) || 0), eq(orders.userId, auth.userId))
+  const whereClause = and(eq(orders.id, orderId), eq(orders.userId, auth.userId))
 
     const [updatedOrder] = await db.update(orders).set({ status }).where(whereClause).returning()
 

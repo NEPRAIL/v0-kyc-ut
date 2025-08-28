@@ -29,7 +29,7 @@ export async function POST() {
 
     const deletedCount = await db
       .delete(telegramLinkingCodes)
-      .where(and(eq(telegramLinkingCodes.userId, auth.userId), gt(now, telegramLinkingCodes.expiresAt)))
+      .where(and(eq(telegramLinkingCodes.userId, auth.userId), gt(telegramLinkingCodes.expiresAt, now)))
       .returning({ code: telegramLinkingCodes.code })
 
     if (deletedCount.length > 0) {
@@ -104,7 +104,7 @@ export async function POST() {
     return NextResponse.json(
       {
         error: "Failed to generate linking code",
-        details: error.message,
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
     )

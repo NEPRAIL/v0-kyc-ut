@@ -8,7 +8,8 @@ import { botTokenFromAuthHeader, hashBotToken, generateBotToken } from "@/lib/bo
 import { addDays } from "date-fns"
 
 export async function requireAuth() {
-  const raw = cookies().get("session")?.value
+  const cookieStore = await cookies()
+  const raw = cookieStore.get("session")?.value
   if (!raw) return { ok: false as const, status: 401 as const }
   const session = await verifySession(raw)
   if (!session?.uid) return { ok: false as const, status: 401 as const }
@@ -27,7 +28,7 @@ export async function verifySessionTolerant(cookieVal?: string): Promise<{ userI
 // Returns { userId } if authenticated via cookie session OR bot token
 export async function getAuthFromRequest(): Promise<{ userId: string } | null> {
   // 1) try cookie session (browser)
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const sessionCookie = cookieStore.get("session")?.value
   if (sessionCookie) {
     const s = await verifySession(sessionCookie)
@@ -35,7 +36,7 @@ export async function getAuthFromRequest(): Promise<{ userId: string } | null> {
   }
 
   // 2) try bot token (Authorization header)
-  const hdrs = headers()
+  const hdrs = await headers()
   const authHeader = hdrs.get("authorization")
   if (authHeader) {
     const token = botTokenFromAuthHeader(new Request("http://local", { headers: { authorization: authHeader } }))
@@ -163,13 +164,10 @@ export async function getUserBotSessions(userId: string) {
   const db = getDb()
   const now = new Date()
 
-  const sessions = await db.query.telegramLinks.findMany({
-    where: and(
-      eq(telegramLinks.userId, userId),
-      eq(telegramLinks.isRevoked, false),
-      gt(telegramLinks.botTokenExpiresAt, now),
-    ),
-  })
+  const sessions = await db
+    .select()
+    .from(telegramLinks)
+    .where(and(eq(telegramLinks.userId, userId), eq(telegramLinks.isRevoked, false), gt(telegramLinks.botTokenExpiresAt, now)))
 
   return sessions.map((session) => ({
     telegramUserId: session.telegramUserId,

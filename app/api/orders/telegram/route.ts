@@ -9,11 +9,12 @@ export const dynamic = "force-dynamic"
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url)
-    const telegramUserId = url.searchParams.get("telegram_user_id")
+  const telegramUserIdStr = url.searchParams.get("telegram_user_id")
 
-    if (!telegramUserId) {
+  if (!telegramUserIdStr) {
       return NextResponse.json({ error: "Telegram user ID required" }, { status: 400 })
     }
+  const telegramUserId = Number(telegramUserIdStr)
 
     const db = getDb()
 
@@ -21,7 +22,7 @@ export async function GET(req: Request) {
     const telegramLink = await db
       .select()
       .from(telegramLinks)
-      .where(eq(telegramLinks.telegramUserId, telegramUserId))
+  .where(eq(telegramLinks.telegramUserId, telegramUserId))
       .limit(1)
 
     if (telegramLink.length === 0) {

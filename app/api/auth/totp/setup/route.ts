@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     const secret = issueTotpSecret()
     const uri = buildTotpURI({ secret, label: user.username, issuer: "KYCut" })
 
-    // Store the secret temporarily (not activated until verified)
-    await db.update(users).set({ totpSecret: secret }).where(eq(users.id, user.id))
+  // Store the secret temporarily in twoFactorSecret field
+  await db.update(users).set({ twoFactorSecret: secret, twoFactorEnabled: false }).where(eq(users.id, user.id))
 
     return NextResponse.json({
       secret,

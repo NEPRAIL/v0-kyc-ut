@@ -16,8 +16,8 @@ const updateProfileSchema = z.object({
 
 export async function GET() {
   try {
-    const auth = await requireAuth()
-    if (!auth.success) {
+  const auth = await requireAuth()
+  if (!auth.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -27,8 +27,7 @@ export async function GET() {
         id: users.id,
         username: users.username,
         email: users.email,
-        name: users.name,
-        created_at: users.created_at,
+  createdAt: users.createdAt,
       })
       .from(users)
       .where(eq(users.id, auth.userId))
@@ -48,7 +47,7 @@ export async function GET() {
 export async function PATCH(req: Request) {
   try {
     const auth = await requireAuth()
-    if (!auth.success) {
+  if (!auth.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -78,13 +77,7 @@ export async function PATCH(req: Request) {
       }
     }
 
-    await db
-      .update(users)
-      .set({
-        ...updateData,
-        updated_at: new Date(),
-      })
-      .where(eq(users.id, auth.userId))
+  await db.update(users).set({ ...updateData, updatedAt: new Date() }).where(eq(users.id, auth.userId))
 
     return NextResponse.json({ success: true })
   } catch (error) {

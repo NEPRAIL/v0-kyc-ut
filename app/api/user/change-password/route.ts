@@ -17,7 +17,7 @@ const changePasswordSchema = z.object({
 export async function POST(req: Request) {
   try {
     const auth = await requireAuth()
-    if (!auth.success) {
+  if (!auth.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -32,14 +32,14 @@ export async function POST(req: Request) {
     const db = getDb()
 
     // Get current user
-    const [user] = await db.select().from(users).where(eq(users.id, auth.userId)).limit(1)
+  const [user] = await db.select().from(users).where(eq(users.id, auth.userId)).limit(1)
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     // Verify current password
-    const currentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash)
+  const currentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash)
     if (!currentPasswordValid) {
       return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 })
     }
@@ -50,10 +50,7 @@ export async function POST(req: Request) {
     // Update password
     await db
       .update(users)
-      .set({
-        password_hash: newPasswordHash,
-        updated_at: new Date(),
-      })
+  .set({ passwordHash: newPasswordHash, updatedAt: new Date() })
       .where(eq(users.id, auth.userId))
 
     return NextResponse.json({ success: true })

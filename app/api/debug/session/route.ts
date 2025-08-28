@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const raw = cookies().get("session")?.value ?? null;
+  const raw = (await cookies()).get("session")?.value ?? null;
     const parsed = raw ? await verifySession(raw) : null;
     return NextResponse.json({
       hasCookie: !!raw,

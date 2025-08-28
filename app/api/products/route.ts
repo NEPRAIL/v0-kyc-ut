@@ -13,8 +13,7 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get("limit") || "20")
     const offset = (page - 1) * limit
 
-    let query = db
-      .select({
+    const selection = {
         id: products.id,
         slug: products.slug,
         name: products.name,
@@ -32,17 +31,10 @@ export async function GET(request: NextRequest) {
         lowestPrice: sql<string>`MIN(${listings.price})`.as("lowestPrice"),
         totalStock: sql<number>`SUM(${listings.stock})`.as("totalStock"),
         hasVariants: sql<boolean>`COUNT(${variants.id}) > 0`.as("hasVariants"),
-      })
-      .from(products)
-      .leftJoin(seasons, eq(products.seasonId, seasons.id))
-      .leftJoin(rarities, eq(products.rarityId, rarities.id))
-      .leftJoin(listings, and(eq(listings.productId, products.id), eq(listings.isActive, true)))
-      .leftJoin(variants, eq(variants.productId, products.id))
-      .where(eq(products.isActive, true))
-      .groupBy(products.id, seasons.id, rarities.id)
+      }
 
     // Apply filters
-    const conditions = [eq(products.isActive, true)]
+  const conditions = [eq(products.isActive, true)]
 
     if (search) {
       conditions.push(like(products.name, `%${search}%`))
@@ -56,18 +48,24 @@ export async function GET(request: NextRequest) {
       conditions.push(inArray(products.rarityId, rarityIds))
     }
 
-    if (conditions.length > 1) {
-      query = query.where(and(...conditions))
-    }
-
-    const results = await query.limit(limit).offset(offset)
+    const where = conditions.length > 1 ? and(...conditions) : eq(products.isActive, true)
+    const results = await db
+      .select(selection)
+      .from(products)
+      .leftJoin(seasons, eq(products.seasonId, seasons.id))
+      .leftJoin(rarities, eq(products.rarityId, rarities.id))
+      .leftJoin(listings, and(eq(listings.productId, products.id), eq(listings.isActive, true)))
+      .leftJoin(variants, eq(variants.productId, products.id))
+      .where(where)
+      .groupBy(products.id, seasons.id, rarities.id)
+      .limit(limit)
+      .offset(offset)
 
     // Get total count for pagination
-    let countQuery = db.select({ count: sql<number>`COUNT(*)` }).from(products)
-    if (conditions.length > 1) {
-      countQuery = countQuery.where(and(...conditions))
-    }
-    const [{ count }] = await countQuery
+    const [{ count }] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(products)
+      .where(where)
 
     return NextResponse.json({
       products: results,

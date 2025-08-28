@@ -294,7 +294,7 @@ export default function ProductClientPage({ params }: ProductPageProps) {
                     >
                       <div className="flex justify-between items-center py-2">
                         <span className="font-medium text-white">{key}</span>
-                        <span className="text-muted-foreground">{value}</span>
+                        <span className="text-muted-foreground">{String(value)}</span>
                       </div>
                       {index < Object.entries(product.specifications).length - 1 && <Separator className="bg-border" />}
                     </div>

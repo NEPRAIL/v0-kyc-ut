@@ -2,7 +2,7 @@ import { getDb } from "@/lib/db"
 import { apiKeys } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import "server-only"
-import { compareApiKeyHash, parseApiKey } from "@/lib/security"
+import { compareApiKeyHash } from "@/lib/security"
 import type { NextRequest } from "next/server"
 
 export async function authenticateApiKey(req: NextRequest): Promise<{ userId: string; scopes: string[] } | null> {
@@ -12,17 +12,17 @@ export async function authenticateApiKey(req: NextRequest): Promise<{ userId: st
       return null
     }
 
-    const apiKey = authHeader.substring(7)
-    const parsed = parseApiKey(apiKey)
-    if (!parsed) {
-      return null
-    }
+  const apiKey = authHeader.substring(7)
+  // Expected format: ak_live_<id>_<secret>
+  const match = apiKey.match(/^ak_live_([a-f0-9]+)_(.+)$/)
+  if (!match) return null
+  const [, keyId, secret] = match
 
     const db = getDb()
     const keyRecord = await db
       .select()
       .from(apiKeys)
-      .where(eq(apiKeys.id, `ak_live_${parsed.keyId}`))
+  .where(eq(apiKeys.id, `ak_live_${keyId}`))
       .limit(1)
 
     if (keyRecord.length === 0) {
@@ -32,7 +32,7 @@ export async function authenticateApiKey(req: NextRequest): Promise<{ userId: st
     const key = keyRecord[0]
 
     // Verify key hash in constant time
-    if (!compareApiKeyHash(parsed.secret, key.keyHash)) {
+  if (!(await compareApiKeyHash(secret, key.keyHash))) {
       return null
     }
 

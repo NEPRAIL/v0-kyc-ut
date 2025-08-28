@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Signup API called")
 
     // Rate limiting
-    const clientIP = request.ip || request.headers.get("x-forwarded-for") || "unknown"
+  const clientIP = request.headers.get("x-forwarded-for") || "unknown"
     console.log("[v0] Client IP:", clientIP)
 
     const rateLimitResult = await checkRateLimit(`signup:${clientIP}`, { requests: 3, window: 300 })
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Hashing password")
     // Create user
-    const userId = randomId("usr_")
+  const userId = randomId()
     const passwordHash = await hashPassword(password)
 
     console.log("[v0] Creating user in database")
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     console.log("[v0] User created:", newUser.id)
 
     // Create session
-    const sessionId = randomId("sess_")
+  const sessionId = randomId()
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
 
     console.log("[v0] Creating session")
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     // Sign session cookie
     console.log("[v0] Signing session cookie")
-    const sessionCookie = signSession({ uid: newUser.id, exp: expiresAt.getTime() }, sessionSecret)
+  const sessionCookie = `session=${signSession(newUser.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}`
 
     const response = NextResponse.json({
       success: true,
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       userId: newUser.id,
     })
 
-    response.headers.set("Set-Cookie", sessionCookie)
+  response.headers.set("Set-Cookie", sessionCookie)
     console.log("[v0] Signup successful")
 
     return response

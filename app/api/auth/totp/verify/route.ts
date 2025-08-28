@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     if (disable) {
       // Disable TOTP
-      await db.update(users).set({ totpSecret: null }).where(eq(users.id, user.id))
+      await db.update(users).set({ twoFactorSecret: null, twoFactorEnabled: false }).where(eq(users.id, user.id))
       return NextResponse.json({ success: true, message: "TOTP disabled" })
     }
 
@@ -35,12 +35,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current user data
-    const [currentUser] = await db.select().from(users).where(eq(users.id, user.id)).limit(1)
-    if (!currentUser || !currentUser.totpSecret) {
+  const [currentUser] = await db.select().from(users).where(eq(users.id, user.id)).limit(1)
+  if (!currentUser || !currentUser.twoFactorSecret) {
       return NextResponse.json({ error: "TOTP not set up" }, { status: 400 })
     }
 
-    const isValid = verifyTotpToken({ token, secret: currentUser.totpSecret })
+  const isValid = verifyTotpToken({ token, secret: currentUser.twoFactorSecret })
     if (!isValid) {
       return NextResponse.json({ error: "Invalid TOTP token" }, { status: 400 })
     }

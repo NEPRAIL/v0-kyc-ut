@@ -311,7 +311,7 @@ export function CheckoutForm() {
           <div className="space-y-4">
             {state.items.map((item) => (
               <div key={item.id} className="flex items-center gap-4">
-                <ProductImage productName={item.name} alt={item.name} type="thumbnail" />
+                <ProductImage productName={item.name} type="thumbnail" />
                 <div className="flex-1">
                   <h3 className="font-medium">{item.name}</h3>
                   <p className="text-sm text-muted-foreground">{item.verificationLevel}</p>

@@ -104,7 +104,8 @@ export async function POST(req: Request) {
       expiresAt = issued.expiresAt
     } catch (err) {
       console.error("[telegram/link] issueBotToken failed:", err)
-      return NextResponse.json({ error: "Failed to issue bot token", details: err?.message || String(err) }, { status: 500 })
+      const details = err instanceof Error ? err.message : String(err)
+      return NextResponse.json({ error: "Failed to issue bot token", details }, { status: 500 })
     }
 
     console.log(`[telegram/link] Successfully linked user ${linkingCode.userId} to Telegram ${telegramUserId}`)
@@ -120,7 +121,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("[telegram/link] error:", error)
     const payload: any = { error: "Failed to verify linking code" }
-    if (process.env.NODE_ENV !== "production") payload.details = error?.message || String(error)
+    if (process.env.NODE_ENV !== "production") payload.details = error instanceof Error ? error.message : String(error)
     return NextResponse.json(payload, { status: 500 })
   }
 }
