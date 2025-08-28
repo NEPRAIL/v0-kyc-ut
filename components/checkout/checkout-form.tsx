@@ -37,31 +37,33 @@ export function CheckoutForm() {
       console.log("[v0] Starting checkout with items:", state.items)
 
       const items = state.items.map((item) => ({
-        productId: item.id,
-        qty: item.quantity,
-        price_cents: Math.round(item.price * 100),
+        id: item.id,
         name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        verificationLevel: item.verificationLevel,
+        category: item.category,
       }))
 
-      const response = await fetch("/api/checkout/start", {
+      const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ items, currency: "USD" }),
+        body: JSON.stringify({ items }),
       })
 
-      console.log("[v0] Checkout API response status:", response.status)
+      console.log("[v0] Orders API response status:", response.status)
       const data = await response.json()
-      console.log("[v0] Checkout API response data:", data)
+      console.log("[v0] Orders API response data:", data)
 
-      if (response.ok) {
+      if (response.ok && data.success) {
         clearCart()
         setOrderResult({
-          orderId: data.orderId || data.order?.id,
-          orderNumber: data.orderNumber || data.order?.order_number,
-          tgDeepLink: data.tgDeepLink || data.telegram_deeplink,
-          totalCents: data.totalCents || Math.round(state.total * 100),
-          currency: data.currency || "USD",
+          orderId: data.order.id,
+          orderNumber: data.order.id,
+          tgDeepLink: data.tgDeepLink,
+          totalCents: Math.round(data.order.total * 100),
+          currency: "USD",
         })
         toast({
           title: "Order created successfully!",
@@ -74,6 +76,44 @@ export function CheckoutForm() {
     } catch (error) {
       console.error("[v0] Checkout network error:", error)
       setError("Network error. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleConfirmOrder = async () => {
+    if (!orderResult?.orderId) return
+
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/orders/${orderResult.orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: "confirmed" }),
+      })
+
+      const data = await response.json()
+      if (response.ok && data.success) {
+        toast({
+          title: "Order confirmed!",
+          description: "Your order has been confirmed successfully.",
+        })
+        handleViewOrder()
+      } else {
+        toast({
+          title: "Confirmation failed",
+          description: data.error || "Failed to confirm order",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Order confirmation error:", error)
+      toast({
+        title: "Confirmation failed",
+        description: "Network error. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -147,10 +187,26 @@ export function CheckoutForm() {
                     </div>
                   </div>
 
-                  <Button onClick={handleTelegramPayment} className="w-full h-12 text-base font-medium" size="lg">
-                    <ExternalLink className="h-5 w-5 mr-2" />
-                    Complete Payment in Telegram
-                  </Button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Button onClick={handleTelegramPayment} className="h-12 text-base font-medium" size="lg">
+                      <ExternalLink className="h-5 w-5 mr-2" />
+                      Pay via Telegram
+                    </Button>
+                    <Button
+                      onClick={handleConfirmOrder}
+                      variant="outline"
+                      className="h-12 text-base font-medium bg-transparent"
+                      size="lg"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                      )}
+                      Confirm Order
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="text-center">

@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthFromRequest } from "@/lib/auth-server"
 import { db } from "@/lib/db"
-import { orders, listings, products, variants } from "@/lib/db/schema"
-import { eq, and } from "drizzle-orm"
-import { btcpayClient } from "@/lib/btcpay/client"
+import { orders } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
+import { randomBytes } from "node:crypto"
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,126 +12,68 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
-    const { productId, variantId, qty = 1 } = await request.json()
+    const body = await request.json()
 
-    if (!productId) {
-      return NextResponse.json({ error: "Product ID is required" }, { status: 400 })
-    }
-
-    // Find the appropriate listing
-    let listing
-    if (variantId) {
-      ;[listing] = await db
-        .select()
-        .from(listings)
-        .where(and(eq(listings.productId, productId), eq(listings.variantId, variantId), eq(listings.active, true)))
-        .limit(1)
+    let items = []
+    if (body.items && Array.isArray(body.items)) {
+      // New format with items array
+      items = body.items
+    } else if (body.productId) {
+      // Old format - convert to new format
+      items = [
+        {
+          id: body.productId,
+          name: body.productName || "Product",
+          price: body.price || 0,
+          quantity: body.qty || 1,
+          variantId: body.variantId,
+        },
+      ]
     } else {
-      ;[listing] = await db
-        .select()
-        .from(listings)
-        .where(and(eq(listings.productId, productId), eq(listings.variantId, null), eq(listings.active, true)))
-        .limit(1)
+      return NextResponse.json({ error: "Invalid order format" }, { status: 400 })
     }
 
-    if (!listing) {
-      return NextResponse.json({ error: "Item not available for purchase" }, { status: 400 })
+    if (items.length === 0) {
+      return NextResponse.json({ error: "Cart is empty" }, { status: 400 })
     }
 
-    if (listing.stock < qty) {
-      return NextResponse.json({ error: "Insufficient stock" }, { status: 400 })
+    const totalCents = Math.round(items.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0) * 100)
+    const id = "ord_" + randomBytes(12).toString("hex")
+    const botUser = process.env.TELEGRAM_BOT_USERNAME || ""
+    const deepLink = botUser ? `https://t.me/${botUser}?start=order_${id}` : null
+
+    const orderData = {
+      id,
+      userId: auth.userId,
+      items: items.map((item: any) => ({
+        productId: item.id,
+        name: item.name,
+        price_cents: Math.round(item.price * 100),
+        qty: item.quantity,
+        variantId: item.variantId || null,
+      })) as any,
+      totalCents,
+      currency: "USD",
+      status: "pending",
+      tgDeeplink: deepLink,
     }
 
-    // Get product details for description
-    const [product] = await db.select().from(products).where(eq(products.id, productId)).limit(1)
+    const [order] = await db.insert(orders).values(orderData).returning()
 
-    if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 })
-    }
+    // Send Telegram notification to admin
+    await sendTelegramNotification(order, items)
 
-    // Get variant details if applicable
-    let variant = null
-    if (variantId) {
-      ;[variant] = await db.select().from(variants).where(eq(variants.id, variantId)).limit(1)
-    }
-
-    const totalPrice = listing.priceSats * qty
-    const description = variant ? `${product.name} - ${variant.label}` : product.name
-
-    // Create order record
-    const [order] = await db
-      .insert(orders)
-      .values({
-        userId: auth.userId,
-        productId,
-        variantId: variantId || null,
-        qty,
-        priceSats: totalPrice,
+    return NextResponse.json({
+      success: true,
+      order: {
+        id: order.id,
+        total: totalCents / 100,
         status: "pending",
-      })
-      .returning()
-
-    if (btcpayClient.isReady()) {
-      try {
-        // Create BTCPay invoice
-        const invoice = await btcpayClient.createInvoice({
-          amountSats: totalPrice,
-          orderId: order.id,
-          description,
-        })
-
-        // Update order with invoice ID
-        await db
-          .update(orders)
-          .set({
-            btcpayInvoiceId: invoice.id,
-            status: "unpaid",
-          })
-          .where(eq(orders.id, order.id))
-
-        // Reserve stock (reduce available stock)
-        await db
-          .update(listings)
-          .set({
-            stock: listing.stock - qty,
-          })
-          .where(eq(listings.id, listing.id))
-
-        return NextResponse.json({
-          orderId: order.id,
-          invoiceId: invoice.id,
-          checkoutLink: invoice.checkoutLink,
-          amount: totalPrice,
-          description,
-        })
-      } catch (error) {
-        // If BTCPay fails, clean up the order
-        await db.delete(orders).where(eq(orders.id, order.id))
-        throw error
-      }
-    } else {
-      await db
-        .update(orders)
-        .set({
-          status: "pending_payment",
-        })
-        .where(eq(orders.id, order.id))
-
-      // Reserve stock (reduce available stock)
-      await db
-        .update(listings)
-        .set({
-          stock: listing.stock - qty,
-        })
-        .where(eq(listings.id, listing.id))
-
-      return NextResponse.json({
-        orderId: order.id,
-        amount: totalPrice,
-        description,
-        message: "Order created. Payment processing is currently unavailable.",
-      })
-    }
+        items: items,
+      },
+      tgDeepLink: deepLink,
+      message: "Order created successfully. Complete payment via Telegram bot.",
+    })
   } catch (error) {
     console.error("Create order error:", error)
     return NextResponse.json({ error: "Failed to create order" }, { status: 500 })
@@ -153,32 +95,91 @@ export async function GET(request: NextRequest) {
     const userOrders = await db
       .select({
         id: orders.id,
-        qty: orders.qty,
-        priceSats: orders.priceSats,
+        totalCents: orders.totalCents,
+        currency: orders.currency,
         status: orders.status,
+        items: orders.items,
+        tgDeeplink: orders.tgDeeplink,
         createdAt: orders.createdAt,
-        btcpayInvoiceId: orders.btcpayInvoiceId,
-        product: {
-          id: products.id,
-          name: products.name,
-          imageUrl: products.imageUrl,
-        },
-        variant: {
-          id: variants.id,
-          label: variants.label,
-        },
       })
       .from(orders)
-      .leftJoin(products, eq(orders.productId, products.id))
-      .leftJoin(variants, eq(orders.variantId, variants.id))
       .where(eq(orders.userId, auth.userId))
       .orderBy(orders.createdAt)
       .limit(limit)
       .offset(offset)
 
-    return NextResponse.json({ orders: userOrders })
+    const transformedOrders = userOrders.map((order) => ({
+      id: order.id,
+      order_number: order.id,
+      total_amount: Number.parseFloat((order.totalCents / 100).toFixed(2)),
+      status: order.status,
+      created_at: order.createdAt,
+      payment_status: order.status === "paid" ? "completed" : order.status === "failed" ? "failed" : "pending",
+      telegram_deeplink: order.tgDeeplink,
+      items: Array.isArray(order.items)
+        ? order.items.map((item: any, index: number) => ({
+            id: `${order.id}_${index}`,
+            product_name: item.name || "Unknown Product",
+            product_id: item.productId || "unknown",
+            quantity: item.qty || 1,
+            product_price: Number.parseFloat((item.price_cents ? item.price_cents / 100 : 0).toFixed(2)),
+            total_price: Number.parseFloat((((item.price_cents || 0) * (item.qty || 1)) / 100).toFixed(2)),
+          }))
+        : [],
+      total_items: Array.isArray(order.items)
+        ? order.items.reduce((sum: number, item: any) => sum + (item.qty || 1), 0)
+        : 0,
+      currency_symbol: order.currency === "USD" ? "$" : order.currency,
+    }))
+
+    return NextResponse.json({
+      success: true,
+      orders: transformedOrders,
+      metadata: {
+        total_orders: transformedOrders.length,
+        total_value: transformedOrders.reduce((sum, order) => sum + order.total_amount, 0),
+      },
+    })
   } catch (error) {
     console.error("Get orders error:", error)
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 })
+  }
+}
+
+async function sendTelegramNotification(order: any, items: any[]) {
+  try {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN
+    const adminId = process.env.TELEGRAM_ADMIN_CHAT_ID
+
+    if (!botToken || !adminId) {
+      return
+    }
+
+    const itemsText = items
+      .map((item) => `• ${item.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}`)
+      .join("\n")
+
+    const message = `🔔 **NEW ORDER CREATED**
+
+**Order ID:** \`${order.id}\`
+**Total:** $${(order.totalCents / 100).toFixed(2)}
+**Status:** ${order.status.toUpperCase()}
+
+**Items:**
+${itemsText}
+
+Use /order ${order.id} in the bot to manage this order.`
+
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: adminId,
+        text: message,
+        parse_mode: "Markdown",
+      }),
+    })
+  } catch (error) {
+    console.error("Failed to send Telegram notification:", error)
   }
 }
