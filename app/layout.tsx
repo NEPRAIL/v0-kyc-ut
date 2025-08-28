@@ -35,9 +35,10 @@ html {
         `}</style>
       </head>
       <body>
+        {/* Keep server-only Header outside client providers to avoid client bundling of server deps */}
+        <Header />
         <ThemeProvider>
           <CartProvider>
-            <Header />
             {children}
             <Toaster />
           </CartProvider>
